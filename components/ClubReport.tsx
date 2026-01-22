@@ -1,0 +1,113 @@
+import React from 'react';
+import { Club } from '../types';
+import { Trophy, Star, Building2, Wallet } from 'lucide-react';
+
+interface ClubReportProps {
+  club: Club;
+}
+
+const KitVisual: React.FC<{ c1: string, c2: string }> = ({ c1, c2 }) => (
+  <div className="relative w-20 h-24 mx-auto">
+    <div className={`w-full h-full ${c1} rounded-t-lg relative flex items-center justify-center overflow-hidden border-2 border-slate-700`}>
+        <div className={`absolute inset-x-0 top-0 h-4 ${c2} opacity-30`}></div>
+        <div className={`absolute inset-y-0 left-0 w-2 ${c2} opacity-30`}></div>
+        <div className={`absolute inset-y-0 right-0 w-2 ${c2} opacity-30`}></div>
+    </div>
+    <div className="flex justify-between -mt-1">
+        <div className={`w-8 h-8 ${c1} border-2 border-slate-700`}></div>
+        <div className={`w-8 h-8 ${c1} border-2 border-slate-700`}></div>
+    </div>
+  </div>
+);
+
+export const ClubReport: React.FC<ClubReportProps> = ({ club }) => {
+  const renderStars = (reputation: number) => {
+    const stars = Math.round(reputation / 2000);
+    return (
+      <div className="flex gap-1">
+        {[...Array(5)].map((_, i) => (
+          <Star key={i} size={14} className={i < stars ? "text-yellow-500 fill-yellow-500" : "text-slate-600"} />
+        ))}
+      </div>
+    );
+  };
+
+  return (
+    <div className="flex-1 p-8 overflow-y-auto flex flex-col gap-8 bg-slate-900/50">
+      {/* Header Panel */}
+      <div className="flex flex-col md:flex-row gap-8 items-center md:items-start bg-slate-800 p-8 rounded-2xl border border-slate-700 shadow-2xl">
+        <div className="w-32 h-32 bg-slate-700 border-4 border-slate-600 shadow-xl flex items-center justify-center rounded-2xl relative overflow-hidden shrink-0">
+          <div className={`absolute inset-0 opacity-40 ${club.primaryColor}`}></div>
+          <span className="text-6xl font-black z-10 drop-shadow-lg text-white">
+            {club.shortName.substring(0, 1)}
+          </span>
+        </div>
+        
+        <div className="text-center md:text-left flex-1">
+          <div className="text-5xl font-black uppercase text-white tracking-tighter italic drop-shadow-lg mb-2">
+            {club.name}
+          </div>
+          <div className="text-slate-400 text-sm font-bold flex flex-wrap justify-center md:justify-start gap-6 mt-1">
+            <span className="flex items-center gap-2"><Building2 size={16} /> Estadio: {club.stadium}</span>
+            <span className="flex items-center gap-2">Reputación: {renderStars(club.reputation)}</span>
+          </div>
+          
+          <div className="mt-8 flex flex-wrap justify-center md:justify-start gap-4">
+            <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-700 min-w-[140px] text-center shadow-inner">
+              <div className="text-[10px] text-slate-500 uppercase tracking-widest font-black mb-1 flex items-center justify-center gap-2">
+                <Wallet size={12} /> Economía
+              </div>
+              <div className="font-black text-green-500 text-xl">
+                £{club.finances.balance.toLocaleString()}
+              </div>
+            </div>
+            <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-700 min-w-[140px] text-center shadow-inner">
+              <div className="text-[10px] text-slate-500 uppercase tracking-widest font-black mb-1">Manager</div>
+              <div className="font-bold text-blue-400">Tú</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Grid Panels */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Palmarés */}
+        <div className="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden shadow-xl">
+          <div className="bg-slate-900/50 px-6 py-4 border-b border-slate-700 flex items-center gap-3">
+            <Trophy size={18} className="text-yellow-500" />
+            <h3 className="text-sm font-black uppercase tracking-widest text-white">Palmarés</h3>
+          </div>
+          <div className="p-6 space-y-4">
+            {club.honours.length > 0 ? (
+              club.honours.map((h, i) => (
+                <div key={i} className="flex justify-between items-center border-b border-slate-700/50 pb-3 last:border-0 last:pb-0">
+                  <span className="text-yellow-500 font-bold flex items-center gap-2">🏆 {h.name}</span>
+                  <span className="text-slate-500 font-mono text-sm">{h.year}</span>
+                </div>
+              ))
+            ) : (
+              <div className="text-slate-500 italic text-center py-4">Sin títulos recientes en las vitrinas.</div>
+            )}
+          </div>
+        </div>
+
+        {/* Camisetas */}
+        <div className="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden shadow-xl">
+          <div className="bg-slate-900/50 px-6 py-4 border-b border-slate-700">
+            <h3 className="text-sm font-black uppercase tracking-widest text-white">Equipación</h3>
+          </div>
+          <div className="p-8 flex justify-around">
+            <div className="text-center group">
+              <KitVisual c1={club.primaryColor} c2={club.secondaryColor} />
+              <div className="mt-4 text-xs font-black text-slate-500 uppercase tracking-widest group-hover:text-blue-400 transition-colors">Titular</div>
+            </div>
+            <div className="text-center group">
+              <KitVisual c1={club.secondaryColor} c2={club.primaryColor} />
+              <div className="mt-4 text-xs font-black text-slate-500 uppercase tracking-widest group-hover:text-blue-400 transition-colors">Visitante</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};

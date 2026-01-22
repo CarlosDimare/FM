@@ -1,0 +1,5 @@
+{
+  "name": "OpenFM Browser Edition",
+  "description": "A browser-based football management simulation engine featuring text-based match simulation, detailed player attributes, and narrative generation.",
+  "requestFramePermissions": []
+}
