@@ -1,8 +1,8 @@
-
 import React, { useState, useMemo } from 'react';
 import { Player } from '../types';
 import { world } from '../services/worldManager';
 import { Search, Filter, DollarSign, Clock, ArrowRightLeft } from 'lucide-react';
+import { FMBox, FMTable, FMTableCell } from './FMUI';
 
 interface MarketViewProps {
   onSelectPlayer: (player: Player) => void;
@@ -24,87 +24,75 @@ export const MarketView: React.FC<MarketViewProps> = ({ onSelectPlayer, userClub
   }, [filter, search]);
 
   return (
-    <div className="p-6 h-full flex flex-col gap-6" style={{ backgroundColor: '#dcdcdc' }}>
-      <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div className="p-4 h-full flex flex-col gap-4 bg-slate-400 overflow-hidden">
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b-2 border-slate-600 pb-4">
         <div>
-          <h2 className="text-2xl font-black uppercase italic tracking-tighter" style={{ color: '#333' }}>Mercado de Fichajes</h2>
-          <p className="text-sm" style={{ color: '#999' }}>Jugadores transferibles y cedibles en todo el mundo.</p>
+          <h2 className="text-3xl font-black text-slate-950 uppercase italic tracking-tighter">Mercado Mundial</h2>
+          <p className="text-slate-800 font-black text-xs uppercase tracking-widest italic">Buscando el próximo refuerzo estrella.</p>
         </div>
         
-        <div className="flex p-1 rounded-lg shadow-inner" style={{ backgroundColor: '#e8e8e8', border: '1px solid #999' }}>
-           {['ALL', 'TRANSFERABLE', 'LOANABLE'].map(f => (
+        <div className="flex bg-slate-200 p-1 rounded-sm border border-slate-600 shadow-inner">
+           {[
+             { id: 'ALL', label: 'Todos' },
+             { id: 'TRANSFERABLE', label: 'Transferibles' },
+             { id: 'LOANABLE', label: 'Cedibles' }
+           ].map(f => (
               <button 
-                 key={f}
-                 onClick={() => setFilter(f as any)}
-                 className="px-4 py-2 text-[10px] font-black rounded-md transition-all uppercase tracking-widest"
-                 style={{ 
-                   backgroundColor: filter === f ? '#666' : 'transparent',
-                   color: filter === f ? '#fff' : '#666' 
-                 }}
+                 key={f.id}
+                 onClick={() => setFilter(f.id as any)}
+                 className={`px-6 py-2 text-[10px] font-black rounded-sm transition-all uppercase tracking-widest ${filter === f.id ? 'bg-slate-950 text-white shadow-md' : 'text-slate-600 hover:text-slate-950'}`}
               >
-                 {f === 'ALL' ? 'Todos' : f === 'TRANSFERABLE' ? 'Transferibles' : 'Cedibles'}
+                 {f.label}
               </button>
            ))}
         </div>
       </header>
 
-      <div className="relative">
-         <Search className="absolute left-4 top-1/2 -translate-y-1/2" size={18} style={{ color: '#999' }} />
+      <div className="relative shrink-0">
+         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600" size={18} />
          <input 
             type="text" 
-            placeholder="Buscar jugador..." 
-            className="w-full rounded-xl pl-12 pr-6 py-4 outline-none font-bold"
-            style={{ backgroundColor: '#e8e8e8', border: '1px solid #999', color: '#333' }}
+            placeholder="Introduce nombre del jugador..." 
+            className="w-full bg-slate-100 border border-slate-600 rounded-sm pl-12 pr-6 py-4 text-slate-950 focus:ring-2 focus:ring-slate-900 outline-none font-black uppercase text-xs tracking-wider placeholder:text-slate-400 shadow-sm"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
          />
       </div>
 
-      <div className="rounded-xl overflow-hidden flex-1 shadow-2xl" style={{ backgroundColor: '#f4f4f4', border: '1px solid #999' }}>
-         <div className="overflow-y-auto max-h-full">
-            <table className="w-full text-left">
-               <thead className="sticky top-0 z-10 font-black uppercase text-[10px]" style={{ backgroundColor: '#e8e8e8', borderBottom: '1px solid #999', color: '#666' }}>
-                  <tr className="tracking-[0.2em]">
-                     <th className="p-4">Jugador</th>
-                     <th className="p-4">Club</th>
-                     <th className="p-4">Estado</th>
-                     <th className="p-4 text-center">Edad</th>
-                     <th className="p-4 text-right">Valor</th>
-                  </tr>
-               </thead>
-               <tbody className="divide-y" style={{ borderColor: '#ccc' }}>
-                  {marketPlayers.map(p => (
-                     <tr 
-                        key={p.id} 
-                        onClick={() => onSelectPlayer(p)}
-                        className="cursor-pointer transition-colors group"
-                        style={{ backgroundColor: 'transparent' }}
-                     >
-                        <td className="p-4">
-                           <p className="font-bold group-hover:text-600" style={{ color: '#333' }}>{p.name}</p>
-                           <p className="text-[10px] uppercase" style={{ color: '#999' }}>{p.positions[0]}</p>
-                        </td>
-                        <td className="p-4 text-sm" style={{ color: '#999' }}>
-                           {world.getClub(p.clubId)?.name}
-                        </td>
-                        <td className="p-4">
-                           <span className="px-2 py-1 rounded text-[9px] font-black uppercase tracking-widest" style={{ backgroundColor: '#e8e8e8', border: '1px solid #999', color: '#666' }}>
-                              {p.transferStatus === 'TRANSFERABLE' ? 'Transferible' : 'Cedible'}
-                           </span>
-                        </td>
-                        <td className="p-4 text-center font-mono" style={{ color: '#999' }}>{p.age}</td>
-                        <td className="p-4 text-right font-black" style={{ color: '#333' }}>
-                           £{(p.value / 1000000).toFixed(1)}M
-                        </td>
-                     </tr>
-                  ))}
-               </tbody>
-            </table>
-            {marketPlayers.length === 0 && (
-               <div className="p-20 text-center italic" style={{ color: '#999' }}>No se han encontrado jugadores con estos criterios.</div>
-            )}
-         </div>
-      </div>
+      <FMBox title="Resultados del Mercado" className="flex-1" noPadding>
+         <FMTable 
+            headers={['Jugador', 'Club', 'Estado', 'Edad', 'Valor']}
+            colWidths={['auto', 'auto', '120px', '50px', '100px']}
+         >
+            {marketPlayers.map(p => (
+               <tr 
+                  key={p.id} 
+                  onClick={() => onSelectPlayer(p)}
+                  className="hover:bg-slate-300 cursor-pointer transition-colors group"
+               >
+                  <FMTableCell>
+                     <p className="font-black text-slate-950 group-hover:text-blue-900 italic uppercase tracking-tighter">{p.name}</p>
+                     <p className="text-[9px] text-slate-600 font-black uppercase font-mono">{p.positions[0]}</p>
+                  </FMTableCell>
+                  <FMTableCell className="text-slate-700 italic font-black uppercase text-[10px]">
+                     {world.getClub(p.clubId)?.name}
+                  </FMTableCell>
+                  <FMTableCell>
+                     <span className={`px-2 py-0.5 rounded-sm text-[9px] font-black uppercase tracking-widest border ${p.transferStatus === 'TRANSFERABLE' ? 'bg-green-200 text-green-900 border-green-500' : 'bg-blue-200 text-blue-900 border-blue-500'}`}>
+                        {p.transferStatus === 'TRANSFERABLE' ? 'Transferible' : 'Cedible'}
+                     </span>
+                  </FMTableCell>
+                  <FMTableCell className="text-center font-mono font-black" isNumber>{p.age}</FMTableCell>
+                  <FMTableCell className="text-right font-black" isNumber>
+                     £{(p.value / 1000000).toFixed(1)}M
+                  </FMTableCell>
+               </tr>
+            ))}
+         </FMTable>
+         {marketPlayers.length === 0 && (
+            <div className="p-20 text-center text-slate-600 italic uppercase font-black tracking-widest text-[10px]">No se encontraron registros activos</div>
+         )}
+      </FMBox>
     </div>
   );
 };

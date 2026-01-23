@@ -1,6 +1,7 @@
 import React from 'react';
 import { Club, Player } from '../types';
-import { Play, Clipboard, ShieldCheck } from 'lucide-react';
+import { Play, Clipboard, ShieldCheck, AlertOctagon, Info, Settings } from 'lucide-react';
+import { FMBox, FMButton } from './FMUI';
 
 interface PreMatchViewProps {
   club: Club;
@@ -11,88 +12,117 @@ interface PreMatchViewProps {
 }
 
 export const PreMatchView: React.FC<PreMatchViewProps> = ({ club, opponent, starters, onStart, onGoToTactics }) => {
+  const invalidStarters = starters.filter(p => p.injury || (p.suspension && p.suspension.matchesLeft > 0));
+  const hasInvalidStarters = invalidStarters.length > 0;
+  const isReady = starters.length === 11 && !hasInvalidStarters;
+
   return (
-    <div className="p-8 h-full flex flex-col items-center justify-center overflow-y-auto" style={{ backgroundColor: '#dcdcdc' }}>
-      <div className="max-w-4xl w-full rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-500" style={{ backgroundColor: '#f4f4f4', border: '1px solid #999' }}>
-        <header className="p-8 border-b flex justify-between items-center" style={{ backgroundColor: '#e8e8e8', borderColor: '#999' }}>
-          <div className="flex items-center gap-6">
-            <div className={`w-16 h-16 rounded-full flex items-center justify-center text-white font-black text-2xl shadow-xl ${club.primaryColor}`}>{club.shortName}</div>
-            <div className="text-4xl font-black italic" style={{ color: '#999' }}>VS</div>
-            <div className={`w-16 h-16 rounded-full flex items-center justify-center text-white font-black text-2xl shadow-xl ${opponent.primaryColor}`}>{opponent.shortName}</div>
-          </div>
-          <div className="text-right">
-            <h2 className="text-2xl font-black uppercase italic tracking-tighter" style={{ color: '#333' }}>Preparativos</h2>
-            <p className="font-bold text-xs uppercase tracking-widest" style={{ color: '#666' }}>{club.stadium}</p>
-          </div>
-        </header>
+    <div className="h-full flex flex-col bg-slate-400 overflow-hidden">
+      <div className="flex-1 overflow-y-auto custom-scroll pb-32 md:pb-0">
+        <div className="max-w-5xl mx-auto md:my-8 bg-slate-200 md:rounded-sm border-x md:border border-slate-600 shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-500 flex flex-col">
+          
+          {/* Header */}
+          <header className="p-4 sm:p-8 bg-slate-300 border-b border-slate-500 flex flex-col sm:flex-row justify-between items-center gap-6 shrink-0">
+            <div className="flex items-center gap-4 sm:gap-6">
+              <div className={`w-14 h-14 sm:w-20 sm:h-20 rounded-full flex items-center justify-center text-white font-black text-xl sm:text-3xl shadow-lg border-2 sm:border-4 border-slate-100 ${club.primaryColor} ${club.primaryColor === 'bg-white' ? 'text-slate-950 border-slate-400' : ''}`}>{club.shortName}</div>
+              <div className="text-3xl sm:text-5xl font-black text-slate-500 italic tracking-tighter">VS</div>
+              <div className={`w-14 h-14 sm:w-20 sm:h-20 rounded-full flex items-center justify-center text-white font-black text-xl sm:text-3xl shadow-lg border-2 sm:border-4 border-slate-100 ${opponent.primaryColor} ${opponent.primaryColor === 'bg-white' ? 'text-slate-950 border-slate-400' : ''}`}>{opponent.shortName}</div>
+            </div>
+            <div className="text-center sm:text-right">
+              <h2 className="text-xl sm:text-3xl font-black text-slate-950 uppercase italic tracking-tighter">La Previa</h2>
+              <p className="text-slate-800 font-black text-[9px] sm:text-[11px] uppercase tracking-[0.2em] bg-slate-100 border border-slate-400 px-3 py-1 mt-1 rounded-sm">{club.stadium}</p>
+            </div>
+          </header>
 
-        <div className="p-10 grid grid-cols-1 md:grid-cols-2 gap-12">
-          <div>
-            <h3 className="font-black uppercase text-xs tracking-widest mb-6 flex items-center gap-2" style={{ color: '#999' }}>
-              <Clipboard size={14}/> Alineación Confirmada
-            </h3>
-            <div className="space-y-2 max-h-[400px] overflow-y-auto pr-4 scrollbar-hide">
-              {starters.length === 0 ? (
-                <div className="p-8 border-2 border-dashed rounded-xl text-center italic" style={{ borderColor: '#999', color: '#999' }}>No has seleccionado un 11 inicial.</div>
-              ) : (
-                starters.sort((a,b) => (a.tacticalPosition || 0) - (b.tacticalPosition || 0)).map(p => (
-                  <div key={p.id} className="flex items-center justify-between p-3 rounded-xl transition-colors" style={{ backgroundColor: '#e8e8e8', border: '1px solid #999' }}>
-                    <div className="flex items-center gap-3">
-                      <span className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-black" style={{ backgroundColor: '#1e293b', color: '#999', border: '1px solid #999' }}>{p.positions[0]}</span>
-                      <span className="font-bold" style={{ color: '#333' }}>{p.name}</span>
+          {/* Body Content */}
+          <div className="p-4 sm:p-10 flex flex-col md:grid md:grid-cols-2 gap-8 sm:gap-12 bg-slate-200">
+            
+            {/* Squad List */}
+            <div className="flex flex-col">
+              <h3 className="text-slate-600 font-black uppercase text-[10px] tracking-widest mb-4 flex items-center gap-2 border-b border-slate-400 pb-2">
+                <Clipboard size={14}/> FORMACIÓN TITULAR
+              </h3>
+              <div className="space-y-1">
+                {starters.length === 0 ? (
+                  <div className="p-12 border-2 border-dashed border-slate-400 rounded-sm bg-slate-300 text-center text-slate-600 font-black italic uppercase tracking-widest text-[10px]">Alineación no definida</div>
+                ) : (
+                  starters.sort((a,b) => (a.tacticalPosition || 0) - (b.tacticalPosition || 0)).map(p => (
+                    <div key={p.id} className={`flex items-center justify-between p-3 rounded-sm border-b transition-colors ${p.injury || p.suspension ? 'bg-red-100 border-red-300' : 'bg-slate-50 border-slate-300'}`}>
+                      <div className="flex items-center gap-3">
+                        <span className="w-6 h-6 rounded-sm bg-slate-950 flex items-center justify-center text-[9px] font-black text-white shrink-0">{p.positions[0]}</span>
+                        <div className="flex flex-col">
+                           <span className="text-slate-950 font-black uppercase text-xs italic">{p.name}</span>
+                           {(p.injury || p.suspension) && <span className="text-[8px] text-red-800 font-black uppercase">No disponible</span>}
+                        </div>
+                      </div>
+                      <span className="text-slate-950 font-black text-[10px]">{(p.currentAbility/20).toFixed(1)} ★</span>
                     </div>
-                    <span className="font-bold text-xs" style={{ color: '#999' }}>{(p.currentAbility/20).toFixed(1)} ★</span>
-                  </div>
-                ))
-              )}
-            </div>
-            {starters.length < 11 && (
-               <p className="mt-4 text-xs font-bold animate-pulse" style={{ color: '#999' }}>Debes tener 11 jugadores titulares para jugar.</p>
-            )}
-          </div>
-
-          <div className="flex flex-col justify-between">
-            <div className="space-y-6">
-              <div className="p-6 rounded-2xl" style={{ backgroundColor: '#e8e8e8', border: '1px solid #999' }}>
-                <h4 className="font-bold mb-2 flex items-center gap-2 text-sm" style={{ color: '#333' }}><ShieldCheck size={16} style={{ color: '#666' }}/> Informe del Ayudante</h4>
-                <p className="text-sm italic leading-relaxed" style={{ color: '#999' }}>"El equipo está listo, jefe. La moral es {starters.reduce((acc, p) => acc + p.morale, 0) / (starters.length || 1) > 80 ? 'excelente' : 'mejorable'}. Si mantenemos la presión arriba deberíamos llevarnos los 3 puntos."</p>
+                  ))
+                )}
               </div>
-              
+            </div>
+
+            {/* Tactical Info & Actions (Actions hidden on mobile, using sticky instead) */}
+            <div className="flex flex-col gap-6">
+              <div className="bg-slate-300 p-6 rounded-sm border border-slate-400 shadow-inner">
+                <h4 className="text-slate-950 font-black mb-3 flex items-center gap-2 text-[10px] uppercase tracking-widest border-b border-slate-500 pb-2"><ShieldCheck size={16}/> Informe del Cuerpo Técnico</h4>
+                <p className="text-slate-900 text-sm italic font-black leading-relaxed">"Todo listo, Jefe. El equipo tiene un promedio de {Math.round(starters.reduce((acc, p) => acc + p.fitness, 0) / (starters.length || 1))}% de condición física para hoy."</p>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
-                 <div className="p-4 rounded-xl text-center" style={{ backgroundColor: '#e8e8e8', border: '1px solid #999' }}>
-                    <span className="block text-[10px] font-black uppercase mb-1" style={{ color: '#999' }}>Tu Nivel</span>
-                    <span className="text-2xl font-black" style={{ color: '#333' }}>{(club.reputation/2000).toFixed(1)}</span>
+                 <div className="bg-slate-50 p-4 rounded-sm border border-slate-400 text-center">
+                    <span className="block text-[9px] text-slate-600 font-black uppercase mb-1 tracking-widest">Reputación Local</span>
+                    <span className="text-3xl font-black text-slate-950 italic">{(club.reputation/2000).toFixed(1)}</span>
                  </div>
-                 <div className="p-4 rounded-xl text-center" style={{ backgroundColor: '#e8e8e8', border: '1px solid #999' }}>
-                    <span className="block text-[10px] font-black uppercase mb-1" style={{ color: '#999' }}>Rival Nivel</span>
-                    <span className="text-2xl font-black" style={{ color: '#333' }}>{(opponent.reputation/2000).toFixed(1)}</span>
+                 <div className="bg-slate-50 p-4 rounded-sm border border-slate-400 text-center">
+                    <span className="block text-[9px] text-slate-600 font-black uppercase mb-1 tracking-widest">Reputación Rival</span>
+                    <span className="text-3xl font-black text-slate-950 italic">{(opponent.reputation/2000).toFixed(1)}</span>
                  </div>
               </div>
-            </div>
 
-            <div className="space-y-4 pt-8">
-              <button 
-                onClick={onStart}
-                disabled={starters.length < 11}
-                className="w-full py-5 flex items-center justify-center gap-3 rounded-2xl font-black uppercase tracking-[0.2em] shadow-2xl transition-all active:scale-95"
-                style={{ 
-                  backgroundColor: starters.length < 11 ? '#1e293b' : '#666',
-                  color: starters.length < 11 ? '#999' : '#fff',
-                  cursor: starters.length < 11 ? 'not-allowed' : 'pointer'
-                }}
-              >
-                <Play size={20} /> Jugar Partido
-              </button>
-              <button 
-                onClick={onGoToTactics}
-                className="w-full py-4 transition-colors text-xs font-black tracking-widest uppercase border rounded-xl"
-                style={{ color: '#999', borderColor: 'transparent' }}
-              >
-                Ajustar Tácticas
-              </button>
+              {/* Desktop Actions */}
+              <div className="hidden md:flex flex-col gap-3 mt-auto pt-6 border-t border-slate-400">
+                <button 
+                  onClick={onStart}
+                  disabled={!isReady}
+                  className={`w-full py-6 flex items-center justify-center gap-4 rounded-sm font-black uppercase tracking-[0.3em] shadow-xl transition-all active:scale-95 text-lg border-2 ${!isReady ? 'bg-slate-400 text-slate-500 border-slate-500 cursor-not-allowed' : 'bg-slate-950 hover:bg-black text-white border-black'}`}
+                >
+                  <Play size={20} fill="white" /> COMENZAR PARTIDO
+                </button>
+                <button 
+                  onClick={onGoToTactics}
+                  className="w-full py-3 text-slate-700 hover:text-slate-950 transition-colors text-[9px] font-black tracking-widest uppercase border border-slate-500 bg-slate-300 rounded-sm hover:bg-slate-50"
+                >
+                  Ajustar Tácticas
+                </button>
+              </div>
             </div>
           </div>
         </div>
+      </div>
+
+      {/* MOBILE STICKY FOOTER */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-gradient-to-t from-slate-300 to-slate-200 border-t-4 border-slate-950 p-4 z-[120] shadow-[0_-10px_30px_rgba(0,0,0,0.3)] flex flex-col gap-3">
+         {!isReady && (
+            <div className="bg-red-600 text-white text-[9px] font-black uppercase tracking-widest py-1 px-3 text-center rounded-sm animate-pulse">
+               Alineación incompleta o no válida
+            </div>
+         )}
+         <div className="flex gap-2">
+            <button 
+               onClick={onGoToTactics}
+               className="flex-1 bg-slate-100 border-2 border-slate-500 py-4 rounded-sm text-slate-950 font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2"
+            >
+               <Settings size={14} /> TÁCTICAS
+            </button>
+            <button 
+               onClick={onStart}
+               disabled={!isReady}
+               className={`flex-[2] py-4 rounded-sm font-black text-xs uppercase tracking-[0.2em] shadow-lg flex items-center justify-center gap-2 transition-all ${!isReady ? 'bg-slate-400 text-slate-600 cursor-not-allowed' : 'bg-slate-950 text-white active:scale-95'}`}
+            >
+               <Play size={14} fill="currentColor" /> COMENZAR
+            </button>
+         </div>
       </div>
     </div>
   );

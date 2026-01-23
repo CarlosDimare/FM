@@ -13,6 +13,14 @@ export class Scheduler {
     const fixedClub = rotatingClubs.shift(); 
     if (!fixedClub) return [];
     let currentRoundDate = new Date(startDate);
+    
+    // Ensure leagues start on Saturday/Sunday
+    if (currentRoundDate.getDay() !== 6 && currentRoundDate.getDay() !== 0) {
+        // Find next Saturday
+        const dist = (6 - currentRoundDate.getDay() + 7) % 7;
+        currentRoundDate.setDate(currentRoundDate.getDate() + dist);
+    }
+
     for (let round = 0; round < numRounds; round++) {
       if (round > 0) currentRoundDate.setDate(currentRoundDate.getDate() + 7);
       const roundClubs = [fixedClub, ...rotatingClubs];
@@ -33,6 +41,13 @@ export class Scheduler {
   static generateCupRound(competitionId: string, clubs: Club[], roundDate: Date, stage: MatchStage): Fixture[] {
      const fixtures: Fixture[] = [];
      const shuffled = [...clubs].sort(() => Math.random() - 0.5);
+     
+     // Ensure Cup rounds are mid-week (Wednesday) to avoid conflict
+     const safeDate = new Date(roundDate);
+     while(safeDate.getDay() !== 3) {
+        safeDate.setDate(safeDate.getDate() + 1);
+     }
+
      for (let i = 0; i < shuffled.length; i += 2) {
         if (shuffled[i] && shuffled[i+1]) {
            fixtures.push({
@@ -40,11 +55,11 @@ export class Scheduler {
               competitionId,
               homeTeamId: shuffled[i].id,
               awayTeamId: shuffled[i+1].id,
-              date: new Date(roundDate),
+              date: new Date(safeDate),
               played: false,
               squadType: 'SENIOR',
               stage: stage,
-              isNeutral: stage === 'FINAL'
+              isNeutral: stage === 'FINAL' || competitionId === 'W_CLUB' // Club World Cup always neutral
            });
         }
      }
@@ -55,14 +70,20 @@ export class Scheduler {
       const fixtures: Fixture[] = [];
       const shuffledClubs = [...clubs].sort(() => Math.random() - 0.5).slice(0, 32);
       
+      // Ensure start is a Wednesday
+      const safeStartDate = new Date(startDate);
+      while(safeStartDate.getDay() !== 3) {
+         safeStartDate.setDate(safeStartDate.getDate() + 1);
+      }
+
       for (let groupIdx = 0; groupIdx < 8; groupIdx++) {
          const groupClubs = shuffledClubs.slice(groupIdx * 4, (groupIdx * 4) + 4);
          if (groupClubs.length < 4) continue;
 
          // Group stage has 6 matchdays
          for (let m = 0; m < 6; m++) {
-            const matchDate = new Date(startDate);
-            matchDate.setDate(matchDate.getDate() + (m * 14) + (randomInt(0,1))); // Tue or Wed
+            const matchDate = new Date(safeStartDate);
+            matchDate.setDate(matchDate.getDate() + (m * 14)); // Every 2 weeks
             
             // Basic pairing logic for 4 teams group
             const pairs = m % 2 === 0 ? [[0,1], [2,3]] : [[0,2], [1,3]];
@@ -75,7 +96,8 @@ export class Scheduler {
                   date: matchDate,
                   played: false,
                   squadType: 'SENIOR',
-                  stage: 'GROUP'
+                  stage: 'GROUP',
+                  groupId: groupIdx
                });
             });
          }

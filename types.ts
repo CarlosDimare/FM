@@ -13,7 +13,7 @@ export enum Position {
 
 export type SquadType = 'SENIOR' | 'RESERVE' | 'U20';
 export type TransferStatus = 'NONE' | 'TRANSFERABLE' | 'LOANABLE';
-export type CompetitionType = 'LEAGUE' | 'CUP' | 'CONTINENTAL_ELITE' | 'CONTINENTAL_SMALL';
+export type CompetitionType = 'LEAGUE' | 'CUP' | 'CONTINENTAL_ELITE' | 'CONTINENTAL_SMALL' | 'GLOBAL';
 
 // Inbox Types
 export type MessageCategory = 'MARKET' | 'SQUAD' | 'STATEMENTS' | 'FINANCE' | 'COMPETITION';
@@ -40,6 +40,17 @@ export interface TransferOffer {
   responseDate: Date;
   counterAmount?: number;
   isViewed: boolean;
+}
+
+export interface MatchLog {
+  fixtureId: string;
+  date: Date;
+  homeTeamId: string;
+  awayTeamId: string;
+  homeScore: number;
+  awayScore: number;
+  events: MatchEvent[];
+  stats: Record<string, PlayerMatchStats>;
 }
 
 export const POSITION_ORDER: Record<string, number> = {
@@ -122,6 +133,10 @@ export interface Player {
     type: string;
     daysLeft: number;
   };
+  suspension?: {
+    type: 'RED_CARD' | 'YELLOW_ACCUMULATION';
+    matchesLeft: number;
+  };
   // Contract specific
   contractExpiry: Date;
   loyalty: number; // 1-20
@@ -201,6 +216,8 @@ export interface MatchEvent {
   teamId?: string;
   playerId?: string;
   assistId?: string;
+  subInId?: string;
+  subOutId?: string;
   importance: 'LOW' | 'MEDIUM' | 'HIGH';
   intensity: 1 | 2 | 3 | 4 | 5;
 }
@@ -238,6 +255,9 @@ export interface Fixture {
   squadType: SquadType;
   stage: MatchStage;
   isNeutral?: boolean;
+  groupId?: number; // 0-7 for Groups A-H
+  penaltyHome?: number;
+  penaltyAway?: number;
 }
 
 export interface TableEntry {
