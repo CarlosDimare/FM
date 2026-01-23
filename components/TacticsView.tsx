@@ -127,57 +127,55 @@ export const TacticsView: React.FC<TacticsViewProps> = ({ players, club, onUpdat
       );
    };
 
-   return (
-      <div className="p-2 sm:p-4 h-full flex flex-col lg:flex-row gap-2 md:gap-4 overflow-hidden">
-         <div className="flex-1 flex flex-col gap-2 min-h-0">
-            {/* Toolbar - Compact on Mobile */}
-            <div className="bg-slate-800 p-2 rounded-lg border border-slate-700 flex flex-wrap gap-2 items-center justify-between shadow-lg">
-               <div className="flex gap-1.5 overflow-x-auto scrollbar-hide max-w-full">
-                  <select 
-                    className="bg-slate-900 text-white text-[10px] sm:text-xs border border-slate-600 rounded px-2 py-1.5"
-                    value={selectedTacticId} onChange={(e) => handleLoadTactic(e.target.value)}
-                  >
-                    <option value="" disabled>Táctica</option>
-                    {world.getTactics().map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                  </select>
-                  <button onClick={() => autoPickBestEleven()} className="bg-blue-600 text-white text-[10px] px-3 py-1.5 rounded whitespace-nowrap uppercase font-black tracking-widest">Auto</button>
-                  <button onClick={() => { players.forEach(p => { p.isStarter = false; onUpdatePlayer(p); }); }} className="bg-red-900/50 text-red-200 text-[10px] px-3 py-1.5 rounded whitespace-nowrap uppercase">Reset</button>
-               </div>
-            </div>
+    return (
+       <div className="p-2 sm:p-4 h-full flex flex-col lg:flex-row gap-2 md:gap-4 overflow-hidden fm-compact">
+          <div className="flex-1 flex flex-col gap-2 min-h-0">
+             {/* Toolbar - Compact on Mobile */}
+             <div className="metallic-panel p-2 rounded-lg flex flex-wrap gap-2 items-center justify-between shadow-lg" style={{ backgroundColor: '#f4f4f4', border: '1px solid #999' }}>
+                <div className="flex gap-1.5 overflow-x-auto scrollbar-hide max-w-full">
+                   <select 
+                     className="text-[10px] sm:text-xs border rounded px-2 py-1.5"
+                     style={{ backgroundColor: '#e8e8e8', borderColor: '#999', color: '#333' }}
+                     value={selectedTacticId} onChange={(e) => handleLoadTactic(e.target.value)}
+                   >
+                     <option value="" disabled>Táctica</option>
+                     {world.getTactics().map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                   </select>
+                   <button onClick={() => autoPickBestEleven()} className="text-[10px] px-3 py-1.5 rounded whitespace-nowrap uppercase font-black tracking-widest border" style={{ backgroundColor: '#0066cc', color: '#fff', borderColor: '#004499' }}>Auto</button>
+                   <button onClick={() => { players.forEach(p => { p.isStarter = false; onUpdatePlayer(p); }); }} className="text-[10px] px-3 py-1.5 rounded whitespace-nowrap uppercase border" style={{ backgroundColor: '#e8e8e8', color: '#333', borderColor: '#999' }}>Reset</button>
+                </div>
+             </div>
 
-            {/* Pitch */}
-            <div className="flex-1 bg-slate-900 rounded-lg border border-slate-700 flex items-center justify-center p-1 sm:p-2 min-h-[300px] overflow-hidden">
-               <div className="relative w-full h-full max-w-[90vw] sm:max-w-[60vh] aspect-[68/105] shadow-2xl bg-[#1a2c26] border border-slate-600 rounded">
-                  <div className="absolute inset-0 opacity-10 pointer-events-none">
-                    <svg width="100%" height="100%" viewBox="0 0 100 140" preserveAspectRatio="none"><rect width="100" height="140" fill="#2d5a40" /><line x1="0" y1="70" x2="100" y2="70" stroke="white" strokeWidth="2"/></svg>
-                  </div>
-                  <div className="absolute inset-0 flex flex-col z-10 p-1">
-                     <div className="flex-[1] flex w-full">{renderCell(30, "")}{renderCell(29, "")}{renderCell(28, "")}{renderCell(27, "")}{renderCell(26, "")}</div>
-                     <div className="flex-[1] flex w-full">{renderCell(25, "")}{renderCell(24, "")}{renderCell(23, "")}{renderCell(22, "")}{renderCell(21, "")}</div>
-                     <div className="flex-[1] flex w-full">{renderCell(20, "")}{renderCell(19, "")}{renderCell(18, "")}{renderCell(17, "")}{renderCell(16, "")}</div>
-                     <div className="flex-[1] flex w-full">{renderCell(15, "")}{renderCell(14, "")}{renderCell(13, "")}{renderCell(12, "")}{renderCell(11, "")}</div>
-                     <div className="flex-[1] flex w-full">{renderCell(10, "")}{renderCell(9, "")}{renderCell(8, "")}{renderCell(7, "")}{renderCell(6, "")}</div>
-                     <div className="flex-[1] flex w-full">{renderCell(5, "")}{renderCell(4, "")}{renderCell(3, "")}{renderCell(2, "")}{renderCell(1, "")}</div>
-                     <div className="flex-[1] flex w-full justify-center"><div className="w-1/4 h-full">{renderCell(0, "")}</div></div>
-                  </div>
-               </div>
-            </div>
-         </div>
+             {/* Pitch */}
+             <div className="flex-1 rounded-lg flex items-center justify-center p-1 sm:p-2 min-h-[300px] overflow-hidden" style={{ backgroundColor: '#e8e8e8', border: '1px solid #999' }}>
+                <div className="relative w-full h-full max-w-[90vw] sm:max-w-[60vh] aspect-[68/105] shadow-2xl fm-pitch border rounded overflow-hidden" style={{ borderColor: '#333' }}>
+                   <div className="absolute inset-0 flex flex-col z-10 p-1">
+                      <div className="flex-[1] flex w-full">{renderCell(30, "")}{renderCell(29, "")}{renderCell(28, "")}{renderCell(27, "")}{renderCell(26, "")}</div>
+                      <div className="flex-[1] flex w-full">{renderCell(25, "")}{renderCell(24, "")}{renderCell(23, "")}{renderCell(22, "")}{renderCell(21, "")}</div>
+                      <div className="flex-[1] flex w-full">{renderCell(20, "")}{renderCell(19, "")}{renderCell(18, "")}{renderCell(17, "")}{renderCell(16, "")}</div>
+                      <div className="flex-[1] flex w-full">{renderCell(15, "")}{renderCell(14, "")}{renderCell(13, "")}{renderCell(12, "")}{renderCell(11, "")}</div>
+                      <div className="flex-[1] flex w-full">{renderCell(10, "")}{renderCell(9, "")}{renderCell(8, "")}{renderCell(7, "")}{renderCell(6, "")}</div>
+                      <div className="flex-[1] flex w-full">{renderCell(5, "")}{renderCell(4, "")}{renderCell(3, "")}{renderCell(2, "")}{renderCell(1, "")}</div>
+                      <div className="flex-[1] flex w-full justify-center"><div className="w-1/4 h-full">{renderCell(0, "")}</div></div>
+                   </div>
+                </div>
+             </div>
+          </div>
 
-         {/* Available Players - Compact Sidebar/Bottom Drawer style */}
-         <div className="lg:w-80 bg-slate-800 rounded-lg border border-slate-700 flex flex-col min-h-[150px] lg:h-auto overflow-hidden">
-            <header className="p-3 border-b border-slate-700 bg-slate-900/50 shrink-0">
-               <h3 className="text-white font-bold text-xs flex items-center gap-2 uppercase tracking-widest"><Shirt size={14}/> Plantilla</h3>
-            </header>
-            <div className="flex-1 overflow-y-auto p-1.5 space-y-1 scrollbar-hide">
-               {players.sort((a,b) => b.currentAbility - a.currentAbility).map(p => (
-                  <div key={p.id} draggable onDragStart={(e) => handleDragStart(e, p.id)} onContextMenu={(e) => onContextMenu && onContextMenu(e, p)} className={`flex items-center p-2 rounded transition-all ${p.isStarter ? 'opacity-40 grayscale bg-slate-900' : 'bg-slate-700/50 hover:bg-slate-700 shadow-sm'}`}>
-                     <div className={`w-7 h-7 rounded-full flex items-center justify-center font-black text-[9px] mr-2 shrink-0 ${getPlayerColor(p.positions)}`}>{p.positions[0].substring(0,2)}</div>
-                     <div className="flex-1 min-w-0"><p className="text-[11px] font-bold text-slate-200 truncate">{p.name}</p><div className="flex gap-2 text-[8px] text-slate-500 uppercase"><span>{p.positions[0]}</span><span className="text-yellow-500">★ {(p.currentAbility/20).toFixed(0)}</span></div></div>
-                  </div>
-               ))}
-            </div>
-         </div>
-      </div>
-   );
+          {/* Available Players - Compact Sidebar/Bottom Drawer style */}
+          <div className="lg:w-80 metallic-panel rounded-lg flex flex-col min-h-[150px] lg:h-auto overflow-hidden" style={{ backgroundColor: '#f4f4f4', border: '1px solid #999' }}>
+             <header className="p-3 border-b shrink-0" style={{ backgroundColor: '#e8e8e8', borderColor: '#ccc' }}>
+                <h3 className="font-bold text-xs flex items-center gap-2 uppercase tracking-widest" style={{ color: '#333' }}><Shirt size={14}/> Plantilla</h3>
+             </header>
+             <div className="flex-1 overflow-y-auto p-1.5 space-y-1 scrollbar-hide">
+                {players.sort((a,b) => b.currentAbility - a.currentAbility).map(p => (
+                   <div key={p.id} draggable onDragStart={(e) => handleDragStart(e, p.id)} onContextMenu={(e) => onContextMenu && onContextMenu(e, p)} className={`flex items-center p-2 rounded transition-all ${p.isStarter ? 'opacity-40 grayscale' : 'shadow-sm'}`} style={{ backgroundColor: p.isStarter ? '#ccc' : '#e8e8e8' }}>
+                      <div className="w-7 h-7 rounded-full flex items-center justify-center font-black text-[9px] mr-2 shrink-0 border-2 border-white" style={{ backgroundColor: p.positions.includes(Position.GK) ? '#ffcc00' : club.primaryColor, color: p.positions.includes(Position.GK) ? '#000' : '#fff' }}>{p.positions[0].substring(0,2)}</div>
+                      <div className="flex-1 min-w-0"><p className="text-[11px] font-bold truncate fm-link" style={{ color: '#0066cc' }}>{p.name}</p><div className="flex gap-2 text-[8px] uppercase" style={{ color: '#666' }}><span>{p.positions[0]}</span><span style={{ color: '#ff9900' }}>★ {(p.currentAbility/20).toFixed(0)}</span></div></div>
+                   </div>
+                ))}
+             </div>
+          </div>
+       </div>
+    );
 }

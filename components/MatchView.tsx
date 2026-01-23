@@ -242,10 +242,10 @@ export const MatchView: React.FC<MatchViewProps> = ({ homeTeam, awayTeam, homePl
         </div>
       </div>
 
-      <div className="flex bg-slate-800 border-b border-slate-700 overflow-x-auto scrollbar-hide">
-        <button onClick={() => setActiveTab('LOG')} className={`flex-1 p-3 text-[10px] font-bold uppercase tracking-wider ${activeTab === 'LOG' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-500'}`}>Relato</button>
-        <button onClick={() => setActiveTab('STATS')} className={`flex-1 p-3 text-[10px] font-bold uppercase tracking-wider ${activeTab === 'STATS' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-500'}`}>Estadísticas</button>
-        <button onClick={() => setActiveTab('RATINGS')} className={`flex-1 p-3 text-[10px] font-bold uppercase tracking-wider ${activeTab === 'RATINGS' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-500'}`}>Puntos</button>
+      <div className="flex border-b overflow-x-auto scrollbar-hide" style={{ backgroundColor: '#1e293b', borderColor: '#999' }}>
+        <button onClick={() => setActiveTab('LOG')} className="flex-1 p-3 text-[10px] font-bold uppercase tracking-wider" style={{ color: activeTab === 'LOG' ? '#666' : '#64748b', borderBottom: activeTab === 'LOG' ? '2px solid #666' : 'none' }}>Relato</button>
+        <button onClick={() => setActiveTab('STATS')} className="flex-1 p-3 text-[10px] font-bold uppercase tracking-wider" style={{ color: activeTab === 'STATS' ? '#666' : '#64748b', borderBottom: activeTab === 'STATS' ? '2px solid #666' : 'none' }}>Estadísticas</button>
+        <button onClick={() => setActiveTab('RATINGS')} className="flex-1 p-3 text-[10px] font-bold uppercase tracking-wider" style={{ color: activeTab === 'RATINGS' ? '#666' : '#64748b', borderBottom: activeTab === 'RATINGS' ? '2px solid #666' : 'none' }}>Puntos</button>
       </div>
 
       <div className="flex-1 overflow-hidden flex flex-col">
@@ -314,7 +314,8 @@ export const MatchView: React.FC<MatchViewProps> = ({ homeTeam, awayTeam, homePl
         {matchState.minute < 90 && (
           <button 
             onClick={() => setMatchState(p => ({...p, isPlaying: !p.isPlaying}))} 
-            className="flex-1 py-3 bg-blue-600 text-white rounded font-black text-xs uppercase tracking-widest"
+            className="flex-1 py-3 rounded font-black text-xs uppercase tracking-widest"
+            style={{ backgroundColor: '#666', color: '#fff' }}
           >
             {matchState.isPlaying ? "PAUSA" : "JUGAR"}
           </button>
@@ -365,8 +366,8 @@ const RatingRow = ({ player, stats, isMOTM, isExpanded, onToggle }: any) => {
       </div>
       
       {isExpanded && (
-         <div className="bg-slate-900/50 p-3 border-t border-slate-700/50 animate-in slide-in-from-top-1 duration-200">
-            <p className="text-[10px] text-blue-300 italic mb-3 font-medium">
+         <div className="p-3 border-t animate-in slide-in-from-top-1 duration-200" style={{ backgroundColor: 'rgba(15, 23, 42, 0.5)', borderColor: 'rgba(51, 65, 85, 0.5)' }}>
+            <p className="text-[10px] italic mb-3 font-medium" style={{ color: '#ccc' }}>
                "{stats.participationPhrase}"
             </p>
             <div className="grid grid-cols-4 gap-2 text-[9px] text-slate-400 text-center">

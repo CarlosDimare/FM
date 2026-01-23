@@ -34,13 +34,13 @@ export const PlayerContextMenu: React.FC<PlayerContextMenuProps> = ({ player, x,
 
   return (
     <div 
-      className="fixed z-[1000] bg-slate-800 border border-slate-700 rounded-lg shadow-2xl py-2 w-56 animate-in fade-in zoom-in duration-100"
-      style={{ left: x, top: y }}
+      className="fixed z-[1000] rounded-lg shadow-2xl py-2 w-56 animate-in fade-in zoom-in duration-100"
+      style={{ left: x, top: y, backgroundColor: '#f4f4f4', border: '1px solid #999' }}
       onClick={(e) => e.stopPropagation()}
     >
-      <div className="px-4 py-2 border-b border-slate-700">
-        <p className="text-white font-bold text-xs truncate">{player.name}</p>
-        <p className="text-slate-500 text-[9px] uppercase tracking-widest">{player.positions[0]}</p>
+      <div className="px-4 py-2" style={{ borderBottom: '1px solid #999' }}>
+        <p className="font-bold text-xs truncate" style={{ color: '#333' }}>{player.name}</p>
+        <p className="text-[9px] uppercase tracking-widest" style={{ color: '#999' }}>{player.positions[0]}</p>
       </div>
 
       <div className="py-1">
@@ -55,14 +55,14 @@ export const PlayerContextMenu: React.FC<PlayerContextMenuProps> = ({ player, x,
         )}
       </div>
 
-      <div className="border-t border-slate-700 py-1">
+      <div className="border-t py-1" style={{ borderColor: '#999' }}>
         <ContextItem 
-          icon={<DollarSign size={14} className={player.transferStatus === 'TRANSFERABLE' ? 'text-green-400' : ''}/>} 
+          icon={<DollarSign size={14} style={{ color: player.transferStatus === 'TRANSFERABLE' ? '#666' : '' }}/>} 
           label={player.transferStatus === 'TRANSFERABLE' ? "Quitar de Transferibles" : "Declarar Transferible"} 
           onClick={() => handleAction(() => setStatus(player.transferStatus === 'TRANSFERABLE' ? 'NONE' : 'TRANSFERABLE'))} 
         />
         <ContextItem 
-          icon={<ShieldCheck size={14} className={player.transferStatus === 'LOANABLE' ? 'text-blue-400' : ''}/>} 
+          icon={<ShieldCheck size={14} style={{ color: player.transferStatus === 'LOANABLE' ? '#666' : '' }}/>} 
           label={player.transferStatus === 'LOANABLE' ? "Quitar de Cedibles" : "Declarar Cedible"} 
           onClick={() => handleAction(() => setStatus(player.transferStatus === 'LOANABLE' ? 'NONE' : 'LOANABLE'))} 
         />
@@ -74,7 +74,8 @@ export const PlayerContextMenu: React.FC<PlayerContextMenuProps> = ({ player, x,
 const ContextItem = ({ icon, label, onClick }: { icon: React.ReactNode, label: string, onClick: () => void }) => (
   <button 
     onClick={onClick}
-    className="w-full text-left px-4 py-2 text-xs font-medium text-slate-300 hover:bg-blue-600 hover:text-white flex items-center gap-3 transition-colors"
+    className="w-full text-left px-4 py-2 text-xs font-medium flex items-center gap-3 transition-colors"
+    style={{ color: '#333' }}
   >
     {icon} {label}
   </button>

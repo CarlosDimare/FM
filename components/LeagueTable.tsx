@@ -54,112 +54,112 @@ export const LeagueTable: React.FC<LeagueTableProps> = ({
    const topScorers = useMemo(() => [...leaguePlayers].sort((a, b) => b.seasonStats.goals - a.seasonStats.goals).slice(0, 20), [leaguePlayers]);
    const topAssists = useMemo(() => [...leaguePlayers].sort((a, b) => b.seasonStats.assists - a.seasonStats.assists).slice(0, 20), [leaguePlayers]);
 
-   return (
-      <div className="flex flex-col h-full gap-2 md:gap-4 overflow-hidden">
-         <div className="flex flex-col gap-2 md:gap-4">
-            <div className="flex flex-col gap-3">
-               {/* Squad Selector - Compact on Mobile */}
-               {onSquadTypeChange && (
-                  <div className="flex bg-slate-800 p-1 rounded-lg border border-slate-700 overflow-x-auto scrollbar-hide">
-                     <button onClick={() => onSquadTypeChange('SENIOR')} className={`px-3 py-1.5 text-[10px] font-bold rounded-md whitespace-nowrap transition-all ${currentSquadType === 'SENIOR' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400'}`}>PRIMER EQUIPO</button>
-                     <button onClick={() => onSquadTypeChange('RESERVE')} className={`px-3 py-1.5 text-[10px] font-bold rounded-md whitespace-nowrap transition-all ${currentSquadType === 'RESERVE' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400'}`}>RESERVA</button>
-                     <button onClick={() => onSquadTypeChange('U20')} className={`px-3 py-1.5 text-[10px] font-bold rounded-md whitespace-nowrap transition-all ${currentSquadType === 'U20' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400'}`}>SUB-20</button>
-                  </div>
-               )}
+    return (
+       <div className="flex flex-col h-full gap-2 md:gap-4 overflow-hidden" style={{ backgroundColor: '#dcdcdc' }}>
+          <div className="flex flex-col gap-2 md:gap-4">
+             <div className="flex flex-col gap-3">
+                {/* Squad Selector - Compact on Mobile */}
+                {onSquadTypeChange && (
+                   <div className="flex p-1 rounded-lg overflow-x-auto scrollbar-hide" style={{ backgroundColor: '#e8e8e8', border: '1px solid #999' }}>
+                      <button onClick={() => onSquadTypeChange('SENIOR')} className="px-3 py-1.5 text-[10px] font-bold rounded-md whitespace-nowrap transition-all" style={{ backgroundColor: currentSquadType === 'SENIOR' ? '#666' : 'transparent', color: currentSquadType === 'SENIOR' ? '#fff' : '#666' }}>PRIMER EQUIPO</button>
+                      <button onClick={() => onSquadTypeChange('RESERVE')} className="px-3 py-1.5 text-[10px] font-bold rounded-md whitespace-nowrap transition-all" style={{ backgroundColor: currentSquadType === 'RESERVE' ? '#666' : 'transparent', color: currentSquadType === 'RESERVE' ? '#fff' : '#666' }}>RESERVA</button>
+                      <button onClick={() => onSquadTypeChange('U20')} className="px-3 py-1.5 text-[10px] font-bold rounded-md whitespace-nowrap transition-all" style={{ backgroundColor: currentSquadType === 'U20' ? '#666' : 'transparent', color: currentSquadType === 'U20' ? '#fff' : '#666' }}>SUB-20</button>
+                   </div>
+                )}
 
-               {/* League Tabs */}
-               {allLeagues && onLeagueChange && (
-                  <div className="flex overflow-x-auto scrollbar-hide space-x-1 bg-slate-800 p-1 rounded-lg border border-slate-700">
-                     {allLeagues.map(l => (
-                        <button key={l.id} onClick={() => onLeagueChange(l.id)} className={`px-2 py-1 text-[9px] font-black rounded whitespace-nowrap tracking-widest uppercase ${currentLeagueId === l.id ? 'bg-slate-700 text-blue-400' : 'text-slate-500'}`}>{l.name}</button>
-                     ))}
-                  </div>
-               )}
-            </div>
+                {/* League Tabs */}
+                {allLeagues && onLeagueChange && (
+                   <div className="flex overflow-x-auto scrollbar-hide space-x-1 p-1 rounded-lg" style={{ backgroundColor: '#e8e8e8', border: '1px solid #999' }}>
+                      {allLeagues.map(l => (
+                         <button key={l.id} onClick={() => onLeagueChange(l.id)} className="px-2 py-1 text-[9px] font-black rounded whitespace-nowrap tracking-widest uppercase" style={{ backgroundColor: currentLeagueId === l.id ? '#ccc' : 'transparent', color: currentLeagueId === l.id ? '#333' : '#666' }}>{l.name}</button>
+                      ))}
+                   </div>
+                )}
+             </div>
 
-            {/* View Mode Selector - Very Compact on Mobile */}
-            <div className="flex border-b border-slate-800 overflow-x-auto scrollbar-hide">
-               <button onClick={() => setTabMode('TABLE')} className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest ${tabMode === 'TABLE' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-500'}`}>Clasificación</button>
-               <button onClick={() => setTabMode('SCORERS')} className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest ${tabMode === 'SCORERS' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-500'}`}>Goleadores</button>
-               <button onClick={() => setTabMode('ASSISTS')} className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest ${tabMode === 'ASSISTS' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-500'}`}>Asistencias</button>
-            </div>
-         </div>
+             {/* View Mode Selector - Very Compact on Mobile */}
+             <div className="flex overflow-x-auto scrollbar-hide" style={{ borderBottom: '1px solid #999' }}>
+                <button onClick={() => setTabMode('TABLE')} className="px-4 py-2 text-[10px] font-black uppercase tracking-widest" style={{ color: tabMode === 'TABLE' ? '#666' : '#999', borderBottom: tabMode === 'TABLE' ? '2px solid #666' : 'none' }}>Clasificación</button>
+                <button onClick={() => setTabMode('SCORERS')} className="px-4 py-2 text-[10px] font-black uppercase tracking-widest" style={{ color: tabMode === 'SCORERS' ? '#666' : '#999', borderBottom: tabMode === 'SCORERS' ? '2px solid #666' : 'none' }}>Goleadores</button>
+                <button onClick={() => setTabMode('ASSISTS')} className="px-4 py-2 text-[10px] font-black uppercase tracking-widest" style={{ color: tabMode === 'ASSISTS' ? '#666' : '#999', borderBottom: tabMode === 'ASSISTS' ? '2px solid #666' : 'none' }}>Asistencias</button>
+             </div>
+          </div>
 
-         <div className="bg-slate-800 rounded-lg shadow-2xl overflow-hidden border border-slate-700 flex-1 flex flex-col">
-            <div className="overflow-auto scrollbar-hide max-h-full">
-               {tabMode === 'TABLE' && (
-                  entries.length > 0 ? (
-                    <table className="w-full text-left min-w-[300px]">
-                       <thead className="sticky top-0 bg-slate-900 z-10 border-b border-slate-700">
-                          <tr className="text-slate-400 text-[9px] uppercase font-black">
-                             <th className="p-3 text-center w-10">Pos</th>
-                             <th className="p-3">Club</th>
-                             <th className="p-3 text-center w-10">PJ</th>
-                             <th className="p-3 text-center w-10 hidden sm:table-cell">G</th>
-                             <th className="p-3 text-center w-10 hidden sm:table-cell">E</th>
-                             <th className="p-3 text-center w-10 hidden sm:table-cell">P</th>
-                             <th className="p-3 text-center w-10 hidden md:table-cell">DG</th>
-                             <th className="p-3 text-center w-12">Pts</th>
-                          </tr>
-                       </thead>
-                       <tbody className="divide-y divide-slate-700/50 text-xs">
-                          {entries.map((entry, index) => (
-                             <tr key={entry.clubId} className={`${entry.clubId === userClubId ? 'bg-blue-600/10' : ''}`}>
-                                <td className="p-3 text-center font-mono font-bold text-[10px]">{index + 1}</td>
-                                <td className="p-3 font-bold truncate max-w-[120px] sm:max-w-none">{entry.clubName}</td>
-                                <td className="p-3 text-center font-mono">{entry.played}</td>
-                                <td className="p-3 text-center hidden sm:table-cell font-mono">{entry.won}</td>
-                                <td className="p-3 text-center hidden sm:table-cell font-mono">{entry.drawn}</td>
-                                <td className="p-3 text-center hidden sm:table-cell font-mono">{entry.lost}</td>
-                                <td className="p-3 text-center hidden md:table-cell font-mono">{entry.gd}</td>
-                                <td className="p-3 text-center font-black text-white">{entry.points}</td>
-                             </tr>
-                          ))}
-                       </tbody>
-                    </table>
-                  ) : (
-                    <div className="p-20 text-center text-slate-500 italic uppercase font-black tracking-widest">Sin datos de clasificación</div>
-                  )
-               )}
-               {tabMode === 'SCORERS' && (
-                  <table className="w-full text-left text-xs">
-                     <thead className="sticky top-0 bg-slate-900 z-10 border-b border-slate-700 font-black uppercase text-[9px] text-slate-400">
-                        <tr><th className="p-3 w-10 text-center">#</th><th className="p-3">Jugador</th><th className="p-3">Club</th><th className="p-3 text-center w-16">Goles</th></tr>
-                     </thead>
-                     <tbody className="divide-y divide-slate-700/50">
-                        {topScorers.filter(p => p.seasonStats.goals > 0).map((p, idx) => (
-                           <tr key={p.id}>
-                              <td className="p-3 text-center font-mono">{idx + 1}</td>
-                              <td className="p-3 font-bold truncate">{p.name}</td>
-                              <td className="p-3 text-slate-400 text-[10px]">{world.getClub(p.clubId)?.name}</td>
-                              <td className="p-3 text-center font-black text-blue-400">{p.seasonStats.goals}</td>
+          <div className="rounded-lg shadow-2xl overflow-hidden flex-1 flex flex-col" style={{ backgroundColor: '#f4f4f4', border: '1px solid #999' }}>
+             <div className="overflow-auto scrollbar-hide max-h-full">
+                {tabMode === 'TABLE' && (
+                   entries.length > 0 ? (
+                     <table className="w-full text-left min-w-[300px]">
+                        <thead className="sticky top-0 z-10 font-black uppercase text-[9px]" style={{ backgroundColor: '#e8e8e8', borderBottom: '1px solid #999', color: '#666' }}>
+                           <tr>
+                              <th className="p-3 text-center w-10">Pos</th>
+                              <th className="p-3">Club</th>
+                              <th className="p-3 text-center w-10">PJ</th>
+                              <th className="p-3 text-center w-10 hidden sm:table-cell">G</th>
+                              <th className="p-3 text-center w-10 hidden sm:table-cell">E</th>
+                              <th className="p-3 text-center w-10 hidden sm:table-cell">P</th>
+                              <th className="p-3 text-center w-10 hidden md:table-cell">DG</th>
+                              <th className="p-3 text-center w-12">Pts</th>
                            </tr>
-                        ))}
-                     </tbody>
-                  </table>
-               )}
-               {tabMode === 'ASSISTS' && (
-                  <table className="w-full text-left text-xs">
-                     <thead className="sticky top-0 bg-slate-900 z-10 border-b border-slate-700 font-black uppercase text-[9px] text-slate-400">
-                        <tr><th className="p-3 w-10 text-center">#</th><th className="p-3">Jugador</th><th className="p-3">Club</th><th className="p-3 text-center w-16">Asist.</th></tr>
-                     </thead>
-                     <tbody className="divide-y divide-slate-700/50">
-                        {topAssists.filter(p => p.seasonStats.assists > 0).map((p, idx) => (
-                           <tr key={p.id}>
-                              <td className="p-3 text-center font-mono">{idx + 1}</td>
-                              <td className="p-3 font-bold truncate">{p.name}</td>
-                              <td className="p-3 text-slate-400 text-[10px]">{world.getClub(p.clubId)?.name}</td>
-                              <td className="p-3 text-center font-black text-green-400">{p.seasonStats.assists}</td>
-                           </tr>
-                        ))}
-                     </tbody>
-                  </table>
-               )}
-               {(tabMode === 'SCORERS' || tabMode === 'ASSISTS') && leaguePlayers.every(p => tabMode === 'SCORERS' ? p.seasonStats.goals === 0 : p.seasonStats.assists === 0) && (
-                  <div className="p-20 text-center text-slate-500 italic uppercase font-black tracking-widest">Aún no hay registros en esta categoría</div>
-               )}
-            </div>
-         </div>
-      </div>
-   );
+                        </thead>
+                        <tbody className="divide-y text-xs" style={{ borderColor: '#ccc' }}>
+                           {entries.map((entry, index) => (
+                              <tr key={entry.clubId} style={{ backgroundColor: entry.clubId === userClubId ? '#e8e8e8' : 'transparent' }}>
+                                 <td className="p-3 text-center font-mono font-bold text-[10px]">{index + 1}</td>
+                                 <td className="p-3 font-bold truncate max-w-[120px] sm:max-w-none" style={{ color: '#333' }}>{entry.clubName}</td>
+                                 <td className="p-3 text-center font-mono" style={{ color: '#666' }}>{entry.played}</td>
+                                 <td className="p-3 text-center hidden sm:table-cell font-mono" style={{ color: '#666' }}>{entry.won}</td>
+                                 <td className="p-3 text-center hidden sm:table-cell font-mono" style={{ color: '#666' }}>{entry.drawn}</td>
+                                 <td className="p-3 text-center hidden sm:table-cell font-mono" style={{ color: '#666' }}>{entry.lost}</td>
+                                 <td className="p-3 text-center hidden md:table-cell font-mono" style={{ color: '#666' }}>{entry.gd}</td>
+                                 <td className="p-3 text-center font-black" style={{ color: '#333' }}>{entry.points}</td>
+                              </tr>
+                           ))}
+                        </tbody>
+                     </table>
+                   ) : (
+                     <div className="p-20 text-center italic uppercase font-black tracking-widest" style={{ color: '#999' }}>Sin datos de clasificación</div>
+                   )
+                )}
+                {tabMode === 'SCORERS' && (
+                   <table className="w-full text-left text-xs">
+                      <thead className="sticky top-0 z-10 font-black uppercase text-[9px]" style={{ backgroundColor: '#e8e8e8', borderBottom: '1px solid #999', color: '#666' }}>
+                         <tr><th className="p-3 w-10 text-center">#</th><th className="p-3">Jugador</th><th className="p-3">Club</th><th className="p-3 text-center w-16">Goles</th></tr>
+                      </thead>
+                      <tbody className="divide-y" style={{ borderColor: '#ccc' }}>
+                         {topScorers.filter(p => p.seasonStats.goals > 0).map((p, idx) => (
+                            <tr key={p.id}>
+                               <td className="p-3 text-center font-mono" style={{ color: '#666' }}>{idx + 1}</td>
+                               <td className="p-3 font-bold truncate" style={{ color: '#333' }}>{p.name}</td>
+                               <td className="p-3 text-[10px]" style={{ color: '#999' }}>{world.getClub(p.clubId)?.name}</td>
+                               <td className="p-3 text-center font-black" style={{ color: '#666' }}>{p.seasonStats.goals}</td>
+                            </tr>
+                         ))}
+                      </tbody>
+                   </table>
+                )}
+                {tabMode === 'ASSISTS' && (
+                   <table className="w-full text-left text-xs">
+                      <thead className="sticky top-0 z-10 font-black uppercase text-[9px]" style={{ backgroundColor: '#e8e8e8', borderBottom: '1px solid #999', color: '#666' }}>
+                         <tr><th className="p-3 w-10 text-center">#</th><th className="p-3">Jugador</th><th className="p-3">Club</th><th className="p-3 text-center w-16">Asist.</th></tr>
+                      </thead>
+                      <tbody className="divide-y" style={{ borderColor: '#ccc' }}>
+                         {topAssists.filter(p => p.seasonStats.assists > 0).map((p, idx) => (
+                            <tr key={p.id}>
+                               <td className="p-3 text-center font-mono" style={{ color: '#666' }}>{idx + 1}</td>
+                               <td className="p-3 font-bold truncate" style={{ color: '#333' }}>{p.name}</td>
+                               <td className="p-3 text-[10px]" style={{ color: '#999' }}>{world.getClub(p.clubId)?.name}</td>
+                               <td className="p-3 text-center font-black" style={{ color: '#666' }}>{p.seasonStats.assists}</td>
+                            </tr>
+                         ))}
+                      </tbody>
+                   </table>
+                )}
+                {(tabMode === 'SCORERS' || tabMode === 'ASSISTS') && leaguePlayers.every(p => tabMode === 'SCORERS' ? p.seasonStats.goals === 0 : p.seasonStats.assists === 0) && (
+                   <div className="p-20 text-center italic uppercase font-black tracking-widest" style={{ color: '#999' }}>Aún no hay registros en esta categoría</div>
+                )}
+             </div>
+          </div>
+       </div>
+    );
 }

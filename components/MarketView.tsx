@@ -24,19 +24,23 @@ export const MarketView: React.FC<MarketViewProps> = ({ onSelectPlayer, userClub
   }, [filter, search]);
 
   return (
-    <div className="p-6 h-full flex flex-col gap-6">
+    <div className="p-6 h-full flex flex-col gap-6" style={{ backgroundColor: '#dcdcdc' }}>
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter">Mercado de Fichajes</h2>
-          <p className="text-slate-400 text-sm">Jugadores transferibles y cedibles en todo el mundo.</p>
+          <h2 className="text-2xl font-black uppercase italic tracking-tighter" style={{ color: '#333' }}>Mercado de Fichajes</h2>
+          <p className="text-sm" style={{ color: '#999' }}>Jugadores transferibles y cedibles en todo el mundo.</p>
         </div>
         
-        <div className="flex bg-slate-800 p-1 rounded-lg border border-slate-700 shadow-inner">
+        <div className="flex p-1 rounded-lg shadow-inner" style={{ backgroundColor: '#e8e8e8', border: '1px solid #999' }}>
            {['ALL', 'TRANSFERABLE', 'LOANABLE'].map(f => (
               <button 
                  key={f}
                  onClick={() => setFilter(f as any)}
-                 className={`px-4 py-2 text-[10px] font-black rounded-md transition-all uppercase tracking-widest ${filter === f ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+                 className="px-4 py-2 text-[10px] font-black rounded-md transition-all uppercase tracking-widest"
+                 style={{ 
+                   backgroundColor: filter === f ? '#666' : 'transparent',
+                   color: filter === f ? '#fff' : '#666' 
+                 }}
               >
                  {f === 'ALL' ? 'Todos' : f === 'TRANSFERABLE' ? 'Transferibles' : 'Cedibles'}
               </button>
@@ -45,21 +49,22 @@ export const MarketView: React.FC<MarketViewProps> = ({ onSelectPlayer, userClub
       </header>
 
       <div className="relative">
-         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
+         <Search className="absolute left-4 top-1/2 -translate-y-1/2" size={18} style={{ color: '#999' }} />
          <input 
             type="text" 
             placeholder="Buscar jugador..." 
-            className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-12 pr-6 py-4 text-white focus:ring-2 focus:ring-blue-500 outline-none font-bold"
+            className="w-full rounded-xl pl-12 pr-6 py-4 outline-none font-bold"
+            style={{ backgroundColor: '#e8e8e8', border: '1px solid #999', color: '#333' }}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
          />
       </div>
 
-      <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden flex-1 shadow-2xl">
+      <div className="rounded-xl overflow-hidden flex-1 shadow-2xl" style={{ backgroundColor: '#f4f4f4', border: '1px solid #999' }}>
          <div className="overflow-y-auto max-h-full">
             <table className="w-full text-left">
-               <thead className="sticky top-0 bg-slate-900 z-10 border-b border-slate-700">
-                  <tr className="text-slate-400 text-[10px] uppercase tracking-[0.2em] font-black">
+               <thead className="sticky top-0 z-10 font-black uppercase text-[10px]" style={{ backgroundColor: '#e8e8e8', borderBottom: '1px solid #999', color: '#666' }}>
+                  <tr className="tracking-[0.2em]">
                      <th className="p-4">Jugador</th>
                      <th className="p-4">Club</th>
                      <th className="p-4">Estado</th>
@@ -67,27 +72,28 @@ export const MarketView: React.FC<MarketViewProps> = ({ onSelectPlayer, userClub
                      <th className="p-4 text-right">Valor</th>
                   </tr>
                </thead>
-               <tbody className="divide-y divide-slate-700/50">
+               <tbody className="divide-y" style={{ borderColor: '#ccc' }}>
                   {marketPlayers.map(p => (
                      <tr 
                         key={p.id} 
                         onClick={() => onSelectPlayer(p)}
-                        className="hover:bg-slate-700/30 cursor-pointer transition-colors group"
+                        className="cursor-pointer transition-colors group"
+                        style={{ backgroundColor: 'transparent' }}
                      >
                         <td className="p-4">
-                           <p className="font-bold text-white group-hover:text-blue-400">{p.name}</p>
-                           <p className="text-[10px] text-slate-500 uppercase">{p.positions[0]}</p>
+                           <p className="font-bold group-hover:text-600" style={{ color: '#333' }}>{p.name}</p>
+                           <p className="text-[10px] uppercase" style={{ color: '#999' }}>{p.positions[0]}</p>
                         </td>
-                        <td className="p-4 text-slate-400 text-sm">
+                        <td className="p-4 text-sm" style={{ color: '#999' }}>
                            {world.getClub(p.clubId)?.name}
                         </td>
                         <td className="p-4">
-                           <span className={`px-2 py-1 rounded text-[9px] font-black uppercase tracking-widest ${p.transferStatus === 'TRANSFERABLE' ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'}`}>
+                           <span className="px-2 py-1 rounded text-[9px] font-black uppercase tracking-widest" style={{ backgroundColor: '#e8e8e8', border: '1px solid #999', color: '#666' }}>
                               {p.transferStatus === 'TRANSFERABLE' ? 'Transferible' : 'Cedible'}
                            </span>
                         </td>
-                        <td className="p-4 text-center text-slate-500 font-mono">{p.age}</td>
-                        <td className="p-4 text-right text-white font-black">
+                        <td className="p-4 text-center font-mono" style={{ color: '#999' }}>{p.age}</td>
+                        <td className="p-4 text-right font-black" style={{ color: '#333' }}>
                            £{(p.value / 1000000).toFixed(1)}M
                         </td>
                      </tr>
@@ -95,7 +101,7 @@ export const MarketView: React.FC<MarketViewProps> = ({ onSelectPlayer, userClub
                </tbody>
             </table>
             {marketPlayers.length === 0 && (
-               <div className="p-20 text-center text-slate-600 italic">No se han encontrado jugadores con estos criterios.</div>
+               <div className="p-20 text-center italic" style={{ color: '#999' }}>No se han encontrado jugadores con estos criterios.</div>
             )}
          </div>
       </div>
