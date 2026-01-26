@@ -80,6 +80,7 @@ export interface Club {
   name: string;
   shortName: string;
   leagueId: string;
+  country: string;
   primaryColor: string;
   secondaryColor: string;
   finances: {

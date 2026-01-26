@@ -9,6 +9,7 @@ import { TransferOfferModal } from './TransferOfferModal';
 import { ContractNegotiationModal } from './ContractNegotiationModal';
 import { X, MessageSquare, Activity, Map, BarChart2, FileText, History, TrendingUp, TrendingDown, ShieldAlert, ArrowRightLeft, UserX, UserPlus, Users } from 'lucide-react';
 import { FMTable, FMTableCell, FMButton } from './FMUI';
+import { getFlagUrl } from '../data/static';
 
 interface PlayerModalProps {
   player: Player | null;
@@ -139,7 +140,15 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({ player, onClose, userC
             <div className="flex-1 min-w-0 pr-4">
               <div className="flex flex-col lg:flex-row lg:items-end gap-x-4 gap-y-1 mb-2">
                  <div className="flex flex-wrap items-baseline gap-2 md:gap-3">
-                    <h2 className="text-2xl md:text-3xl font-black truncate tracking-tighter uppercase italic drop-shadow-sm">{player.name}</h2>
+                    <h2 className="text-2xl md:text-3xl font-black truncate tracking-tighter uppercase italic drop-shadow-sm flex items-center gap-2">
+                        <img 
+                          src={getFlagUrl(player.nationality)} 
+                          alt={player.nationality} 
+                          className="w-6 h-4 md:w-8 md:h-5 object-cover shadow-sm rounded-[1px]" 
+                          title={player.nationality} 
+                        />
+                        {player.name}
+                    </h2>
                     <div className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest bg-white/20 px-2 py-0.5 rounded border border-white/30 backdrop-blur-sm self-center">{club?.name}</div>
                     {player.developmentTrend === 'RISING' && (
                        <div className="flex items-center gap-1 bg-green-500/20 text-current px-2 py-0.5 rounded border border-green-500/30 self-center" title="En progresión">
