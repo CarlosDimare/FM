@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Home, Users, Trophy, Calendar, Clipboard, ListOrdered, Sun, Info, ShoppingBag, Search, Wallet, X, MessageSquare, Inbox, ChevronDown, ChevronRight, Globe, Briefcase } from 'lucide-react';
+import { Home, Users, Trophy, Calendar, Clipboard, ListOrdered, Sun, Info, ShoppingBag, Search, Wallet, X, MessageSquare, Inbox, ChevronDown, ChevronRight, Globe, Briefcase, Building2 } from 'lucide-react';
 import { Club, SquadType, Competition } from '../types';
 import { world } from '../services/worldManager';
 
@@ -104,6 +104,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, club, on
                  <SubNavItem id="MARKET" label="Mercado" icon={ShoppingBag} active={currentView === 'MARKET'} onClick={() => setView('MARKET')} />
                  <SubNavItem id="SEARCH" label="Buscar Jugador" icon={Search} active={currentView === 'SEARCH'} onClick={() => setView('SEARCH')} />
                  <SubNavItem id="NEGOTIATIONS" label="Negociaciones" icon={MessageSquare} active={currentView === 'NEGOTIATIONS'} onClick={() => setView('NEGOTIATIONS')} />
+                 <SubNavItem id="CLUBS_LIST" label="Clubes" icon={Building2} active={currentView === 'CLUBS_LIST'} onClick={() => setView('CLUBS_LIST')} />
               </div>
             )}
           </div>

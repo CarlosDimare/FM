@@ -15,6 +15,7 @@ export const StaffView: React.FC<StaffViewProps> = ({ staff }) => {
 
   const getRoleLabel = (role: string) => {
     switch(role) {
+      case 'HEAD_COACH': return 'Director Técnico';
       case 'ASSISTANT_MANAGER': return 'Segundo Entrenador';
       case 'PHYSIO': return 'Fisioterapeuta';
       case 'FITNESS_COACH': return 'Preparador Físico';
@@ -24,6 +25,13 @@ export const StaffView: React.FC<StaffViewProps> = ({ staff }) => {
     }
   };
 
+  // Sort staff to show Head Coach first
+  const sortedStaff = [...staff].sort((a, b) => {
+     if (a.role === 'HEAD_COACH') return -1;
+     if (b.role === 'HEAD_COACH') return 1;
+     return 0;
+  });
+
   return (
     <div className="p-4 md:p-6 h-full flex flex-col bg-slate-300">
       <header className="mb-6 border-b border-slate-400 pb-4">
@@ -32,17 +40,17 @@ export const StaffView: React.FC<StaffViewProps> = ({ staff }) => {
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto flex-1 pb-20 custom-scroll">
-        {staff.map(s => (
+        {sortedStaff.map(s => (
           <div 
             key={s.id} 
             onClick={() => setSelectedStaff(s)}
-            className="bg-slate-200 p-6 rounded-sm border border-slate-400 hover:border-slate-600 hover:bg-slate-100 transition-all cursor-pointer group relative overflow-hidden shadow-sm hover:shadow-md"
+            className={`p-6 rounded-sm border transition-all cursor-pointer group relative overflow-hidden shadow-sm hover:shadow-md ${s.role === 'HEAD_COACH' ? 'bg-blue-100 border-blue-400 hover:bg-blue-50 hover:border-blue-600' : 'bg-slate-200 border-slate-400 hover:border-slate-600 hover:bg-slate-100'}`}
           >
-            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 text-slate-900">
+            <div className={`absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 ${s.role === 'HEAD_COACH' ? 'text-blue-900' : 'text-slate-900'}`}>
                <Briefcase size={64} />
             </div>
             <h3 className="text-lg font-black text-slate-950 mb-1 uppercase italic">{s.name}</h3>
-            <p className="text-blue-700 font-black text-[10px] uppercase mb-4 tracking-widest">{getRoleLabel(s.role)}</p>
+            <p className={`${s.role === 'HEAD_COACH' ? 'text-blue-800 text-xs' : 'text-blue-700 text-[10px]'} font-black uppercase mb-4 tracking-widest`}>{getRoleLabel(s.role)}</p>
             <div className="flex gap-4 text-[10px] text-slate-600 font-bold uppercase">
                <span>{s.nationality}</span>
                <span>{s.age} años</span>

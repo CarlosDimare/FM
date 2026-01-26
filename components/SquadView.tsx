@@ -8,11 +8,12 @@ interface SquadViewProps {
   players: Player[];
   onSelectPlayer: (player: Player) => void;
   onContextMenu?: (e: React.MouseEvent, player: Player) => void;
+  customTitle?: string;
 }
 
 type SortField = 'STATUS' | 'POS' | 'NAME' | 'AGE' | 'TREND' | 'SAL' | 'FIT' | 'MOR' | 'VAL';
 
-export const SquadView: React.FC<SquadViewProps> = ({ players, onSelectPlayer, onContextMenu }) => {
+export const SquadView: React.FC<SquadViewProps> = ({ players, onSelectPlayer, onContextMenu, customTitle }) => {
   const [sortField, setSortField] = useState<SortField>('VAL');
   const [sortDesc, setSortDesc] = useState(true);
 
@@ -66,7 +67,7 @@ export const SquadView: React.FC<SquadViewProps> = ({ players, onSelectPlayer, o
 
   return (
     <div className="p-2 h-full flex flex-col gap-2 bg-slate-300">
-      <FMBox title={`PLANTILLA (${players.length})`} className="flex-1" noPadding>
+      <FMBox title={customTitle || `PLANTILLA (${players.length})`} className="flex-1" noPadding>
         <FMTable 
             headers={['Pos', 'Nombre', 'Edad', 'Prog', 'Sueldo', 'Fis', 'Mor', 'Valor']}
             colWidths={['50px', 'auto', '40px', '40px', '70px', '40px', '40px', '80px']}
