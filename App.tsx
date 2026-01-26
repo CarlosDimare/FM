@@ -17,13 +17,14 @@ import { InboxView } from './components/InboxView';
 import { SeasonSummaryModal, CompetitionSummary } from './components/SeasonSummaryModal';
 import { PlayerContextMenu } from './components/PlayerContextMenu';
 import { TournamentHub } from './components/TournamentHub';
+import { ClubsListView } from './components/ClubsListView';
 import { world } from './services/worldManager';
 import { Scheduler } from './services/scheduler';
 import { LifecycleManager } from './services/lifecycleManager'; 
 import { Club, Player, Competition, Fixture, SquadType, InboxMessage } from './types';
 import { randomInt } from './services/utils';
 import { MatchSimulator } from './services/engine';
-import { RefreshCw, Globe, Play, Sun, Menu, Zap, Mail, Trophy, ChevronRight, User } from 'lucide-react';
+import { RefreshCw, Globe, Play, Sun, Menu, Zap, Mail, Trophy, ChevronRight, User, ArrowLeft } from 'lucide-react';
 import { FMButton } from './components/FMUI';
 
 type GameState = 'LOADING' | 'SETUP_USER' | 'SETUP_LEAGUE' | 'SETUP_TEAM' | 'PLAYING';
@@ -42,6 +43,8 @@ const App: React.FC = () => {
   const [selectedLeague, setSelectedLeague] = useState<Competition | null>(null);
   const [userClub, setUserClub] = useState<Club | null>(null);
   const [forceUpdate, setForceUpdate] = useState(0); 
+
+  const [viewExternalClub, setViewExternalClub] = useState<Club | null>(null);
 
   const [isVacationModalOpen, setIsVacationModalOpen] = useState(false);
   const [vacationTargetDate, setVacationTargetDate] = useState("");
@@ -440,6 +443,35 @@ const App: React.FC = () => {
     if (nextFixture) {
        homeClub = nextFixture.homeTeamId === userClub.id ? userClub : world.getClub(nextFixture.homeTeamId);
        awayClub = nextFixture.awayTeamId === userClub.id ? userClub : world.getClub(nextFixture.awayTeamId);
+    }
+
+    if (currentView === 'CLUBS_LIST') {
+        return <ClubsListView onSelectClub={(c) => { setViewExternalClub(c); setView('EXTERNAL_CLUB'); }} />;
+    }
+
+    if (currentView === 'EXTERNAL_CLUB' && viewExternalClub) {
+        return (
+            <div className="flex flex-col h-full bg-slate-300">
+                <div className="p-2 bg-slate-200 border-b border-slate-400 flex justify-between items-center shadow-sm">
+                    <h3 className="font-black uppercase text-slate-800 text-xs flex items-center gap-2">
+                        <div className={`w-6 h-6 rounded-full ${viewExternalClub.primaryColor} ${viewExternalClub.primaryColor === 'bg-white' ? 'border border-slate-400' : 'border border-transparent'} flex items-center justify-center text-[8px] text-white shadow-sm`}>
+                           {viewExternalClub.shortName.substring(0, 2)}
+                        </div> 
+                        {viewExternalClub.name} - PLANTILLA
+                    </h3>
+                    <button onClick={() => setView('CLUBS_LIST')} className="text-[10px] font-bold uppercase bg-white border border-slate-400 px-3 py-1 rounded-sm hover:bg-slate-50 flex items-center gap-1 shadow-sm">
+                        <ArrowLeft size={10} /> Volver
+                    </button>
+                </div>
+                <div className="flex-1 overflow-hidden">
+                    <SquadView 
+                        players={world.getPlayersByClub(viewExternalClub.id).filter(p => p.squad === 'SENIOR')} 
+                        onSelectPlayer={setSelectedPlayer} 
+                        customTitle={`PLANTILLA - ${viewExternalClub.name}`}
+                    />
+                </div>
+            </div>
+        );
     }
 
     if (currentView === 'PRE_MATCH') {
