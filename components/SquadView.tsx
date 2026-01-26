@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Player, POSITION_ORDER } from '../types';
 import { FMBox, FMTable, FMTableCell } from './FMUI';
 import { TrendingUp, TrendingDown, Minus, Ambulance, AlertOctagon } from 'lucide-react';
+import { getFlagUrl } from '../data/static';
 
 interface SquadViewProps {
   players: Player[];
@@ -85,6 +86,12 @@ export const SquadView: React.FC<SquadViewProps> = ({ players, onSelectPlayer, o
 
                    {/* 2. NAME */}
                    <FMTableCell className="font-black text-slate-950 italic tracking-tight truncate max-w-[120px] sm:max-w-none flex items-center gap-2">
+                      <img 
+                        src={getFlagUrl(player.nationality)} 
+                        alt={player.nationality} 
+                        className="w-4 h-3 object-cover shadow-sm rounded-[1px]" 
+                        title={player.nationality} 
+                      />
                       {player.name}
                       {player.transferStatus !== 'NONE' && <span className="text-[8px] text-orange-700 font-black border border-orange-300 bg-orange-100 px-1 rounded-sm">TRN</span>}
                       {getStatusIcon(player)}

@@ -2,7 +2,7 @@
 import { Player, Club, Competition, CompetitionType, Position, PlayerStats, Fixture, TableEntry, Tactic, Staff, StaffRole, SquadType, PlayerSeasonStats, ClubHonour, TransferOffer, InboxMessage, MessageCategory, MatchLog } from "../types";
 import { generateUUID, randomInt, weightedRandom } from "./utils";
 import { NATIONS } from "../constants";
-import { TACTIC_PRESETS, NAMES_DB, STAFF_NAMES, POS_DEFINITIONS, ARG_PRIMERA, ARG_NACIONAL, CONT_CLUBS, CONT_CLUBS_TIER2, WORLD_BOSSES, RealClubDef } from "../data/static";
+import { TACTIC_PRESETS, NAMES_DB, REGEN_DB, STAFF_NAMES, POS_DEFINITIONS, ARG_PRIMERA, ARG_NACIONAL, CONT_CLUBS, CONT_CLUBS_TIER2, WORLD_BOSSES, RealClubDef } from "../data/static";
 
 export class WorldManager {
   players: Player[] = [];
@@ -54,6 +54,7 @@ export class WorldManager {
            name: def.name,
            shortName: def.short,
            leagueId: leagueId,
+           country: def.country,
            primaryColor: def.pCol,
            secondaryColor: def.sCol,
            finances: {
@@ -185,6 +186,59 @@ export class WorldManager {
     const repBase = club ? club.reputation / 500 : 10;
     const tier = randomInt(Math.max(1, repBase - 5), Math.min(20, repBase + 5)); 
 
+    // Nationality & Name Generation
+    let nat = "Argentina";
+    let firstName = "";
+    let lastName = "";
+
+    // Determine Nationality based on club
+    if (club) {
+        // 90% chance to be from the club's country, 10% foreign
+        if (Math.random() < 0.9) {
+            nat = club.country;
+        } else {
+            // Random foreigner (neighbor or european)
+            const foreignOptions = Object.keys(REGEN_DB);
+            // Add Argentina to mix if club is not argentine
+            if (club.country !== "Argentina") foreignOptions.push("argentina");
+            
+            const pickedKey = foreignOptions[randomInt(0, foreignOptions.length - 1)];
+            // Map key back to display name if needed, or stick to simple
+            if (pickedKey === "argentina") nat = "Argentina";
+            else {
+                // Find matching display name or just Capitalize
+                // Simple mapping back from key to display name would be ideal but for now we rely on REGEN_DB structure
+                // Reverse look up FLAGS keys or just capitalize
+                nat = pickedKey.charAt(0).toUpperCase() + pickedKey.slice(1);
+                if (pickedKey === "espana") nat = "España";
+                if (pickedKey === "inglaterra") nat = "Inglaterra";
+                if (pickedKey === "alemania") nat = "Alemania";
+                if (pickedKey === "paises bajos") nat = "Países Bajos";
+                if (pickedKey === "belgica") nat = "Bélgica";
+                if (pickedKey === "brasil") nat = "Brasil";
+                if (pickedKey === "peru") nat = "Peru";
+            }
+        }
+    } else {
+        nat = NATIONS[randomInt(0, NATIONS.length - 1)];
+    }
+
+    // Generate Name based on Nationality
+    const normalizeKey = (str: string) => str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const regenKey = normalizeKey(nat);
+
+    if (REGEN_DB[regenKey]) {
+        const db = REGEN_DB[regenKey];
+        firstName = db.nombres[randomInt(0, db.nombres.length - 1)];
+        lastName = db.apellidos[randomInt(0, db.apellidos.length - 1)];
+    } else {
+        // Fallback to generic/Argentine names
+        firstName = NAMES_DB.firstNames[randomInt(0, NAMES_DB.firstNames.length - 1)];
+        lastName = NAMES_DB.lastNames[randomInt(0, NAMES_DB.lastNames.length - 1)];
+        // Force nat to Argentina if we used Argentine names and nat wasn't specific
+        if (!club && !NATIONS.includes(nat)) nat = "Argentina";
+    }
+
     const secondaryPositions: Position[] = [];
     if (Math.random() > 0.6) {
        const related = this.getRelatedPosition(primaryPos);
@@ -226,11 +280,9 @@ export class WorldManager {
     const contractYears = randomInt(1, 4);
     const contractExpiry = new Date(baseYear + contractYears, 5, 30);
     
-    const nat = club ? "Argentina" : NATIONS[randomInt(0, NATIONS.length - 1)];
-
     return {
       id: generateUUID(),
-      name: `${NAMES_DB.firstNames[randomInt(0, NAMES_DB.firstNames.length - 1)]} ${NAMES_DB.lastNames[randomInt(0, NAMES_DB.lastNames.length - 1)]}`,
+      name: `${firstName} ${lastName}`,
       age: age, birthDate: birthDate, height, weight, nationality: nat,
       positions: [primaryPos], secondaryPositions: secondaryPositions, stats: stats,
       seasonStats: { appearances: 0, goals: 0, assists: 0, cleanSheets: 0, conceded: 0, totalRating: 0 },
