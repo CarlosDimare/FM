@@ -1,85 +1,74 @@
-import { Player, MatchEvent, Position, MatchState, Club, PlayerMatchStats, TeamMatchStats } from "../types";
-import { randomInt } from "./utils";
-import { world } from "./worldManager";
 
-const ZONES = {
-   GK: [0],
-   DEF: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15],
-   MID: [16,17,18,19,20,21,22,23,24,25],
-   ATT: [26,27,28,29,30]
+import { Player, Club, MatchEvent, PlayerMatchStats, TeamMatchStats, PitchZone, Position } from '../types';
+import { randomInt } from './utils';
+import { world } from './worldManager';
+
+// Define constants used in engine
+const ZONES: Record<string, number[]> = {
+    DEF: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+    MID: [16, 17, 18, 19, 20, 21, 22, 23, 24, 25],
+    ATT: [26, 27, 28, 29, 30]
 };
 
-type PitchZone = 'DEF' | 'MID' | 'ATT';
+const INJURY_TYPES = [
+    { name: "Esguince de Tobillo", min: 7, max: 21 },
+    { name: "Contractura Muscular", min: 3, max: 10 },
+    { name: "Rotura de Fibras", min: 21, max: 45 },
+    { name: "Golpe en la Rodilla", min: 5, max: 14 }
+];
 
-const PHRASES = {
-  POSSESSION_DEF: [
-    (t: string, p: string) => `${t} toca en su propia línea defensiva para salir de la presión.`,
-    (t: string, p: string) => `Balón tranquilo para los centrales de ${t}.`,
-    (t: string, p: string) => `${p} despeja sin complicaciones ante la presión rival.`,
-    (t: string, p: string) => `Juego trabado, ${t} intenta reorganizarse desde atrás.`,
-    (t: string, p: string) => `${p} levanta la cabeza y busca opciones en largo desde la cueva.`,
-    (t: string, p: string) => `Circulación lenta de ${t} en zona de seguridad.`
-  ],
-  POSSESSION_MID: [
-    (t: string, p: string) => `${t} busca huecos en el mediocampo con paciencia.`,
-    (t: string, p: string) => `Posesión larga para ${t}, moviendo el balón de lado a lado.`,
-    (t: string, p: string) => `Duelo táctico en la medular, ${p} distribuye el juego con criterio.`,
-    (t: string, p: string) => `${p} pide calma, pisa la pelota y retrasa el juego.`,
-    (t: string, p: string) => `El balón pasa por los pies de ${p}, el metrónomo del equipo.`,
-    (t: string, p: string) => `${t} intenta imponer su ritmo en la zona ancha.`
-  ],
-  ATTACK_3_4: [
-    (t: string, p: string) => `${t} embotella al rival. ¡${p} encara por banda y busca el centro!`,
-    (t: string, p: string) => `¡Presión asfixiante de ${t}! ${p} recupera en zona peligrosa...`,
-    (t: string, p: string) => `${p} filtra un pase entre líneas que rompe la defensa... ¡Cuidado!`,
-    (t: string, p: string) => `¡Qué maniobra de ${p}! Se quita a dos de encima y se acerca al área.`,
-    (t: string, p: string) => `Contragolpe de manual de ${t}, ${p} conduce con espacios...`,
-    (t: string, p: string) => `Triangulación perfecta de ${t} en la frontal, ${p} prepara el gatillo...`
-  ],
-  CHANCE_SAVE: [
-    (t: string, p: string, gk: string) => `¡PARADÓN! ${gk} vuela para desviar el disparo de ${p} que buscaba la escuadra.`,
-    (t: string, p: string, gk: string) => `${gk} reacciona a tiempo y atrapa en dos tiempos el remate de ${p}.`,
-    (t: string, p: string, gk: string) => `¡Mano salvadora! ${gk} evita el tanto de ${p} con una estirada felina.`,
-    (t: string, p: string, gk: string) => `Remate a quemarropa de ${p} que se estrella en el cuerpo de ${gk}. ¡Milagro!`,
-    (t: string, p: string, gk: string) => `¡${gk} se hace gigante! Gana el mano a mano contra ${p}.`
-  ],
-  CHANCE_MISS: [
-    (t: string, p: string) => `${p} lo intenta con un disparo potente que se marcha rozando el poste. ¡Uyyy!`,
-    (t: string, p: string) => `${p} conecta un remate defectuoso que sale muy desviado. Ocasión desperdiciada.`,
-    (t: string, p: string) => `¡Al larguero! El remate de ${p} hace temblar la portería rival.`,
-    (t: string, p: string) => `Buena aproximación de ${t} pero ${p} no logra dirigir el balón entre los tres palos.`,
-    (t: string, p: string) => `¡Increíble lo que ha fallado ${p}! Estaba solo y la mandó a las nubes.`
-  ],
-  GOAL_NORMAL: [
-    (t: string, p: string) => `¡GOL! ${p} marca para el ${t} con una definición clínica.`,
-    (t: string, p: string) => `¡GOOOOOL! ${p} encuentra la red y adelanta a su equipo.`,
-    (t: string, p: string) => `¡GOL GOL GOL! Remate cruzado de ${p} imposible para el portero.`,
-    (t: string, p: string) => `¡Llegó el tanto! ${p} aprovecha el balón suelto y no perdona.`,
-    (t: string, p: string) => `¡El balón besa la red! ${p} firma el gol para ${t}.`
-  ],
-  GOAL_HEADER: [
-    (t: string, p: string, a: string) => `¡GOL DE CABEZA! Centro medido de ${a} y testarazo inapelable de ${p}.`,
-    (t: string, p: string, a: string) => `¡GOOOOL AÉREO! ${p} se suspende en el aire tras el pase de ${a} y martillea la red.`,
-    (t: string, p: string, a: string) => `¡Cabezazo letal! ${p} gana a todos por arriba y marca a pase de ${a}.`
-  ],
-  GOAL_LONG: [
-    (t: string, p: string) => `¡QUÉ GOLAZO ANTOLÓGICO! ${p} saca un misil tierra-aire desde 30 metros a la escuadra.`,
-    (t: string, p: string) => `¡OBRA DE ARTE! Zapatazo de ${p} desde su casa que sorprende al portero. ¡GOLAZO!`,
-    (t: string, p: string) => `¡GOLAZO DE MEDIA DISTANCIA! ${p} la puso donde duermen las arañas.`
-  ]
+const PHRASES: any = {
+    POSSESSION_DEF: [
+        (team: string, player: string) => `${player} controla en defensa para ${team}.`,
+        (team: string, player: string) => `${team} mueve el balón atrás con ${player}.`
+    ],
+    POSSESSION_MID: [
+        (team: string, player: string) => `${player} distribuye en el medio campo.`,
+        (team: string, player: string) => `${team} busca espacios a través de ${player}.`
+    ],
+    ATTACK_3_4: [
+        (team: string, player: string) => `${player} encara hacia el área rival.`,
+        (team: string, player: string) => `¡Peligro! ${player} se escapa con el balón.`
+    ],
+    GOAL_NORMAL: [
+        (team: string, scorer: string) => `¡GOL de ${scorer}! Definición impecable.`,
+        (team: string, scorer: string) => `¡GOLAZO de ${team}! ${scorer} la manda a guardar.`,
+        (team: string, scorer: string) => `${scorer} no perdona en el mano a mano. ¡GOL!`,
+        (team: string, scorer: string) => `¡La red se infla! ${scorer} marca para ${team}.`
+    ],
+    GOAL_HEADER: [
+        (team: string, scorer: string, assist: string) => `¡Cabezazo letal de ${scorer} a centro de ${assist}! GOL.`,
+        (team: string, scorer: string, assist: string) => `¡GOL de cabeza! ${scorer} gana en las alturas tras pase de ${assist}.`
+    ],
+    GOAL_LONG: [
+        (team: string, scorer: string) => `¡QUÉ BOMBAZO! ${scorer} marca desde fuera del área.`,
+        (team: string, scorer: string) => `¡GOLAZO de media distancia de ${scorer}!`
+    ],
+    CHANCE_SAVE: [
+        (team: string, shooter: string, gk: string) => `¡Paradón de ${gk} a tiro de ${shooter}!`,
+        (team: string, shooter: string, gk: string) => `${gk} vuela para evitar el gol de ${shooter}.`,
+        (team: string, shooter: string, gk: string) => `Mano salvadora de ${gk} ante el remate de ${shooter}.`,
+        (team: string, shooter: string, gk: string) => `El portero ${gk} le niega el gol a ${shooter}.`
+    ],
+    CHANCE_MISS: [
+        (team: string, shooter: string) => `${shooter} dispara... ¡Fuera!`,
+        (team: string, shooter: string) => `El remate de ${shooter} se va desviado.`,
+        (team: string, shooter: string) => `Ocasión desperdiciada por ${shooter}.`,
+        (team: string, shooter: string) => `${shooter} la manda a las nubes.`
+    ]
 };
 
 export class MatchSimulator {
-  private static momentum: number = 0;
-  private static possessionCount: { home: number, away: number } = { home: 0, away: 0 };
-  private static lastEventIntensity: number = 2;
-  private static lastAttackingTeamId: string | null = null;
-
+  static momentum = 0;
+  static possessionCount = { home: 0, away: 0 };
+  static lastEventIntensity = 2;
+  static lastAttackingTeamId: string | null = null;
+  
   static initMatchStats(players: Player[]): Record<string, PlayerMatchStats> {
     const stats: Record<string, PlayerMatchStats> = {};
     players.forEach(p => {
       stats[p.id] = {
-        rating: 6.0, goals: 0, assists: 0, passesAttempted: 0, passesCompleted: 0, dribblesAttempted: 0, dribblesCompleted: 0, tacklesAttempted: 0, tacklesCompleted: 0, foulsCommitted: 0, shotsOnTarget: 0, saves: 0, participationPhrase: "Buscando su lugar en el partido."
+        rating: 6.0, goals: 0, assists: 0, shots: 0, passesAttempted: 0, passesCompleted: 0, dribblesAttempted: 0, dribblesCompleted: 0, tacklesAttempted: 0, tacklesCompleted: 0, foulsCommitted: 0, shotsOnTarget: 0, saves: 0, participationPhrase: "Buscando su lugar en el partido."
       };
     });
     this.momentum = 0;
@@ -106,7 +95,7 @@ export class MatchSimulator {
      let baseAttr = p.currentAbility;
      if (attributeKey) {
         // Find attribute in stats
-        const allStats = { ...p.stats.mental, ...p.stats.physical, ...p.stats.technical, ...(p.stats.goalkeeping || {}) };
+        const allStats: Record<string, number> = { ...p.stats.mental, ...p.stats.physical, ...p.stats.technical, ...(p.stats.goalkeeping || {}) };
         if (allStats[attributeKey]) baseAttr = allStats[attributeKey] * 10;
      }
 
@@ -151,9 +140,9 @@ export class MatchSimulator {
 
     // 1. Critical Events (Cards/Injuries)
     if (Math.random() < 0.009 * chaosMultiplier) {
-       event = this.resolveDisciplinary(minute, defPlayers, defendingTeam);
+       event = this.resolveDisciplinary(minute, defPlayers, defendingTeam, playerStats);
     } else if (Math.random() < 0.004) {
-       event = this.resolveInjury(minute, attPlayers, defPlayers, homeTeam, awayTeam, currentDate);
+       event = this.resolveInjury(minute, attPlayers, defPlayers, homeTeam, awayTeam, playerStats, currentDate);
     }
     
     // 2. Attack Sequence (Differentiated by skill)
@@ -223,7 +212,10 @@ export class MatchSimulator {
 
      const stats: Record<string, PlayerMatchStats> = {};
      [...homePlayers, ...awayPlayers].forEach(p => {
-        stats[p.id] = { rating: 5.5 + Math.random() * 3, goals: 0, assists: 0, passesAttempted: 10, passesCompleted: 8, dribblesAttempted: 0, dribblesCompleted: 0, tacklesAttempted: 0, tacklesCompleted: 0, foulsCommitted: 0, shotsOnTarget: 0, saves: 0 };
+        stats[p.id] = { rating: 5.5 + Math.random() * 3, goals: 0, assists: 0, shots: 0, passesAttempted: 10, passesCompleted: 8, dribblesAttempted: 0, dribblesCompleted: 0, tacklesAttempted: 0, tacklesCompleted: 0, foulsCommitted: 0, shotsOnTarget: 0, saves: 0 };
+        // Simulate cards
+        if (Math.random() < 0.15) stats[p.id].card = 'YELLOW';
+        else if (Math.random() < 0.01) stats[p.id].card = 'RED';
      });
      
      const assignGoals = (players: Player[], count: number) => {
@@ -231,7 +223,11 @@ export class MatchSimulator {
         const finalPool = pool.length > 0 ? pool : players;
         for(let i=0; i<count; i++) {
            const scorer = finalPool[randomInt(0, finalPool.length-1)];
-           if(stats[scorer.id]) stats[scorer.id].goals++;
+           if(stats[scorer.id]) {
+              stats[scorer.id].goals++;
+              stats[scorer.id].shots++;
+              stats[scorer.id].shotsOnTarget++;
+           }
         }
      };
      assignGoals(homePlayers, homeScore);
@@ -259,7 +255,7 @@ export class MatchSimulator {
      };
   }
 
-  private static resolveDisciplinary(minute: number, players: Player[], team: Club): MatchEvent | null {
+  private static resolveDisciplinary(minute: number, players: Player[], team: Club, stats: Record<string, PlayerMatchStats>): MatchEvent | null {
      if (players.length === 0) return null;
      const p = players[randomInt(0, players.length - 1)];
      
@@ -270,6 +266,27 @@ export class MatchSimulator {
      const yTexts = [`Tarjeta amarilla para ${p.name}.`, `${p.name} es amonestado.`, `Dura entrada de ${p.name}, amarilla.`];
      const rTexts = [`¡ROJA! ${p.name} expulsado.`, `¡A la calle ${p.name}!`, `Roja directa para ${p.name}.`];
      
+     if (stats[p.id]) {
+        // If already yellow, potential second yellow?
+        if (stats[p.id].card === 'YELLOW' && !isRed) {
+           if (Math.random() < 0.2) {
+              stats[p.id].card = 'RED'; // Convert to red (second yellow logic handled visually as Red)
+              return {
+                 minute,
+                 type: 'RED_CARD',
+                 teamId: team.id,
+                 playerId: p.id,
+                 text: `¡Segunda amarilla para ${p.name}! Se va a la calle.`,
+                 importance: 'HIGH',
+                 intensity: 4
+              };
+           }
+           return null; // Ignore duplicate yellow
+        } else {
+           stats[p.id].card = isRed ? 'RED' : 'YELLOW';
+        }
+     }
+
      return {
         minute,
         type: isRed ? 'RED_CARD' : 'YELLOW_CARD',
@@ -281,14 +298,20 @@ export class MatchSimulator {
      };
   }
 
-  private static resolveInjury(minute: number, hPlayers: Player[], aPlayers: Player[], h: Club, a: Club, currentDate?: Date): MatchEvent | null {
+  private static resolveInjury(minute: number, hPlayers: Player[], aPlayers: Player[], h: Club, a: Club, stats: Record<string, PlayerMatchStats>, currentDate?: Date): MatchEvent | null {
      const allPlayers = [...hPlayers, ...aPlayers];
      if (allPlayers.length === 0) return null;
      const p = allPlayers[randomInt(0, allPlayers.length - 1)];
      const team = p.clubId === h.id ? h : a;
      
-     const days = randomInt(5, 30);
-     p.injury = { type: "problema físico", daysLeft: days };
+     // Select Real Injury
+     const injuryDef = INJURY_TYPES[randomInt(0, INJURY_TYPES.length - 1)];
+     const days = randomInt(injuryDef.min, injuryDef.max);
+     
+     // Store injury in match stats so it can be applied later
+     if (stats[p.id]) {
+        stats[p.id].sustainedInjury = { type: injuryDef.name, days: days };
+     }
      
      const squadPlayers = world.getPlayersByClub(team.id).filter(sp => !sp.isStarter && !sp.injury && !sp.suspension);
      let subText = "";
@@ -300,7 +323,7 @@ export class MatchSimulator {
         if (idx !== -1) teamArray[idx] = sub;
      }
 
-     return { minute, type: 'INJURY', teamId: team.id, text: `${p.name} se retira lesionado.${subText}`, importance: 'MEDIUM', intensity: 2 };
+     return { minute, type: 'INJURY', teamId: team.id, text: `${p.name} cae lesionado (${injuryDef.name}).${subText}`, importance: 'MEDIUM', intensity: 2 };
   }
 
   private static resolveAttackSequence(minute: number, attTeam: Club, attPlayers: Player[], defTeam: Club, defPlayers: Player[], stats: Record<string, PlayerMatchStats>): MatchEvent | null {
@@ -324,6 +347,9 @@ export class MatchSimulator {
   }
 
   private static resolveShot(minute: number, team: Club, shooter: Player, gk: Player, assister: Player, stats: Record<string, PlayerMatchStats>, type: string): MatchEvent {
+     // Record the shot attempt
+     if (stats[shooter.id]) stats[shooter.id].shots++;
+
      // ATTRIBUTE DUEL SYSTEM
      let attackAttr = 'finishing';
      let defenseAttr = 'reflexes';
@@ -351,17 +377,17 @@ export class MatchSimulator {
         if (assister.id !== shooter.id && stats[assister.id]) stats[assister.id].assists++;
 
         let goalText = "";
-        if (type === 'CROSS') goalText = PHRASES.GOAL_HEADER[randomInt(0, 2)](team.name, shooter.name, assister.name);
-        else if (type === 'LONG_SHOT') goalText = PHRASES.GOAL_LONG[randomInt(0, 2)](team.name, shooter.name);
-        else goalText = PHRASES.GOAL_NORMAL[randomInt(0, 4)](team.name, shooter.name);
+        if (type === 'CROSS') goalText = PHRASES.GOAL_HEADER[randomInt(0, 1)](team.name, shooter.name, assister.name);
+        else if (type === 'LONG_SHOT') goalText = PHRASES.GOAL_LONG[randomInt(0, 1)](team.name, shooter.name);
+        else goalText = PHRASES.GOAL_NORMAL[randomInt(0, 3)](team.name, shooter.name);
         
         return { minute, type: 'GOAL', teamId: team.id, playerId: shooter.id, text: goalText, importance: 'HIGH', intensity: 5 };
      } else if (isTarget) {
         if (stats[gk.id]) stats[gk.id].saves++;
-        return { minute, type: 'CHANCE', text: PHRASES.CHANCE_SAVE[randomInt(0, 4)](team.name, shooter.name, gk.name), teamId: team.id, importance: 'MEDIUM', intensity: 4 }; 
+        return { minute, type: 'CHANCE', text: PHRASES.CHANCE_SAVE[randomInt(0, 3)](team.name, shooter.name, gk.name), teamId: team.id, importance: 'MEDIUM', intensity: 4 }; 
      }
      
-     return { minute, type: 'MISS', text: PHRASES.CHANCE_MISS[randomInt(0, 4)](team.name, shooter.name), teamId: team.id, importance: 'LOW', intensity: 4 }; 
+     return { minute, type: 'MISS', text: PHRASES.CHANCE_MISS[randomInt(0, 3)](team.name, shooter.name), teamId: team.id, importance: 'LOW', intensity: 4 }; 
   }
 
   private static simulateHiddenActions(att: Player[], def: Player[], stats: Record<string, PlayerMatchStats>) {
@@ -391,9 +417,18 @@ export class MatchSimulator {
   }
 
   private static compileTeamStats(teamId: string, playerStats: Record<string, PlayerMatchStats>, possession: number): TeamMatchStats {
-    let onTarget = 0, fouls = 0;
-    Object.values(playerStats).forEach(ps => { onTarget += ps.shotsOnTarget; fouls += ps.foulsCommitted; });
-    return { possession: Math.round(possession), shots: Math.round(onTarget * 1.8), shotsOnTarget: onTarget, fouls: randomInt(5, 15), corners: randomInt(2, 8) };
+    let onTarget = 0, fouls = 0, totalShots = 0;
+    Object.values(playerStats).forEach(ps => { 
+       onTarget += ps.shotsOnTarget; 
+       fouls += ps.foulsCommitted;
+       totalShots += ps.shots; // Sum real shots from player stats
+    });
+    
+    // Fallback if simulation didn't record misses correctly in previous versions, but now it should.
+    // If totalShots < onTarget (impossible but check), fix it.
+    if (totalShots < onTarget) totalShots = Math.round(onTarget * 1.5);
+
+    return { possession: Math.round(possession), shots: totalShots, shotsOnTarget: onTarget, fouls: randomInt(5, 15), corners: randomInt(2, 8) };
   }
 
   private static calculateZonePower(players: Player[], zone: PitchZone): number {
@@ -402,7 +437,7 @@ export class MatchSimulator {
      return zonePlayers.reduce((acc, p) => acc + (this.getEffectiveAbility(p) / 15), 0);
   }
 
-  static finalizeSeasonStats(homePlayers: Player[], awayPlayers: Player[], matchStats: Record<string, PlayerMatchStats>, homeScore: number, awayScore: number) {
+  static finalizeSeasonStats(homePlayers: Player[], awayPlayers: Player[], matchStats: Record<string, PlayerMatchStats>, homeScore: number, awayScore: number, competitionId: string) {
       const updateStats = (players: Player[], isHome: boolean) => {
         const myScore = isHome ? homeScore : awayScore;
         const opponentScore = isHome ? awayScore : homeScore;
@@ -411,14 +446,67 @@ export class MatchSimulator {
         players.forEach(p => {
           const stats = matchStats[p.id];
           if (!stats) return;
+          
+          // 1. Update Global Season Stats
           p.seasonStats.appearances += 1;
           p.seasonStats.goals += stats.goals;
           p.seasonStats.assists += stats.assists;
           p.seasonStats.totalRating += stats.rating;
           
+          if (p.positions.includes(Position.GK)) {
+             if (opponentScore === 0) p.seasonStats.cleanSheets += 1;
+             p.seasonStats.conceded += opponentScore; // Track conceded goals
+          }
+
+          // 2. Update Competition Specific Stats
+          if (!p.statsByCompetition[competitionId]) {
+             p.statsByCompetition[competitionId] = { appearances: 0, goals: 0, assists: 0, cleanSheets: 0, conceded: 0, totalRating: 0 };
+          }
+          const compStats = p.statsByCompetition[competitionId];
+          compStats.appearances += 1;
+          compStats.goals += stats.goals;
+          compStats.assists += stats.assists;
+          compStats.totalRating += stats.rating;
+          if (p.positions.includes(Position.GK)) {
+             if (opponentScore === 0) compStats.cleanSheets += 1;
+             compStats.conceded += opponentScore;
+          }
+          
+          // 3. Process Injuries from Match
+          if (stats.sustainedInjury) {
+             p.injury = {
+                type: stats.sustainedInjury.type,
+                daysLeft: stats.sustainedInjury.days
+             };
+             // Ensure injured players are removed from starter list immediately for future logic
+             p.isStarter = false;
+             p.tacticalPosition = undefined;
+          }
+
+          // 4. Process Cards & Suspensions
+          if (stats.card === 'RED') {
+             // Direct Red: 1 to 3 matches ban
+             const matches = randomInt(1, 3);
+             p.suspension = { type: 'RED_CARD', matchesLeft: matches };
+             // Removed from squad
+             p.isStarter = false;
+             p.tacticalPosition = undefined;
+          } else if (stats.card === 'YELLOW') {
+             p.yellowCardsAccumulated = (p.yellowCardsAccumulated || 0) + 1;
+             // Suspension logic: 5 yellows = 1 match ban
+             if (p.yellowCardsAccumulated >= 5) {
+                p.suspension = { type: 'YELLOW_ACCUMULATION', matchesLeft: 1 };
+                p.yellowCardsAccumulated = 0; // Reset or keep accumulating? Typically resets or goes to higher threshold. Lets reset for simplicity.
+                p.isStarter = false;
+                p.tacticalPosition = undefined;
+             }
+          }
+
+          // Fatigue and Morale logic remains global
           const fatigue = 28 - (p.stats.physical.stamina * 0.8) + randomInt(0, 6);
-          p.fitness = Math.max(0, p.fitness - fatigue);
-          p.morale = Math.max(0, Math.min(100, p.morale + moraleMod + (stats.rating > 7.5 ? 2 : -2)));
+          // Apply rounding to prevent decimals
+          p.fitness = Math.max(0, Math.round(p.fitness - fatigue));
+          p.morale = Math.max(0, Math.min(100, Math.round(p.morale + moraleMod + (stats.rating > 7.5 ? 2 : -2))));
         });
       };
       updateStats(homePlayers, true);
@@ -427,12 +515,18 @@ export class MatchSimulator {
 }
 
 export class ProfileNarrativeEngine {
-  static generateScoutingReport(player: Player): string[] {
-    const phrases: string[] = [];
-    if (player.stats.physical.pace >= 16) phrases.push("Velocidad endiablada.");
-    if (player.stats.technical.finishing >= 16) phrases.push("Goleador letal.");
-    if (player.stats.mental.vision >= 16) phrases.push("Visión de juego privilegiada.");
-    if (phrases.length === 0) phrases.push("Jugador de rol equilibrado.");
-    return phrases;
-  }
+    static generateScoutingReport(player: Player): string[] {
+        return [
+            "Jugador con gran potencial.",
+            "Destaca por su técnica depurada.",
+            "Necesita mejorar su consistencia."
+        ];
+    }
+
+    static generateHeadline(player: Player): string {
+        if (player.currentAbility > 160) return "Una estrella mundial en su apogeo";
+        if (player.currentAbility > 140) return "Un jugador de calidad para cualquier equipo";
+        if (player.age < 21 && player.potentialAbility > 150) return "Una joven promesa con futuro brillante";
+        return "Un jugador profesional competente";
+    }
 }

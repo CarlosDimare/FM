@@ -1,3 +1,4 @@
+
 import { Position } from "./types";
 
 export const POSITIONS = [Position.GK, Position.DC, Position.MC, Position.ST];

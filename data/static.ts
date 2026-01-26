@@ -75,6 +75,7 @@ export const CONT_CLUBS: RealClubDef[] = [
     { name: "Internacional", short: "INT", pCol: "bg-red-600", sCol: "text-white", stadium: "Beira-Rio", rep: 8700 },
     { name: "Fluminense", short: "FLU", pCol: "bg-red-800", sCol: "text-green-700", stadium: "Maracanã", rep: 8600 },
     { name: "Atlético Mineiro", short: "CAM", pCol: "bg-black", sCol: "text-white", stadium: "Arena MRV", rep: 8800 },
+    { name: "Botafogo", short: "BOT", pCol: "bg-black", sCol: "text-white", stadium: "Nilton Santos", rep: 8500 },
     // Uruguay
     { name: "Peñarol", short: "PEN", pCol: "bg-yellow-400", sCol: "text-black", stadium: "Campeón del Siglo", rep: 8200 },
     { name: "Nacional", short: "NAC", pCol: "bg-white", sCol: "text-blue-800", stadium: "Gran Parque Central", rep: 8100 },
@@ -84,12 +85,61 @@ export const CONT_CLUBS: RealClubDef[] = [
     // Colombia
     { name: "Atl. Nacional", short: "ATN", pCol: "bg-green-600", sCol: "text-white", stadium: "Atanasio Girardot", rep: 7900 },
     { name: "Millonarios", short: "MIL", pCol: "bg-blue-700", sCol: "text-white", stadium: "El Campín", rep: 7500 },
+    { name: "Junior", short: "JUN", pCol: "bg-red-600", sCol: "text-white", stadium: "Metropolitano", rep: 7400 },
     // Paraguay
     { name: "Olimpia", short: "OLI", pCol: "bg-white", sCol: "text-black", stadium: "Manuel Ferreira", rep: 7700 },
     { name: "Cerro Porteño", short: "CER", pCol: "bg-red-700", sCol: "text-blue-800", stadium: "La Nueva Olla", rep: 7600 },
+    { name: "Libertad", short: "LIB", pCol: "bg-black", sCol: "text-white", stadium: "Dr. Nicolás Leoz", rep: 7400 },
     // Ecuador
     { name: "LDU Quito", short: "LDU", pCol: "bg-white", sCol: "text-red-700", stadium: "Rodrigo Paz Delgado", rep: 7800 },
-    { name: "Ind. del Valle", short: "IDV", pCol: "bg-black", sCol: "text-blue-600", stadium: "Banco Guayaquil", rep: 8000 }
+    { name: "Ind. del Valle", short: "IDV", pCol: "bg-black", sCol: "text-blue-600", stadium: "Banco Guayaquil", rep: 8000 },
+    { name: "Barcelona SC", short: "BSC", pCol: "bg-yellow-400", sCol: "text-red-600", stadium: "Monumental Banco Pichincha", rep: 7700 },
+    // Peru
+    { name: "Universitario", short: "UNI", pCol: "bg-red-100", sCol: "text-red-800", stadium: "Monumental U", rep: 7200 },
+    { name: "Sporting Cristal", short: "CRI", pCol: "bg-sky-400", sCol: "text-white", stadium: "Alberto Gallardo", rep: 7100 },
+    { name: "Alianza Lima", short: "ALI", pCol: "bg-blue-900", sCol: "text-white", stadium: "Alejandro Villanueva", rep: 7200 },
+    // Bolivia
+    { name: "Bolívar", short: "BOL", pCol: "bg-sky-400", sCol: "text-white", stadium: "Hernando Siles", rep: 6800 },
+    { name: "The Strongest", short: "STR", pCol: "bg-yellow-400", sCol: "text-black", stadium: "Hernando Siles", rep: 6700 },
+    // Venezuela
+    { name: "Caracas FC", short: "CFC", pCol: "bg-red-700", sCol: "text-white", stadium: "Olímpico de la UCV", rep: 6000 },
+    { name: "Dep. Táchira", short: "TAC", pCol: "bg-yellow-400", sCol: "text-black", stadium: "Pueblo Nuevo", rep: 6000 }
+];
+
+// New list to populate Sudamericana with varied teams
+export const CONT_CLUBS_TIER2: RealClubDef[] = [
+    // Brazil
+    { name: "Athletico PR", short: "CAP", pCol: "bg-red-700", sCol: "text-black", stadium: "Ligga Arena", rep: 8400 },
+    { name: "Fortaleza", short: "FOR", pCol: "bg-blue-700", sCol: "text-red-600", stadium: "Castelão", rep: 8300 },
+    { name: "Cruzeiro", short: "CRU", pCol: "bg-blue-700", sCol: "text-white", stadium: "Mineirão", rep: 8200 },
+    { name: "Vasco da Gama", short: "VAS", pCol: "bg-white", sCol: "text-black", stadium: "São Januário", rep: 8100 },
+    { name: "Bahia", short: "BAH", pCol: "bg-blue-600", sCol: "text-red-600", stadium: "Fonte Nova", rep: 7900 },
+    // Chile
+    { name: "U. Católica", short: "UCA", pCol: "bg-white", sCol: "text-blue-800", stadium: "San Carlos", rep: 7400 },
+    { name: "Cobreloa", short: "COB", pCol: "bg-orange-500", sCol: "text-white", stadium: "Zorros del Desierto", rep: 6800 },
+    { name: "Huachipato", short: "HUA", pCol: "bg-blue-900", sCol: "text-black", stadium: "CAP", rep: 6500 },
+    { name: "Palestino", short: "PAL", pCol: "bg-red-600", sCol: "text-green-700", stadium: "La Cisterna", rep: 6400 },
+    // Uruguay
+    { name: "Defensor Sp.", short: "DEF", pCol: "bg-purple-700", sCol: "text-white", stadium: "Luis Franzini", rep: 6900 },
+    { name: "Danubio", short: "DAN", pCol: "bg-white", sCol: "text-black", stadium: "Jardines del Hipódromo", rep: 6800 },
+    { name: "Liverpool (U)", short: "LIV", pCol: "bg-blue-900", sCol: "text-black", stadium: "Belvedere", rep: 6600 },
+    // Colombia
+    { name: "Ind. Medellín", short: "DIM", pCol: "bg-red-600", sCol: "text-blue-800", stadium: "Atanasio Girardot", rep: 7200 },
+    { name: "América Cali", short: "AME", pCol: "bg-red-600", sCol: "text-white", stadium: "Pascual Guerrero", rep: 7300 },
+    { name: "Dep. Cali", short: "CAL", pCol: "bg-green-700", sCol: "text-white", stadium: "Palmaseca", rep: 7100 },
+    { name: "Santa Fe", short: "SFE", pCol: "bg-red-600", sCol: "text-white", stadium: "El Campín", rep: 7000 },
+    // Paraguay
+    { name: "Guaraní", short: "GUA", pCol: "bg-yellow-400", sCol: "text-black", stadium: "Rogelio Livieres", rep: 6800 },
+    { name: "Nacional (P)", short: "NAC", pCol: "bg-white", sCol: "text-blue-800", stadium: "Arsenio Erico", rep: 6500 },
+    // Ecuador
+    { name: "Emelec", short: "EME", pCol: "bg-blue-700", sCol: "text-slate-400", stadium: "George Capwell", rep: 7400 },
+    { name: "El Nacional", short: "ELN", pCol: "bg-red-600", sCol: "text-blue-500", stadium: "Atahualpa", rep: 6700 },
+    // Peru
+    { name: "Melgar", short: "MEL", pCol: "bg-red-700", sCol: "text-black", stadium: "UNSA", rep: 6900 },
+    { name: "Cienciano", short: "CIE", pCol: "bg-red-600", sCol: "text-white", stadium: "Garcilaso", rep: 6600 },
+    // Bolivia
+    { name: "Wilstermann", short: "WIL", pCol: "bg-red-600", sCol: "text-blue-800", stadium: "Félix Capriles", rep: 6400 },
+    { name: "Oriente P.", short: "ORI", pCol: "bg-green-600", sCol: "text-white", stadium: "Tahuichi", rep: 6300 }
 ];
 
 export const WORLD_BOSSES: RealClubDef[] = [
@@ -123,5 +173,3 @@ export const POS_DEFINITIONS = {
     MID: [Position.MC, Position.MCL, Position.MCR, Position.ML, Position.MR],
     ATT: [Position.AM, Position.AMC, Position.AMR, Position.AML, Position.ST, Position.STC, Position.STR, Position.STL]
 };
-
-// Removed CITIES export as it is no longer used

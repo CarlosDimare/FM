@@ -1,8 +1,57 @@
+
 import React, { useState, useEffect, useRef } from 'react';
-import { Club, Player, MatchState, MatchEvent, PlayerMatchStats } from '../types';
+import { createPortal } from 'react-dom';
+import { Club, Player, MatchState, MatchEvent, PlayerMatchStats, Position } from '../types';
 import { MatchSimulator } from '../services/engine';
 import { GAME_SPEED_MS } from '../constants';
-import { Play, Pause, List, BarChart3, Users, X, Info, Star, ChevronDown, ChevronUp, Zap, AlertCircle } from 'lucide-react';
+import { Play, Pause, List, BarChart3, Users, Zap, AlertCircle, CheckCircle } from 'lucide-react';
+
+// Reuse POS_MAP logic locally or import. Recreating for self-containment in this component.
+const POS_MAP: Record<number, { top: string; left: string }> = {
+   0: { top: "90%", left: "50%" }, // GK
+   1: { top: "75%", left: "15%" }, // DR
+   2: { top: "75%", left: "30%" }, // DCR
+   3: { top: "75%", left: "50%" }, // DC
+   4: { top: "75%", left: "70%" }, // DCL
+   5: { top: "75%", left: "85%" }, // DL
+   6: { top: "75%", left: "25%" }, // DLC
+   7: { top: "75%", left: "75%" }, // DRC
+   
+   8: { top: "60%", left: "50%" }, // DMC
+   9: { top: "60%", left: "30%" }, // DML
+   10: { top: "60%", left: "70%" }, // DMR
+   
+   11: { top: "45%", left: "15%" }, // ML
+   12: { top: "45%", left: "30%" }, // MCL
+   13: { top: "45%", left: "50%" }, // MC
+   14: { top: "45%", left: "70%" }, // MCR
+   15: { top: "45%", left: "85%" }, // MR
+   
+   16: { top: "30%", left: "20%" }, // AML
+   17: { top: "30%", left: "50%" }, // AMC
+   18: { top: "30%", left: "80%" }, // AMR
+   
+   19: { top: "15%", left: "30%" }, // STL
+   20: { top: "15%", left: "70%" }, // STR
+   26: { top: "15%", left: "50%" }, // STC
+   
+   // Fallbacks for common preset indices
+   27: { top: "15%", left: "35%" }, 
+   28: { top: "15%", left: "65%" },
+   29: { top: "15%", left: "50%" },
+   30: { top: "15%", left: "50%" } 
+};
+
+// Heuristic fallback if tacticalPosition is missing (should mostly be there for starters)
+const getPosStyle = (idx: number, pos: string) => {
+   if (POS_MAP[idx]) return POS_MAP[idx];
+   // Simple fallback based on string position
+   if (pos.includes('GK')) return { top: "90%", left: "50%" };
+   if (pos.includes('D')) return { top: "75%", left: "50%" };
+   if (pos.includes('M')) return { top: "45%", left: "50%" };
+   if (pos.includes('ST') || pos.includes('A')) return { top: "15%", left: "50%" };
+   return { top: "50%", left: "50%" };
+};
 
 interface MatchViewProps {
   homeTeam: Club;
@@ -86,13 +135,51 @@ export const MatchView: React.FC<MatchViewProps> = ({ homeTeam, awayTeam, homePl
     });
   };
 
-  const getIntensityStyles = (intensity: number) => {
+  const renderControls = () => {
+    const headerNode = document.getElementById('header-actions');
+    if (!headerNode) return null;
+
+    return createPortal(
+      <div className="flex gap-1">
+        {matchState.minute < 90 && (
+            <>
+                <button 
+                    onClick={() => setMatchState(p => ({...p, isPlaying: !p.isPlaying}))} 
+                    className={`h-8 px-3 rounded-sm shadow-md flex items-center justify-center transition-all border border-black/20 ${matchState.isPlaying ? 'bg-slate-300 text-slate-800 hover:bg-slate-400' : 'bg-green-600 text-white hover:bg-green-700'}`}
+                    title={matchState.isPlaying ? "Pausar" : "Reanudar"}
+                >
+                    {matchState.isPlaying ? <Pause size={14} fill="currentColor"/> : <Play size={14} fill="currentColor"/>}
+                </button>
+                <button 
+                    onClick={handleInstantResult} 
+                    className="h-8 px-3 bg-slate-800 text-yellow-400 rounded-sm shadow-md flex items-center justify-center hover:bg-black transition-all border border-black/20"
+                    title="Resultado Instantáneo"
+                >
+                    <Zap size={14} fill="currentColor"/>
+                </button>
+            </>
+        )}
+        {matchState.minute >= 90 && (
+            <button 
+                onClick={() => onFinish(matchState.homeScore, matchState.awayScore, matchState.playerStats)} 
+                className="h-8 px-3 bg-slate-950 text-white rounded-sm shadow-md flex items-center justify-center hover:bg-black animate-pulse border border-white/20"
+                title="Finalizar Partido"
+            >
+                <CheckCircle size={16} />
+            </button>
+        )}
+      </div>,
+      headerNode
+    );
+  };
+
+  const getIntensityStyles = (intensity: number, teamColorClass?: string) => {
     switch (intensity) {
-      case 1: return "text-[10px] leading-tight text-slate-500 opacity-80 font-medium";
-      case 2: return "text-[12px] leading-snug text-slate-800 font-medium";
-      case 3: return "text-[14px] leading-normal text-slate-900 font-bold";
-      case 4: return "text-[18px] leading-tight text-white font-black italic tracking-tight";
-      case 5: return "text-[32px] leading-[1.1] text-white font-black italic uppercase tracking-tighter drop-shadow-lg";
+      case 1: return "text-[10px] leading-tight font-medium opacity-80";
+      case 2: return "text-[12px] leading-snug font-bold";
+      case 3: return "text-[14px] leading-normal font-black";
+      case 4: return "text-[16px] leading-tight font-black italic tracking-tight";
+      case 5: return "text-[24px] leading-[1.1] font-black italic uppercase tracking-tighter drop-shadow-sm";
       default: return "text-[14px]";
     }
   };
@@ -109,26 +196,38 @@ export const MatchView: React.FC<MatchViewProps> = ({ homeTeam, awayTeam, homePl
 
   return (
     <div className="flex flex-col h-full bg-slate-300 overflow-hidden font-sans">
+      {renderControls()}
+      
       {/* Marcador Profesional */}
-      <div className="bg-slate-100 p-6 border-b border-slate-500 shadow-sm flex justify-between items-center z-20">
-        <div className="flex-1 text-center">
-            <h2 className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">{homeTeam.name}</h2>
-            <div className="text-6xl font-black text-slate-950 tabular-nums drop-shadow-sm">{matchState.homeScore}</div>
-        </div>
-        <div className="flex flex-col items-center px-10 border-x border-slate-300">
-          <div className="bg-slate-950 text-white font-mono text-2xl px-5 py-1.5 rounded-sm mb-1 shadow-inner">{matchState.minute}'</div>
-          <div className="text-[9px] text-slate-500 font-black uppercase tracking-[0.3em] animate-pulse">EN VIVO</div>
-        </div>
-        <div className="flex-1 text-center">
-            <h2 className="text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest">{awayTeam.name}</h2>
-            <div className="text-6xl font-black text-slate-950 tabular-nums drop-shadow-sm">{matchState.awayScore}</div>
+      <div className="bg-slate-100 p-4 border-b border-slate-500 shadow-sm flex items-center z-20 relative">
+        <div className="flex-1 flex items-center justify-between">
+            <div className="text-center w-1/3">
+                <h2 className="text-[9px] md:text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest truncate">{homeTeam.name}</h2>
+                <div className="text-4xl md:text-6xl font-black text-slate-950 tabular-nums drop-shadow-sm">{matchState.homeScore}</div>
+            </div>
+            
+            <div className="flex flex-col items-center px-2">
+                <div className="bg-slate-950 text-white font-mono text-xl md:text-2xl px-4 py-1 rounded-sm mb-1 shadow-inner min-w-[3.5rem] text-center">{matchState.minute}'</div>
+                <div className="text-[8px] md:text-[9px] text-slate-500 font-black uppercase tracking-[0.2em] animate-pulse">EN VIVO</div>
+            </div>
+            
+            <div className="text-center w-1/3">
+                <h2 className="text-[9px] md:text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest truncate">{awayTeam.name}</h2>
+                <div className="text-4xl md:text-6xl font-black text-slate-950 tabular-nums drop-shadow-sm">{matchState.awayScore}</div>
+            </div>
         </div>
       </div>
 
-      <div className="flex bg-slate-200 border-b border-slate-500 shrink-0">
-        <button onClick={() => setActiveTab('LOG')} className={`flex-1 py-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all ${activeTab === 'LOG' ? 'text-slate-950 border-b-4 border-slate-950 bg-slate-100 shadow-inner' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-300/50'}`}>EVENTOS</button>
-        <button onClick={() => setActiveTab('STATS')} className={`flex-1 py-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all ${activeTab === 'STATS' ? 'text-slate-950 border-b-4 border-slate-950 bg-slate-100 shadow-inner' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-300/50'}`}>ESTADÍSTICAS</button>
-        <button onClick={() => setActiveTab('RATINGS')} className={`flex-1 py-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all ${activeTab === 'RATINGS' ? 'text-slate-950 border-b-4 border-slate-950 bg-slate-100 shadow-inner' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-300/50'}`}>CALIFICACIONES</button>
+      <div className="flex bg-slate-200 border-b border-slate-500 shrink-0 h-12">
+        <button onClick={() => setActiveTab('LOG')} className={`flex-1 flex items-center justify-center transition-all ${activeTab === 'LOG' ? 'text-slate-950 border-b-4 border-slate-950 bg-slate-100' : 'text-slate-400 hover:text-slate-700'}`}>
+            <List size={20} />
+        </button>
+        <button onClick={() => setActiveTab('STATS')} className={`flex-1 flex items-center justify-center transition-all ${activeTab === 'STATS' ? 'text-slate-950 border-b-4 border-slate-950 bg-slate-100' : 'text-slate-400 hover:text-slate-700'}`}>
+            <BarChart3 size={20} />
+        </button>
+        <button onClick={() => setActiveTab('RATINGS')} className={`flex-1 flex items-center justify-center transition-all ${activeTab === 'RATINGS' ? 'text-slate-950 border-b-4 border-slate-950 bg-slate-100' : 'text-slate-400 hover:text-slate-700'}`}>
+            <Users size={20} />
+        </button>
       </div>
 
       <div className="flex-1 overflow-hidden flex flex-col bg-slate-400/20 shadow-inner">
@@ -145,29 +244,20 @@ export const MatchView: React.FC<MatchViewProps> = ({ homeTeam, awayTeam, homePl
                const isSpecial = e.intensity >= 4;
                const isGoal = e.type === 'GOAL';
                
-               const borderColorClass = team?.primaryColor.replace('bg-', 'border-') || 'border-slate-500';
-               const textStyle = getIntensityStyles(e.intensity);
-               
+               // Use team colors for background and text
+               const bgClass = team ? team.primaryColor : 'bg-slate-800';
+               const textClass = team ? team.secondaryColor : 'text-slate-300';
+               const borderClass = team ? team.primaryColor.replace('bg-', 'border-') : 'border-slate-600';
+
                return (
                  <div 
                     key={i} 
-                    className={`p-4 border-l-[12px] rounded-sm shadow-md flex items-start gap-5 transition-all animate-in slide-in-from-right-4 duration-500 ${
-                        isSpecial 
-                        ? `bg-slate-900 border-double ${borderColorClass}` 
-                        : 'bg-slate-200/80 border-slate-400'
-                    } ${isGoal ? 'ring-4 ring-yellow-500/20 ring-inset' : ''}`}
+                    className={`p-4 border-l-[8px] rounded-sm shadow-md flex items-start gap-4 transition-all animate-in slide-in-from-right-4 duration-500 ${bgClass} ${borderClass} ${isGoal ? 'ring-4 ring-yellow-500/50 ring-inset' : ''}`}
                 >
-                    <span className={`font-mono font-black shrink-0 mt-1 ${isSpecial ? 'text-slate-500 text-sm' : 'text-slate-400 text-xs'}`}>{e.minute}'</span>
+                    <span className={`font-mono font-black shrink-0 mt-1 opacity-70 ${textClass} text-xs`}>{e.minute}'</span>
                     <div className="flex-1">
-                        {isSpecial && team && (
-                            <div className="flex items-center gap-2 mb-2">
-                                <span className={`inline-block px-2 py-0.5 rounded-sm text-[10px] font-black uppercase ${team.primaryColor} ${team.primaryColor === 'bg-white' ? 'text-slate-950 border border-slate-300' : 'text-white'}`}>
-                                    {team.shortName}
-                                </span>
-                                {isGoal && <span className="text-yellow-500 font-black text-[10px] uppercase tracking-widest animate-bounce">¡GOLAZO!</span>}
-                            </div>
-                        )}
-                        <span className={`${textStyle}`}>{e.text}</span>
+                        <span className={`${getIntensityStyles(e.intensity)} ${textClass} block`}>{e.text}</span>
+                        {isGoal && <div className="mt-2 text-yellow-400 font-black text-[10px] uppercase tracking-widest animate-bounce">¡GOLAZO!</div>}
                     </div>
                  </div>
                );
@@ -175,7 +265,7 @@ export const MatchView: React.FC<MatchViewProps> = ({ homeTeam, awayTeam, homePl
           </div>
         )}
         {activeTab === 'STATS' && (
-          <div className="flex-1 p-10 space-y-10 overflow-y-auto">
+          <div className="flex-1 p-6 md:p-10 space-y-8 overflow-y-auto">
              {renderStatsRow("Posesión %", matchState.homeStats.possession, matchState.awayStats.possession)}
              {renderStatsRow("Remates Totales", matchState.homeStats.shots, matchState.awayStats.shots)}
              {renderStatsRow("Tiros al Arco", matchState.homeStats.shotsOnTarget, matchState.awayStats.shotsOnTarget)}
@@ -184,68 +274,92 @@ export const MatchView: React.FC<MatchViewProps> = ({ homeTeam, awayTeam, homePl
           </div>
         )}
         {activeTab === 'RATINGS' && (
-          <div className="flex-1 p-6 space-y-8 overflow-y-auto">
-             <RatingSection team={homeTeam} players={homePlayers} stats={matchState.playerStats} />
-             <div className="h-px bg-slate-300"></div>
-             <RatingSection team={awayTeam} players={awayPlayers} stats={matchState.playerStats} />
+          <div className="flex-1 overflow-y-auto bg-slate-200">
+             <PitchRatingView team={homeTeam} players={homePlayers} stats={matchState.playerStats} />
+             <div className="h-4 bg-slate-300 border-y border-slate-400"></div>
+             <PitchRatingView team={awayTeam} players={awayPlayers} stats={matchState.playerStats} isAway />
           </div>
-        )}
-      </div>
-
-      <div className="p-4 border-t border-slate-500 bg-slate-300 flex gap-3 shadow-lg z-30">
-        {matchState.minute < 90 && (
-          <button 
-            onClick={() => setMatchState(p => ({...p, isPlaying: !p.isPlaying}))} 
-            className={`flex-1 py-4 rounded-sm font-black text-xs uppercase tracking-[0.3em] shadow-md transition-all active:scale-95 ${matchState.isPlaying ? 'bg-slate-700 text-slate-200 hover:bg-slate-800' : 'bg-slate-950 text-white hover:bg-black'}`}
-          >
-            {matchState.isPlaying ? "PAUSA" : "REANUDAR"}
-          </button>
-        )}
-        {matchState.minute < 90 && (
-          <button 
-            onClick={handleInstantResult} 
-            className="px-8 py-4 border-2 border-slate-950 text-slate-950 hover:bg-slate-950 hover:text-white transition-all rounded-sm font-black text-xs uppercase tracking-widest shadow-md flex items-center gap-2"
-            title="Resultado Instantáneo"
-          >
-            <Zap size={14} fill="currentColor" />
-          </button>
-        )}
-        {matchState.minute >= 90 && (
-          <button 
-            onClick={() => onFinish(matchState.homeScore, matchState.awayScore, matchState.playerStats)} 
-            className="flex-1 py-4 bg-slate-950 text-white hover:bg-black rounded-sm font-black text-xs uppercase tracking-[0.4em] shadow-xl animate-pulse"
-          >
-            FINALIZAR PARTIDO
-          </button>
         )}
       </div>
     </div>
   );
 };
 
-const RatingSection = ({ team, players, stats }: any) => (
-  <div className="space-y-2">
-    <div className="flex items-center gap-3 mb-4">
-        <div className={`w-1.5 h-6 ${team.primaryColor} border border-slate-400/20`}></div>
-        <h3 className="text-xs font-black text-slate-600 uppercase tracking-widest">{team.name}</h3>
-    </div>
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-        {players.map((p: any) => {
-        const s = stats[p.id];
-        if (!s) return null;
-        return (
-            <div key={p.id} className="flex justify-between items-center p-3 bg-slate-200 border border-slate-400 rounded-sm text-[11px] group hover:border-slate-800 transition-colors">
-                <div className="flex items-center gap-2">
-                    <span className="font-black text-slate-950 uppercase italic tracking-tight">{p.name}</span>
-                    {s.goals > 0 && <span className="text-green-700 font-black border border-green-300 bg-green-50 px-1 rounded-sm text-[9px]">{s.goals} G</span>}
-                    {s.assists > 0 && <span className="text-blue-700 font-black border border-blue-300 bg-blue-50 px-1 rounded-sm text-[9px]">{s.assists} A</span>}
-                </div>
-                <span className={`font-mono font-black text-sm px-2 py-0.5 rounded shadow-inner ${s.rating >= 7.5 ? 'bg-green-100 text-green-800' : s.rating < 6 ? 'bg-red-100 text-red-800' : 'bg-slate-300 text-slate-900'}`}>
-                    {s.rating.toFixed(1)}
-                </span>
+const PitchRatingView = ({ team, players, stats, isAway }: { team: Club, players: Player[], stats: Record<string, PlayerMatchStats>, isAway?: boolean }) => {
+   // Identify starters and subs who played (subs have stats or were subbed in)
+   // For simulation simplicity, we rely on 'tacticalPosition' being present for starters.
+   // Subs that entered the game are usually swapped in the engine array, but here we passed initial arrays.
+   // Actually engine updates the arrays in place.
+   
+   const starters = players.filter(p => p.tacticalPosition !== undefined).sort((a,b) => (a.tacticalPosition||0) - (b.tacticalPosition||0));
+   const subs = players.filter(p => p.tacticalPosition === undefined && stats[p.id] && stats[p.id].participationPhrase); // Crude way to detect participation if stats exist
+
+   return (
+      <div className="p-4 bg-slate-200">
+         <div className={`p-2 mb-4 border-l-4 ${isAway ? 'border-red-500' : 'border-blue-500'} bg-slate-100 flex items-center justify-between`}>
+            <span className="font-black text-slate-900 uppercase tracking-widest">{team.name}</span>
+            <div className={`w-3 h-3 rounded-full ${team.primaryColor}`}></div>
+         </div>
+
+         <div className="flex flex-col items-center">
+            {/* Pitch Container */}
+            <div className="relative w-full max-w-[300px] aspect-[68/105] bg-[#1e3a29] border-4 border-white shadow-xl rounded-sm mb-4">
+               {/* SVG Pitch Lines */}
+               <svg width="100%" height="100%" viewBox="0 0 68 105" className="absolute inset-0 w-full h-full opacity-60">
+                  <rect width="100%" height="100%" fill="none" />
+                  <g fill="none" stroke="white" strokeWidth="1">
+                     <rect x="2" y="2" width="64" height="101" />
+                     <line x1="2" y1="52.5" x2="66" y2="52.5" />
+                     <circle cx="34" cy="52.5" r="9" />
+                     <rect x="19" y="2" width="30" height="16" />
+                     <rect x="19" y="87" width="30" height="16" />
+                  </g>
+               </svg>
+
+               {starters.map(p => {
+                  const s = stats[p.id];
+                  const coords = getPosStyle(p.tacticalPosition || 0, p.positions[0]);
+                  const rating = s ? s.rating.toFixed(1) : '-';
+                  const ratingColor = s && s.rating >= 7.5 ? 'bg-green-500' : s && s.rating < 6 ? 'bg-red-500' : 'bg-slate-800';
+                  
+                  return (
+                     <div 
+                        key={p.id}
+                        className="absolute flex flex-col items-center -translate-x-1/2 -translate-y-1/2 transition-all"
+                        style={{ top: coords.top, left: coords.left }}
+                     >
+                        <div className={`w-8 h-8 rounded-full border-2 border-white shadow-md flex items-center justify-center text-[9px] font-black text-white ${team.primaryColor}`}>
+                           {p.positions[0].substring(0, 2)}
+                        </div>
+                        <div className={`mt-0.5 px-1 rounded-sm text-[8px] font-black text-white ${ratingColor} shadow border border-white/20`}>
+                           {rating}
+                        </div>
+                        <span className="text-[7px] font-bold text-white uppercase drop-shadow-md truncate max-w-[60px] bg-black/40 px-1 rounded mt-0.5">{p.name.split(' ').pop()}</span>
+                     </div>
+                  );
+               })}
             </div>
-        );
-        })}
-    </div>
-  </div>
-);
+
+            {/* Substitutes List */}
+            {subs.length > 0 && (
+               <div className="w-full max-w-[300px] bg-slate-100 p-2 rounded-sm border border-slate-300">
+                  <h4 className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2 border-b border-slate-300 pb-1">Suplentes Ingresados</h4>
+                  <div className="space-y-1">
+                     {subs.map(p => {
+                        const s = stats[p.id];
+                        const rating = s ? s.rating.toFixed(1) : '-';
+                        const ratingColor = s && s.rating >= 7.5 ? 'text-green-600' : s && s.rating < 6 ? 'text-red-600' : 'text-slate-600';
+                        return (
+                           <div key={p.id} className="flex justify-between items-center text-[10px]">
+                              <span className="font-bold text-slate-900 uppercase">{p.name}</span>
+                              <span className={`font-mono font-black ${ratingColor}`}>{rating}</span>
+                           </div>
+                        );
+                     })}
+                  </div>
+               </div>
+            )}
+         </div>
+      </div>
+   );
+};

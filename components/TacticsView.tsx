@@ -1,7 +1,9 @@
+
 import React, { useState } from 'react';
 import { Player, Position, Club } from '../types';
 import { world } from '../services/worldManager';
-import { Shirt, X, GripVertical, Save, RefreshCw, ChevronDown, UserCheck } from 'lucide-react';
+import { Shirt, Save, UserCheck, AlertCircle, X, Check, Ambulance, AlertTriangle } from 'lucide-react';
+import { FMButton } from './FMUI';
 
 interface TacticsViewProps {
    players: Player[];
@@ -13,8 +15,15 @@ interface TacticsViewProps {
 export const TacticsView: React.FC<TacticsViewProps> = ({ players, club, onUpdatePlayer, onContextMenu }) => {
    const [draggedPlayerId, setDraggedPlayerId] = useState<string | null>(null);
    const [selectedTacticId, setSelectedTacticId] = useState<string>('');
+   
+   // Modal State
+   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+   const [newTacticName, setNewTacticName] = useState('');
 
-   const starters = players.filter(p => p.isStarter);
+   // We use a counter to force re-render when a tactic is saved
+   const [updateTrigger, setUpdateTrigger] = useState(0);
+
+   const starters = players.filter(p => p.isStarter && p.tacticalPosition !== undefined);
    const getPlayerAtSlot = (idx: number) => players.find(p => p.isStarter && p.tacticalPosition === idx);
    const isDragging = draggedPlayerId !== null;
 
@@ -23,10 +32,16 @@ export const TacticsView: React.FC<TacticsViewProps> = ({ players, club, onUpdat
       return `${club.primaryColor} text-white`;
    };
 
+   const isPlayerUnavailable = (p: Player) => {
+      return (p.injury && p.injury.daysLeft > 0) || (p.suspension && p.suspension.matchesLeft > 0);
+   };
+
    const handleLoadTactic = (tacticId: string) => {
       setSelectedTacticId(tacticId);
       const tactic = world.getTactics().find(t => t.id === tacticId);
       if (!tactic) return;
+      
+      // Clear current setup
       players.forEach(p => {
          if (p.isStarter) {
             p.isStarter = false;
@@ -34,26 +49,120 @@ export const TacticsView: React.FC<TacticsViewProps> = ({ players, club, onUpdat
             onUpdatePlayer(p);
          }
       });
+      
+      // Fill slots with the new tactic shape
       autoPickBestEleven(tactic.positions);
    };
 
+   const handleOpenSaveModal = () => {
+      // Validate we have 11 players
+      const currentStarters = players.filter(p => p.isStarter && p.tacticalPosition !== undefined);
+      
+      if (currentStarters.length !== 11) {
+         alert(`Error: Tienes ${currentStarters.length} jugadores en el campo. Necesitas exactamente 11 para guardar una táctica.`);
+         return;
+      }
+      
+      setNewTacticName('');
+      setIsSaveModalOpen(true);
+   };
+
+   const confirmSaveTactic = () => {
+      if (!newTacticName.trim()) return;
+
+      const currentStarters = players.filter(p => p.isStarter && p.tacticalPosition !== undefined);
+      // Save just the positions (slots) to recreate the shape later
+      const positions = currentStarters.map(p => p.tacticalPosition!).sort((a,b) => a - b);
+      
+      world.saveTactic(newTacticName.trim(), positions);
+      
+      // Force UI update to show new tactic in dropdown
+      setUpdateTrigger(prev => prev + 1);
+
+      // Automatically select the new tactic
+      const tactics = world.getTactics();
+      const newTactic = tactics[tactics.length - 1];
+      if (newTactic) {
+         setSelectedTacticId(newTactic.id);
+      }
+      
+      setIsSaveModalOpen(false);
+   };
+
    const autoPickBestEleven = (targetPositions?: number[]) => {
-      let slotsToFill = targetPositions || world.getTactics()[0].positions;
-      players.forEach(p => { p.isStarter = false; p.tacticalPosition = undefined; onUpdatePlayer(p); });
-      const availablePlayers = [...players].sort((a,b) => b.currentAbility - a.currentAbility);
+      // 1. Determine target positions (shape)
+      let slotsToFill = targetPositions;
+      if (!slotsToFill) {
+         const activeTactic = world.getTactics().find(t => t.id === selectedTacticId);
+         slotsToFill = activeTactic ? activeTactic.positions : world.getTactics()[0].positions;
+      }
+
+      // 2. Reset everyone first
+      players.forEach(p => { 
+          if (p.isStarter) {
+            p.isStarter = false; 
+            p.tacticalPosition = undefined; 
+            onUpdatePlayer(p); 
+          }
+      });
+
+      // 3. Filter eligible players
+      const availablePlayers = players.filter(p => !isPlayerUnavailable(p));
+
       const usedPlayerIds = new Set<string>();
+
+      const getRole = (slotIdx: number): 'GK' | 'DEF' | 'MID' | 'ATT' => {
+         if (slotIdx === 0) return 'GK';
+         if (slotIdx >= 1 && slotIdx <= 15) return 'DEF';
+         if (slotIdx >= 16 && slotIdx <= 25) return 'MID';
+         return 'ATT';
+      };
+
+      const playerFitsRole = (p: Player, role: 'GK' | 'DEF' | 'MID' | 'ATT'): boolean => {
+         if (role === 'GK') return p.positions.includes(Position.GK);
+         if (role === 'DEF') return p.positions.some(pos => pos.includes('DF') || pos === Position.SW);
+         if (role === 'MID') return p.positions.some(pos => pos.includes('M') || pos.includes('DM'));
+         if (role === 'ATT') return p.positions.some(pos => pos.includes('ST') || pos.includes('DL') || pos.includes('AM'));
+         return false;
+      };
+
       slotsToFill.slice(0, 11).forEach(slotIdx => {
-         const bestFit = availablePlayers.find(p => !usedPlayerIds.has(p.id));
+         const role = getRole(slotIdx);
+
+         const bestFit = availablePlayers
+            .filter(p => !usedPlayerIds.has(p.id) && playerFitsRole(p, role))
+            .sort((a, b) => {
+               const scoreA = a.currentAbility * (a.fitness / 100);
+               const scoreB = b.currentAbility * (b.fitness / 100);
+               return scoreB - scoreA;
+            })[0];
+
          if (bestFit) {
             bestFit.isStarter = true;
             bestFit.tacticalPosition = slotIdx;
             usedPlayerIds.add(bestFit.id);
             onUpdatePlayer(bestFit);
+         } else {
+            const panicPick = availablePlayers
+                .filter(p => !usedPlayerIds.has(p.id))
+                .sort((a, b) => (b.currentAbility * (b.fitness/100)) - (a.currentAbility * (a.fitness/100)))[0];
+            
+            if (panicPick) {
+               panicPick.isStarter = true;
+               panicPick.tacticalPosition = slotIdx;
+               usedPlayerIds.add(panicPick.id);
+               onUpdatePlayer(panicPick);
+            }
          }
       });
    };
 
    const handleDragStart = (e: React.DragEvent, playerId: string) => {
+      const p = players.find(pl => pl.id === playerId);
+      if (p && isPlayerUnavailable(p)) {
+         e.preventDefault();
+         return;
+      }
       e.dataTransfer.effectAllowed = 'move';
       setDraggedPlayerId(playerId);
    };
@@ -98,10 +207,10 @@ export const TacticsView: React.FC<TacticsViewProps> = ({ players, club, onUpdat
          >
             {player && (
                <div 
-                  draggable
+                  draggable={!isPlayerUnavailable(player)}
                   onDragStart={(e) => handleDragStart(e, player.id)}
                   onContextMenu={(e) => onContextMenu && onContextMenu(e, player)}
-                  className="z-20 flex flex-col items-center cursor-grab active:cursor-grabbing transform hover:scale-105 transition-transform"
+                  className={`z-20 flex flex-col items-center cursor-grab active:cursor-grabbing transform hover:scale-105 transition-transform ${isPlayerUnavailable(player) ? 'opacity-50 cursor-not-allowed grayscale' : ''}`}
                >
                   <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-white shadow-xl flex items-center justify-center font-black text-[9px] sm:text-[11px] ${getPlayerColor(player.positions)} ${player.positions[0] === Position.GK ? 'ring-2 ring-yellow-400/30' : ''}`}>
                      {player.positions[0].substring(0,2)}
@@ -115,24 +224,83 @@ export const TacticsView: React.FC<TacticsViewProps> = ({ players, club, onUpdat
       );
    };
 
+   // Always get the latest tactics from world directly
+   const allTactics = world.getTactics();
+
    return (
-      <div className="p-2 sm:p-4 h-full flex flex-col lg:flex-row gap-4 overflow-hidden bg-slate-400">
+      <div className="p-2 sm:p-4 h-full flex flex-col lg:flex-row gap-4 overflow-hidden bg-slate-400 relative">
+         {/* Save Tactic Modal */}
+         {isSaveModalOpen && (
+            <div className="absolute inset-0 z-50 bg-black/60 flex items-center justify-center backdrop-blur-sm p-4 animate-in fade-in duration-200">
+               <div className="bg-slate-200 w-full max-w-sm rounded-sm border border-slate-500 shadow-2xl p-6">
+                  <header className="flex justify-between items-center mb-6 border-b border-slate-400 pb-2">
+                     <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
+                        <Save size={16} /> Guardar Táctica
+                     </h3>
+                     <button onClick={() => setIsSaveModalOpen(false)} className="text-slate-500 hover:text-red-600 transition-colors"><X size={20}/></button>
+                  </header>
+                  
+                  <div className="space-y-4">
+                     <div>
+                        <label className="block text-[10px] font-black uppercase text-slate-500 mb-1">Nombre de la táctica</label>
+                        <input 
+                           autoFocus
+                           type="text" 
+                           placeholder="ej: 4-3-3 Ofensiva" 
+                           className="w-full bg-white border border-slate-400 rounded-sm px-3 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
+                           value={newTacticName}
+                           onChange={(e) => setNewTacticName(e.target.value)}
+                           onKeyDown={(e) => e.key === 'Enter' && confirmSaveTactic()}
+                        />
+                     </div>
+                     <div className="flex gap-2 pt-2">
+                        <FMButton variant="secondary" onClick={() => setIsSaveModalOpen(false)} className="flex-1">Cancelar</FMButton>
+                        <FMButton variant="primary" onClick={confirmSaveTactic} className="flex-1">
+                           <Check size={14} /> Guardar
+                        </FMButton>
+                     </div>
+                  </div>
+               </div>
+            </div>
+         )}
+
          <div className="flex-1 flex flex-col gap-3 min-h-0">
             {/* Toolbar */}
             <div className="bg-slate-200 p-2 rounded-sm border border-slate-500 flex flex-wrap gap-2 items-center justify-between shadow-sm">
                <div className="flex gap-2 items-center w-full sm:w-auto">
                   <select 
-                    className="flex-1 sm:flex-none bg-slate-100 text-slate-950 text-[10px] font-black uppercase border border-slate-400 rounded-sm px-3 py-2 outline-none"
-                    value={selectedTacticId} onChange={(e) => handleLoadTactic(e.target.value)}
+                    className="flex-1 sm:flex-none bg-slate-100 text-slate-950 text-[10px] font-black uppercase border border-slate-400 rounded-sm px-3 py-2 outline-none cursor-pointer hover:border-slate-600 transition-colors"
+                    value={selectedTacticId} 
+                    onChange={(e) => handleLoadTactic(e.target.value)}
                   >
                     <option value="" disabled>Formación</option>
-                    {world.getTactics().map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                    {allTactics.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                   </select>
-                  <button onClick={() => autoPickBestEleven()} className="bg-slate-950 text-white text-[10px] px-4 py-2 rounded-sm uppercase font-black tracking-widest hover:bg-black transition-colors">Elegir 11</button>
+                  
+                  <button 
+                     onClick={() => autoPickBestEleven()} 
+                     className="bg-slate-950 text-white text-[10px] px-4 py-2 rounded-sm uppercase font-black tracking-widest hover:bg-black transition-colors flex items-center gap-2 shadow-lg"
+                     title="Selecciona los mejores 11 jugadores"
+                  >
+                     <UserCheck size={14} /> Elegir 11
+                  </button>
+
+                  <button 
+                     onClick={handleOpenSaveModal} 
+                     className="bg-blue-600 text-white text-[10px] px-4 py-2 rounded-sm uppercase font-black tracking-widest hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-lg"
+                     title="Guardar la disposición actual"
+                  >
+                     <Save size={14} /> Guardar
+                  </button>
+               </div>
+               
+               <div className={`px-3 py-1.5 rounded-sm font-black text-[10px] uppercase border flex items-center gap-2 ${starters.length === 11 ? 'bg-green-100 text-green-800 border-green-400' : 'bg-red-100 text-red-800 border-red-400'}`}>
+                  {starters.length === 11 ? <UserCheck size={14} /> : <AlertCircle size={14} />}
+                  {starters.length}/11 Titulares
                </div>
             </div>
 
-            {/* Pitch - Adaptive for Mobile */}
+            {/* Pitch */}
             <div className="flex-1 bg-slate-300 rounded-sm border border-slate-500 flex items-center justify-center p-2 min-h-[350px] sm:min-h-[450px] overflow-hidden relative shadow-inner">
                <div className="relative w-full h-full max-w-[95%] sm:max-w-[55vh] aspect-[68/105] shadow-2xl bg-[#1e293b] border-2 border-slate-600 rounded-sm">
                   {/* Pitch markings */}
@@ -165,18 +333,32 @@ export const TacticsView: React.FC<TacticsViewProps> = ({ players, club, onUpdat
                <h3 className="text-slate-900 font-black text-[10px] flex items-center gap-2 uppercase tracking-widest"><Shirt size={14}/> BANQUILLO</h3>
             </header>
             <div className="flex-1 overflow-y-auto p-1.5 space-y-1 custom-scroll">
-               {players.sort((a,b) => b.currentAbility - a.currentAbility).map(p => (
-                  <div 
-                    key={p.id} 
-                    draggable 
-                    onDragStart={(e) => handleDragStart(e, p.id)} 
-                    onContextMenu={(e) => onContextMenu && onContextMenu(e, p)} 
-                    className={`flex items-center p-2 rounded-sm transition-all border ${p.isStarter ? 'opacity-30 grayscale bg-slate-300 border-slate-400' : 'bg-slate-100 border-slate-300 hover:border-slate-800 shadow-sm cursor-grab active:cursor-grabbing'}`}
-                  >
-                     <div className={`w-7 h-7 rounded-sm flex items-center justify-center font-black text-[9px] mr-2 shrink-0 ${getPlayerColor(p.positions)}`}>{p.positions[0].substring(0,2)}</div>
-                     <div className="flex-1 min-w-0"><p className="text-[11px] font-black text-slate-950 truncate uppercase italic">{p.name.split(' ').pop()}</p><div className="flex gap-2 text-[8px] text-slate-600 font-black uppercase"><span>{p.positions[0]}</span><span className="text-blue-800">★ {(p.currentAbility/40).toFixed(1)}</span></div></div>
-                  </div>
-               ))}
+               {players.sort((a,b) => b.currentAbility - a.currentAbility).map(p => {
+                  const unavailable = isPlayerUnavailable(p);
+                  return (
+                     <div 
+                        key={p.id} 
+                        draggable={!unavailable} 
+                        onDragStart={(e) => handleDragStart(e, p.id)} 
+                        onContextMenu={(e) => onContextMenu && onContextMenu(e, p)} 
+                        className={`flex items-center p-2 rounded-sm transition-all border ${p.isStarter ? 'opacity-30 grayscale bg-slate-300 border-slate-400' : 'bg-slate-100 border-slate-300 hover:border-slate-800 shadow-sm'} ${unavailable ? 'bg-red-50 border-red-200 opacity-70 cursor-not-allowed' : 'cursor-grab active:cursor-grabbing'}`}
+                     >
+                        <div className={`w-7 h-7 rounded-sm flex items-center justify-center font-black text-[9px] mr-2 shrink-0 ${getPlayerColor(p.positions)}`}>{p.positions[0].substring(0,2)}</div>
+                        <div className="flex-1 min-w-0">
+                           <div className="flex justify-between items-center">
+                              <p className="text-[11px] font-black text-slate-950 truncate uppercase italic">{p.name.split(' ').pop()}</p>
+                              {p.injury && <span className="text-[8px] bg-red-600 text-white px-1 rounded flex items-center gap-0.5"><Ambulance size={8}/> {p.injury.daysLeft}d</span>}
+                              {p.suspension && p.suspension.matchesLeft > 0 && <span className="text-[8px] bg-red-600 text-white px-1 rounded flex items-center gap-0.5"><AlertTriangle size={8}/> {p.suspension.matchesLeft}p</span>}
+                           </div>
+                           <div className="flex gap-2 text-[8px] text-slate-600 font-black uppercase">
+                              <span>{p.positions[0]}</span>
+                              <span className="text-blue-800">★ {(p.currentAbility/40).toFixed(1)}</span>
+                              <span className={`${p.fitness < 80 ? 'text-red-600' : 'text-green-700'}`}>{Math.round(p.fitness)}%</span>
+                           </div>
+                        </div>
+                     </div>
+                  );
+               })}
             </div>
          </div>
       </div>

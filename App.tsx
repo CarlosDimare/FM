@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { PlayerModal } from './components/PlayerModal';
@@ -19,10 +20,10 @@ import { TournamentHub } from './components/TournamentHub';
 import { world } from './services/worldManager';
 import { Scheduler } from './services/scheduler';
 import { LifecycleManager } from './services/lifecycleManager'; 
-import { Club, Player, Competition, Fixture, SquadType } from './types';
+import { Club, Player, Competition, Fixture, SquadType, InboxMessage } from './types';
 import { randomInt } from './services/utils';
 import { MatchSimulator } from './services/engine';
-import { RefreshCw, Globe, Play, Sun, Menu, Zap } from 'lucide-react';
+import { RefreshCw, Globe, Play, Sun, Menu, Zap, Mail, Trophy, ChevronRight } from 'lucide-react';
 import { FMButton } from './components/FMUI';
 
 type GameState = 'LOADING' | 'SETUP_LEAGUE' | 'SETUP_TEAM' | 'PLAYING';
@@ -51,7 +52,8 @@ const App: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date(2008, 7, 16)); 
   const [fixtures, setFixtures] = useState<Fixture[]>([]);
   const [nextFixture, setNextFixture] = useState<Fixture | null>(null);
-  const [seasonEndDate, setSeasonEndDate] = useState(new Date(2009, 5, 1));
+  // FIX: Extend season end to July 10th (Month 6) to allow ALL cup finals to finish.
+  const [seasonEndDate, setSeasonEndDate] = useState(new Date(2009, 6, 10));
 
   useEffect(() => {
     setTimeout(() => { setGameState('SETUP_LEAGUE'); }, 800);
@@ -73,12 +75,15 @@ const App: React.FC = () => {
 
   const initSeasonFixtures = (startFrom: Date) => {
     const allFixtures: Fixture[] = [];
+    
+    // Generate Leagues
     world.competitions.filter(c => c.type === 'LEAGUE').forEach(l => {
        const clubs = world.getClubsByLeague(l.id);
        ['SENIOR', 'RESERVE', 'U20'].forEach((st: any) => {
           allFixtures.push(...Scheduler.generateSeasonFixtures(l.id, clubs, startFrom, st));
        });
     });
+
     const cupDate = new Date(startFrom); cupDate.setMonth(startFrom.getMonth() + 1);
     while(cupDate.getDay() !== 3) cupDate.setDate(cupDate.getDate() + 1);
 
@@ -89,14 +94,68 @@ const App: React.FC = () => {
        allFixtures.push(...Scheduler.generateCupRound(copaArg.id, top32, cupDate, 'ROUND_OF_32'));
     }
 
+    // CONTINENTAL COMPETITIONS
     const libertadores = world.competitions.find(c => c.id === 'CONT_LIB');
-    if (libertadores) {
-       const argTeams = world.getClubsByLeague('L_ARG_1').sort((a,b) => b.reputation - a.reputation).slice(0, 5);
-       const contTeams = world.getClubsByLeague('L_SAM_OTHER'); 
-       const pool = [...argTeams, ...contTeams].slice(0, 32);
-       if (pool.length >= 32) {
-          allFixtures.push(...Scheduler.generateContinentalGroups(libertadores.id, pool, new Date(startFrom.getTime() + 1000 * 60 * 60 * 24 * 180))); 
-       }
+    const sudamericana = world.competitions.find(c => c.id === 'CONT_SUD');
+
+    // 1. Get Qualified Teams
+    let libArg = world.clubs.filter(c => c.qualifiedFor === 'CONT_LIB');
+    let sudArg = world.clubs.filter(c => c.qualifiedFor === 'CONT_SUD');
+
+    // Fallback for first season
+    if (libArg.length === 0 && sudArg.length === 0) {
+        const allArgTeams = world.getClubsByLeague('L_ARG_1').sort((a,b) => b.reputation - a.reputation);
+        libArg = allArgTeams.slice(0, 6);
+        sudArg = allArgTeams.slice(6, 12);
+    }
+
+    // 2. Fill pool
+    const allContTeams = world.getClubsByLeague('L_SAM_OTHER').sort((a,b) => b.reputation - a.reputation);
+    const allArgTeams = world.getClubsByLeague('L_ARG_1').sort((a,b) => b.reputation - a.reputation);
+
+    const targetSize = 32;
+
+    // Fill Libertadores
+    let libPool = [...libArg];
+    if (libPool.length < targetSize) {
+        const needed = targetSize - libPool.length;
+        const fromCont = allContTeams.slice(0, needed);
+        libPool = [...libPool, ...fromCont];
+        
+        if (libPool.length < targetSize) {
+            const moreNeeded = targetSize - libPool.length;
+            const moreArg = allArgTeams.filter(c => !libPool.includes(c)).slice(0, moreNeeded);
+            libPool = [...libPool, ...moreArg];
+        }
+    }
+
+    // Fill Sudamericana
+    let sudPool = [...sudArg];
+    const usedIds = new Set(libPool.map(c => c.id));
+    const availableCont = allContTeams.filter(c => !usedIds.has(c.id));
+    
+    if (sudPool.length < targetSize) {
+        const needed = targetSize - sudPool.length;
+        const fromCont = availableCont.slice(0, needed);
+        sudPool = [...sudPool, ...fromCont];
+
+         if (sudPool.length < targetSize) {
+            const moreNeeded = targetSize - sudPool.length;
+            const moreArg = allArgTeams.filter(c => !usedIds.has(c.id) && !sudPool.includes(c)).slice(0, moreNeeded);
+            sudPool = [...sudPool, ...moreArg];
+        }
+    }
+
+    if (libertadores && libPool.length >= 32) {
+       const finalLibPool = libPool.slice(0, 32);
+       const groupStageStart = new Date(startFrom.getTime() + 1000 * 60 * 60 * 24 * 150); 
+       allFixtures.push(...Scheduler.generateContinentalGroups(libertadores.id, finalLibPool, groupStageStart)); 
+    }
+
+    if (sudamericana && sudPool.length >= 32) {
+       const finalSudPool = sudPool.slice(0, 32); 
+       const groupStageStart = new Date(startFrom.getTime() + 1000 * 60 * 60 * 24 * 157); // Start 1 week later
+       allFixtures.push(...Scheduler.generateContinentalGroups(sudamericana.id, finalSudPool, groupStageStart));
     }
     
     const cwc = world.competitions.find(c => c.id === 'W_CLUB');
@@ -123,7 +182,6 @@ const App: React.FC = () => {
   };
 
   const advanceTime = () => {
-     // If we are in PreMatch, the button should start the match, not skip time
      if (currentView === 'PRE_MATCH') {
         handleStartMatch();
         return;
@@ -157,16 +215,16 @@ const App: React.FC = () => {
      setCurrentDate(nextDay);
      LifecycleManager.checkBirthdays(nextDay);
      LifecycleManager.recoverDailyFitness(); 
-     world.checkRenewalTriggers(nextDay);
+     world.checkRenewalTriggers(nextDay, userClub?.id);
      world.processTransferDecisions(nextDay);
      world.processAIActivity(nextDay); 
+     world.processDailyContracts(nextDay, userClub?.id); // Check contract expiry
      simulateDay(nextDay, userClub?.id);
      
      const newCupFixtures = LifecycleManager.processCompetitionProgress(fixtures, nextDay);
-     let updatedFixtures = fixtures;
      if (newCupFixtures.length > 0) {
-        updatedFixtures = [...fixtures, ...newCupFixtures];
         setFixtures(prev => [...prev, ...newCupFixtures]);
+        // Also check if new fixture is tomorrow for user
         if (userClub && !userMatchTomorrow) {
            userMatchTomorrow = newCupFixtures.find(f => 
               f.date.toDateString() === nextDay.toDateString() && 
@@ -175,7 +233,7 @@ const App: React.FC = () => {
         }
      }
 
-     if (userClub) updateNextFixture(updatedFixtures, nextDay, userClub.id);
+     if (userClub) updateNextFixture([...fixtures, ...newCupFixtures], nextDay, userClub.id);
      if (userMatchTomorrow) setView('PRE_MATCH');
      else if (nextFixture && nextFixture.date.toDateString() === nextDay.toDateString()) setView('PRE_MATCH');
      setForceUpdate(v => v + 1);
@@ -192,44 +250,93 @@ const App: React.FC = () => {
        f.played = true; f.homeScore = homeScore; f.awayScore = awayScore;
        const hEleven = world.selectBestEleven(f.homeTeamId, f.squadType);
        const aEleven = world.selectBestEleven(f.awayTeamId, f.squadType);
-       MatchSimulator.finalizeSeasonStats(hEleven, aEleven, stats, homeScore, awayScore);
+       MatchSimulator.finalizeSeasonStats(hEleven, aEleven, stats, homeScore, awayScore, f.competitionId);
+       LifecycleManager.processPostMatchSuspensions(f.homeTeamId, f.awayTeamId);
     });
   };
 
-  const startVacation = async () => {
-    if (!vacationTargetDate) return;
-    const target = new Date(vacationTargetDate);
+  const startVacation = async (targetOverride?: Date) => {
+    let target = targetOverride;
+    if (!target) {
+       if (!vacationTargetDate) return;
+       target = new Date(vacationTargetDate);
+    }
+    
     if (target <= currentDate) return;
     setIsSimulating(true);
+    
     let tempDate = new Date(currentDate);
+    let localFixtures = [...fixtures];
+
     while (tempDate < target) {
       tempDate.setDate(tempDate.getDate() + 1);
       setCurrentDate(new Date(tempDate));
       LifecycleManager.checkBirthdays(tempDate);
       LifecycleManager.recoverDailyFitness();
-      world.checkRenewalTriggers(tempDate);
+      world.checkRenewalTriggers(tempDate, userClub?.id);
       world.processTransferDecisions(tempDate);
       world.processAIActivity(tempDate);
-      simulateDay(tempDate);
-      const newCupFixtures = LifecycleManager.processCompetitionProgress(fixtures, tempDate);
+      world.processDailyContracts(tempDate, userClub?.id);
+      
+      // Simulate day using local list which is up to date in this closure
+      const dayFixtures = localFixtures.filter(f => 
+        f.date.toDateString() === tempDate.toDateString() && 
+        !f.played
+      );
+      dayFixtures.forEach(f => {
+         const { homeScore, awayScore, stats } = MatchSimulator.simulateQuickMatch(f.homeTeamId, f.awayTeamId, f.squadType);
+         f.played = true; f.homeScore = homeScore; f.awayScore = awayScore;
+         const hEleven = world.selectBestEleven(f.homeTeamId, f.squadType);
+         const aEleven = world.selectBestEleven(f.awayTeamId, f.squadType);
+         MatchSimulator.finalizeSeasonStats(hEleven, aEleven, stats, homeScore, awayScore, f.competitionId);
+         LifecycleManager.processPostMatchSuspensions(f.homeTeamId, f.awayTeamId);
+      });
+
+      const newCupFixtures = LifecycleManager.processCompetitionProgress(localFixtures, tempDate);
       if (newCupFixtures.length > 0) {
-         setFixtures(prev => [...prev, ...newCupFixtures]); 
-         fixtures.push(...newCupFixtures); 
+         localFixtures = [...localFixtures, ...newCupFixtures];
       }
-      if (tempDate >= seasonEndDate) { finishSeason(); break; }
+      
+      if (tempDate >= seasonEndDate) { 
+          // Sync state before finishing
+          setFixtures(localFixtures);
+          finishSeason(tempDate); 
+          // Close the vacation modal to show the summary
+          setIsSimulating(false);
+          setIsVacationModalOpen(false);
+          return;
+      }
       await new Promise(r => setTimeout(r, 20)); 
     }
-    if (userClub) updateNextFixture(fixtures, tempDate, userClub.id);
-    setIsSimulating(false); setIsVacationModalOpen(false); setView('HOME');
-    setForceUpdate(v => v + 1);
+    
+    // Sync state after loop if not finished season
+    if (tempDate < seasonEndDate) {
+        setFixtures(localFixtures);
+        if (userClub) updateNextFixture(localFixtures, tempDate, userClub.id);
+        setIsSimulating(false); setIsVacationModalOpen(false); setView('HOME');
+        setForceUpdate(v => v + 1);
+    }
   };
 
-  const finishSeason = () => {
-     const summaries = LifecycleManager.processEndOfSeason(fixtures);
+  const finishSeason = (dateOverride?: Date) => {
+     const refDate = dateOverride || currentDate;
+     // This will force-play pending finals if any exist
+     const summaries = LifecycleManager.processEndOfSeason(fixtures, userClub?.id, refDate);
      setSeasonSummary(summaries);
      if (userClub) setUserWonLeague(summaries.some(s => s.championId === userClub.id));
-     const nextSeasonStart = new Date(currentDate.getFullYear(), 7, 1);
-     setCurrentDate(nextSeasonStart); initSeasonFixtures(nextSeasonStart); setView('HOME');
+     
+     // Correctly advance to next season years
+     const currentYear = refDate.getFullYear();
+     // Start new season on July 20th
+     const nextSeasonStart = new Date(currentYear, 6, 20); 
+     // End new season on July 10th of NEXT year
+     const nextSeasonEnd = new Date(currentYear + 1, 6, 10); 
+
+     setSeasonEndDate(nextSeasonEnd); // IMPORTANT: Update the season end barrier
+     setCurrentDate(nextSeasonStart); 
+     
+     initSeasonFixtures(nextSeasonStart); 
+     setView('HOME');
   };
 
   const renderCurrentView = () => {
@@ -237,8 +344,9 @@ const App: React.FC = () => {
 
     const staticViews: Record<string, React.ReactNode> = {
         'HOME': (
-            <div className="p-4 space-y-4">
+            <div className="p-4 space-y-4 overflow-y-auto">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    {/* NEXT MATCH CARD */}
                     <div className="lg:col-span-2 bg-slate-200 p-6 rounded-sm border border-slate-500 shadow-sm relative overflow-hidden">
                         <div className="absolute top-0 right-0 p-4 opacity-10 text-slate-900"><Globe size={120} /></div>
                         <h3 className="text-slate-950 font-black uppercase text-[11px] tracking-wider mb-4 border-b border-slate-400 pb-1">Próximo Encuentro</h3>
@@ -251,13 +359,67 @@ const App: React.FC = () => {
                         ) : <p className="text-center text-slate-500 italic py-10">No hay partidos próximos.</p>}
                         <div className="mt-4 text-center text-slate-600 font-mono text-[10px] uppercase tracking-widest">{nextFixture?.date.toLocaleDateString()}</div>
                     </div>
+
+                    {/* COMPETITIONS STATUS CARD */}
+                    <div className="bg-slate-200 p-4 rounded-sm border border-slate-500 shadow-sm flex flex-col">
+                        <h3 className="text-slate-950 font-black uppercase text-[11px] tracking-wider mb-2 border-b border-slate-400 pb-1 flex items-center gap-2">
+                           <Trophy size={14} /> Competiciones
+                        </h3>
+                        <div className="flex-1 space-y-2 overflow-y-auto">
+                           {world.competitions.filter(c => {
+                              // Filter relevant competitions
+                              if (c.id === userClub.leagueId) return true;
+                              if (c.type !== 'LEAGUE') {
+                                 // Check if active in this cup
+                                 const compFixtures = fixtures.filter(f => f.competitionId === c.id);
+                                 return compFixtures.some(f => f.homeTeamId === userClub.id || f.awayTeamId === userClub.id);
+                              }
+                              return false;
+                           }).map(comp => {
+                              let statusText = "";
+                              if (comp.type === 'LEAGUE') {
+                                 const table = world.getLeagueTable(comp.id, fixtures, 'SENIOR');
+                                 const rank = table.findIndex(e => e.clubId === userClub.id) + 1;
+                                 statusText = rank > 0 ? `${rank}º Clasificado` : '-';
+                              } else {
+                                 // Basic logic to find latest stage reached
+                                 statusText = "En curso"; 
+                              }
+                              return (
+                                 <div key={comp.id} className="flex justify-between items-center p-2 bg-slate-300/50 rounded-sm border-l-4 border-slate-500">
+                                    <span className="text-[10px] font-black text-slate-700 uppercase truncate max-w-[100px]">{comp.name}</span>
+                                    <span className="text-[10px] font-bold text-slate-950 uppercase">{statusText}</span>
+                                 </div>
+                              );
+                           })}
+                        </div>
+                    </div>
+                </div>
+
+                {/* LATEST NEWS */}
+                <div className="bg-slate-100 p-4 rounded-sm border border-slate-400 shadow-sm">
+                   <h3 className="text-slate-950 font-black uppercase text-[11px] tracking-wider mb-4 border-b border-slate-300 pb-1 flex items-center justify-between">
+                      <div className="flex items-center gap-2"><Mail size={14} /> Últimas Noticias</div>
+                      <button onClick={() => setView('INBOX')} className="text-[9px] text-blue-600 hover:underline flex items-center">Ver todo <ChevronRight size={10} /></button>
+                   </h3>
+                   <div className="space-y-2">
+                      {world.inbox.slice(0, 3).map((msg, i) => (
+                         <div key={msg.id} className="p-3 bg-slate-200 border-l-4 border-slate-400 hover:bg-slate-300 transition-colors cursor-pointer" onClick={() => setView('INBOX')}>
+                            <div className="flex justify-between items-center mb-1">
+                               <span className={`text-[9px] font-black px-1.5 py-0.5 rounded text-white ${msg.category === 'MARKET' ? 'bg-blue-600' : msg.category === 'SQUAD' ? 'bg-green-600' : 'bg-slate-600'}`}>{msg.category}</span>
+                               <span className="text-[9px] text-slate-500 font-mono">{msg.date.toLocaleDateString()}</span>
+                            </div>
+                            <h4 className="text-xs font-black text-slate-900 uppercase truncate">{msg.subject}</h4>
+                            <p className="text-[10px] text-slate-600 truncate italic">{msg.body}</p>
+                         </div>
+                      ))}
+                      {world.inbox.length === 0 && <p className="text-center text-slate-400 italic text-xs py-4">No hay noticias recientes.</p>}
+                   </div>
                 </div>
             </div>
         ),
         'INBOX': <InboxView onUpdate={() => setForceUpdate(v => v + 1)} />,
         'TABLE': <div className="p-2 h-full flex flex-col"><LeagueTable entries={world.getLeagueTable(viewLeagueId || userClub.leagueId, fixtures, viewSquadType)} userClubId={userClub.id} allLeagues={world.getLeagues()} currentLeagueId={viewLeagueId || userClub.leagueId} onLeagueChange={setViewLeagueId} currentSquadType={viewSquadType} onSquadTypeChange={setViewSquadType} /></div>,
-        'PRE_MATCH': nextFixture ? <PreMatchView club={userClub} opponent={world.getClub(nextFixture.homeTeamId === userClub.id ? nextFixture.awayTeamId : nextFixture.homeTeamId)!} starters={world.getPlayersByClub(userClub.id).filter(p => p.isStarter && p.squad === 'SENIOR')} onStart={handleStartMatch} onGoToTactics={() => setView('SENIOR_TACTICS')} /> : <div>Error</div>,
-        'MATCH': nextFixture ? <MatchView homeTeam={nextFixture.homeTeamId === userClub.id ? userClub : world.getClub(nextFixture.homeTeamId)!} awayTeam={nextFixture.homeTeamId === userClub.id ? world.getClub(nextFixture.awayTeamId)! : userClub} homePlayers={world.getPlayersByClub(nextFixture.homeTeamId).filter(p => p.isStarter)} awayPlayers={world.getPlayersByClub(nextFixture.awayTeamId).filter(p => p.isStarter)} onFinish={(h,a,stats) => { nextFixture.played = true; nextFixture.homeScore = h; nextFixture.awayScore = a; MatchSimulator.finalizeSeasonStats(world.getPlayersByClub(nextFixture.homeTeamId).filter(p => p.isStarter), world.getPlayersByClub(nextFixture.awayTeamId).filter(p => p.isStarter), stats, h, a); setView('HOME'); updateNextFixture(fixtures, currentDate, userClub.id); setForceUpdate(v=>v+1); }} /> : <div>Error</div>,
         'MARKET': <MarketView userClubId={userClub.id} onSelectPlayer={setSelectedPlayer} currentDate={currentDate} />,
         'SEARCH': <SearchView onSelectPlayer={setSelectedPlayer} />,
         'NEGOTIATIONS': <NegotiationsView userClubId={userClub.id} onUpdate={() => setForceUpdate(v => v + 1)} currentDate={currentDate} />,
@@ -267,6 +429,28 @@ const App: React.FC = () => {
     };
 
     if (staticViews[currentView]) return staticViews[currentView];
+
+    // Safely resolve match clubs
+    let homeClub: Club | undefined;
+    let awayClub: Club | undefined;
+    if (nextFixture) {
+       homeClub = nextFixture.homeTeamId === userClub.id ? userClub : world.getClub(nextFixture.homeTeamId);
+       awayClub = nextFixture.awayTeamId === userClub.id ? userClub : world.getClub(nextFixture.awayTeamId);
+    }
+
+    if (currentView === 'PRE_MATCH') {
+        if (nextFixture && homeClub && awayClub) {
+            return <PreMatchView club={userClub} opponent={homeClub.id === userClub.id ? awayClub : homeClub} starters={world.getPlayersByClub(userClub.id).filter(p => p.isStarter && p.squad === 'SENIOR')} onStart={handleStartMatch} onGoToTactics={() => setView('SENIOR_TACTICS')} />;
+        }
+        return <div className="p-8 text-center text-slate-500 font-black uppercase">Error: Datos de partido no disponibles</div>;
+    }
+
+    if (currentView === 'MATCH') {
+        if (nextFixture && homeClub && awayClub) {
+            return <MatchView homeTeam={homeClub} awayTeam={awayClub} homePlayers={world.getPlayersByClub(nextFixture.homeTeamId).filter(p => p.isStarter)} awayPlayers={world.getPlayersByClub(nextFixture.awayTeamId).filter(p => p.isStarter)} onFinish={(h,a,stats) => { nextFixture.played = true; nextFixture.homeScore = h; nextFixture.awayScore = a; MatchSimulator.finalizeSeasonStats(world.getPlayersByClub(nextFixture.homeTeamId).filter(p => p.isStarter), world.getPlayersByClub(nextFixture.awayTeamId).filter(p => p.isStarter), stats, h, a, nextFixture.competitionId); LifecycleManager.processPostMatchSuspensions(nextFixture.homeTeamId, nextFixture.awayTeamId); setView('HOME'); updateNextFixture(fixtures, currentDate, userClub.id); setForceUpdate(v=>v+1); }} />;
+        }
+        return <div className="p-8 text-center text-slate-500 font-black uppercase">Error: Datos de partido no disponibles</div>;
+    }
 
     if (currentView.endsWith('_SQUAD')) {
         const type = currentView.split('_')[0] as SquadType;
@@ -308,9 +492,9 @@ const App: React.FC = () => {
     return null;
   };
 
-  if (gameState === 'LOADING') return <div className="h-screen w-screen bg-slate-400 flex items-center justify-center text-slate-950"><div className="animate-pulse flex flex-col items-center"><RefreshCw className="w-10 h-10 animate-spin mb-4 text-slate-900" /><h1 className="text-2xl font-black italic tracking-widest uppercase">FULBO MANASHER</h1></div></div>;
+  if (gameState === 'LOADING') return <div className="h-screen w-screen bg-slate-400 flex items-center justify-center text-slate-950"><div className="animate-pulse flex flex-col items-center"><RefreshCw className="w-10 h-10 animate-spin mb-4 text-slate-900" /><h1 className="text-2xl font-black italic tracking-widest uppercase">OpenFM Argentina</h1></div></div>;
   
-  if (gameState === 'SETUP_LEAGUE') return <div className="h-screen w-screen bg-slate-400 flex items-center justify-center p-4"><div className="max-w-4xl w-full bg-slate-200 rounded-sm p-10 border border-slate-600 text-center shadow-2xl"><h1 className="text-5xl font-black text-slate-950 mb-10 tracking-tighter italic uppercase">FULBO<span className="text-slate-500">MANASHER</span></h1><button onClick={() => { setSelectedLeague(world.competitions[0]); setGameState('SETUP_TEAM'); }} className="p-8 bg-slate-300 border border-slate-500 hover:bg-slate-400 rounded-sm text-left transition-all group shadow-md flex flex-col items-center text-center"><h3 className="text-2xl font-black text-slate-950 mb-1 italic uppercase">Liga Argentina</h3><p className="text-[10px] text-slate-600 font-black uppercase tracking-[0.3em]">Primera y Segunda División</p></button></div></div>;
+  if (gameState === 'SETUP_LEAGUE') return <div className="h-screen w-screen bg-slate-400 flex items-center justify-center p-4"><div className="max-w-4xl w-full bg-slate-200 rounded-sm p-10 border border-slate-600 text-center shadow-2xl"><h1 className="text-5xl font-black text-slate-950 mb-10 tracking-tighter italic uppercase">OPEN<span className="text-slate-500">FM</span></h1><button onClick={() => { setSelectedLeague(world.competitions[0]); setGameState('SETUP_TEAM'); }} className="p-8 bg-slate-300 border border-slate-500 hover:bg-slate-400 rounded-sm text-left transition-all group shadow-md flex flex-col items-center text-center"><h3 className="text-2xl font-black text-slate-950 mb-1 italic uppercase">Liga Argentina</h3><p className="text-[10px] text-slate-600 font-black uppercase tracking-[0.3em]">Primera y Segunda División</p></button></div></div>;
   
   if (gameState === 'SETUP_TEAM') return <div className="h-screen w-screen bg-slate-400 flex items-center justify-center p-4"><div className="max-w-6xl w-full bg-slate-200 rounded-sm p-10 border border-slate-600 shadow-2xl max-h-[90vh] overflow-y-auto"><h1 className="text-3xl font-black text-slate-950 mb-8 italic uppercase border-b-4 border-slate-950 pb-2">Elige tu Equipo</h1><div className="space-y-8"><div><h3 className="text-slate-950 font-black mb-4 uppercase text-[12px] tracking-widest bg-slate-300 p-2 rounded-sm border-l-8 border-slate-950">Liga Profesional</h3><div className="grid grid-cols-2 md:grid-cols-5 gap-4">{world.getClubsByLeague('L_ARG_1').map(c => <button key={c.id} onClick={() => { setUserClub(c); initSeasonFixtures(currentDate); updateNextFixture(fixtures, currentDate, c.id); setGameState('PLAYING'); }} className="p-4 bg-slate-100 hover:bg-slate-300 border border-slate-500 rounded-sm text-left transition-all shadow-sm group border-l-4 hover:border-l-blue-600"><div className={`w-3 h-3 rounded-full mb-3 ${c.primaryColor} border border-slate-500`}></div><p className="font-black text-slate-950 truncate text-[11px] uppercase group-hover:text-blue-700">{c.name}</p></button>)}</div></div><div><h3 className="text-slate-950 font-black mb-4 uppercase text-[12px] tracking-widest bg-slate-300 p-2 rounded-sm border-l-8 border-slate-950">Primera Nacional</h3><div className="grid grid-cols-2 md:grid-cols-5 gap-4">{world.getClubsByLeague('L_ARG_2').map(c => <button key={c.id} onClick={() => { setUserClub(c); initSeasonFixtures(currentDate); updateNextFixture(fixtures, currentDate, c.id); setGameState('PLAYING'); }} className="p-4 bg-slate-100 hover:bg-slate-300 border border-slate-500 rounded-sm text-left transition-all shadow-sm group border-l-4 hover:border-l-blue-600"><div className={`w-3 h-3 rounded-full mb-3 ${c.primaryColor} border border-slate-500`}></div><p className="font-black text-slate-950 truncate text-[11px] uppercase group-hover:text-blue-700">{c.name}</p></button>)}</div></div></div></div></div>;
 
@@ -319,39 +503,55 @@ const App: React.FC = () => {
 
   return (
     <div className="flex flex-col h-screen w-screen bg-slate-400 text-slate-950 overflow-hidden font-sans relative text-sm">
-      <div className={`h-1 w-full ${userClub?.primaryColor || 'bg-slate-800'}`}></div>
-      <header className="h-12 bg-gradient-to-b from-slate-200 to-slate-300 border-b border-slate-600 flex items-center justify-between px-4 shadow-sm z-[110] shrink-0">
+      <div className={`h-1 w-full ${userClub ? userClub.secondaryColor.replace('text-','bg-') : 'bg-slate-800'}`}></div>
+      
+      <header className={`h-12 border-b flex items-center justify-between px-4 shadow-sm z-[110] shrink-0 transition-colors duration-300 ${
+          userClub 
+            ? `${userClub.primaryColor} ${userClub.secondaryColor} border-black/20` 
+            : 'bg-gradient-to-b from-slate-200 to-slate-300 border-slate-600'
+      }`}>
         <div className="flex items-center gap-4">
            {!isMatchView && (
-             <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden text-slate-900 hover:opacity-80 transition-opacity">
+             <button onClick={() => setIsSidebarOpen(true)} className={`lg:hidden hover:opacity-80 transition-opacity ${userClub ? 'text-current' : 'text-slate-900'}`}>
                 <Menu size={20} />
              </button>
            )}
            <div className="flex items-center gap-3">
-              <div className={`w-1.5 h-8 ${userClub?.primaryColor || 'bg-slate-800'} border-x border-black/10`}></div>
-              <h1 className="text-sm font-black text-slate-950 uppercase tracking-tight italic drop-shadow-sm truncate max-w-[120px] sm:max-w-none">{userClub?.name}</h1>
+              <div className={`w-1.5 h-8 ${userClub ? userClub.secondaryColor.replace('text-', 'bg-') : 'bg-slate-800'} border-x border-black/10 opacity-80`}></div>
+              
+              <h1 className={`text-sm font-black uppercase tracking-tight italic drop-shadow-sm truncate max-w-[120px] sm:max-w-none ${userClub ? '' : 'text-slate-950'}`}>
+                {userClub?.name || "OpenFM"}
+              </h1>
            </div>
-           <div className="hidden sm:block w-px h-6 bg-slate-500 mx-2"></div>
-           <div className="hidden sm:block font-mono text-[11px] text-slate-700 font-black uppercase tracking-widest">{currentDate.toLocaleDateString()}</div>
+           
+           <div className={`hidden sm:block w-px h-6 mx-2 ${userClub ? 'bg-current opacity-30' : 'bg-slate-500'}`}></div>
+           
+           <div className={`hidden sm:block font-mono text-[11px] font-black uppercase tracking-widest ${userClub ? 'opacity-90' : 'text-slate-700'}`}>
+             {currentDate.toLocaleDateString()}
+           </div>
         </div>
 
-        {!isMatchView && (
-          <FMButton 
-            variant={isPreMatchView ? "primary" : "primary"} 
-            onClick={advanceTime}
-            className={isPreMatchView ? "bg-slate-950 text-white animate-pulse" : ""}
-          >
-              {isPreMatchView ? (
-                <> <Zap size={10} fill="currentColor" /> Jugar Partido </>
-              ) : (
-                <> <Play size={10} fill="currentColor" /> Continuar </>
-              )}
-          </FMButton>
-        )}
+        <div id="header-actions" className="flex items-center gap-2">
+          {!isMatchView && (
+            <FMButton 
+              variant={isPreMatchView ? "primary" : "primary"} 
+              onClick={advanceTime}
+              className={userClub ? (isPreMatchView ? "bg-slate-950 text-white animate-pulse border-white/40" : "bg-slate-900 text-white border-white/30 shadow-lg") : ""}
+            >
+                {isPreMatchView ? (
+                  <> <Zap size={10} fill="currentColor" /> Jugar Partido </>
+                ) : (
+                  <> <Play size={10} fill="currentColor" /> Continuar </>
+                )}
+            </FMButton>
+          )}
+        </div>
       </header>
 
       <div className="flex flex-1 overflow-hidden relative">
-        <Sidebar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} currentView={currentView} setView={(v) => { setView(v); setIsSidebarOpen(false); }} club={userClub!} onVacation={() => setIsVacationModalOpen(true)} />
+        {userClub && (
+            <Sidebar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} currentView={currentView} setView={(v) => { setView(v); setIsSidebarOpen(false); }} club={userClub} onVacation={() => setIsVacationModalOpen(true)} />
+        )}
         <main className="flex-1 flex flex-col min-w-0 bg-[#94a3b8] relative overflow-hidden">
           {renderCurrentView()}
         </main>
@@ -372,7 +572,8 @@ const App: React.FC = () => {
                   <h2 className="text-lg font-black text-slate-950 mb-6 uppercase italic tracking-widest border-b-2 border-slate-400 pb-2">Planificar Vacaciones</h2>
                   <div className="space-y-4">
                      <div className="text-left"><label className="text-[10px] font-black text-slate-600 uppercase block mb-1 tracking-widest">Fecha de Regreso:</label><input type="date" className="w-full bg-slate-100 border border-slate-500 rounded-sm px-3 py-2 text-slate-950 font-bold text-sm" value={vacationTargetDate} onChange={(e) => setVacationTargetDate(e.target.value)} /></div>
-                     <FMButton variant="vacation" onClick={startVacation} className="w-full py-4 text-xs">Iniciar Simulación</FMButton>
+                     <FMButton variant="vacation" onClick={() => startVacation()} className="w-full py-4 text-xs">Iniciar Simulación</FMButton>
+                     <FMButton variant="primary" onClick={() => startVacation(seasonEndDate)} className="w-full py-4 text-xs">Simular Temporada</FMButton>
                      <FMButton variant="secondary" onClick={() => setIsVacationModalOpen(false)} className="w-full">Cancelar</FMButton>
                   </div>
                </>
@@ -381,8 +582,8 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {selectedPlayer && <PlayerModal player={selectedPlayer} userClubId={userClub!.id} onClose={() => setSelectedPlayer(null)} currentDate={currentDate} />}
-      {contextMenu && <PlayerContextMenu player={contextMenu.player} x={contextMenu.x} y={contextMenu.y} onClose={() => setContextMenu(null)} onUpdate={() => setForceUpdate(v => v + 1)} />}
+      {selectedPlayer && userClub && <PlayerModal player={selectedPlayer} userClubId={userClub.id} onClose={() => setSelectedPlayer(null)} currentDate={currentDate} />}
+      {contextMenu && <PlayerContextMenu player={contextMenu.player} x={contextMenu.x} y={contextMenu.y} onClose={() => setContextMenu(null)} onUpdate={() => setForceUpdate(v => v + 1)} currentDate={currentDate} />}
       {seasonSummary && <SeasonSummaryModal summary={seasonSummary} userWonLeague={userWonLeague} onClose={() => { setSeasonSummary(null); setUserWonLeague(false); }} />}
     </div>
   );

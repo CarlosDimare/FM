@@ -3,7 +3,8 @@ import React, { useState, useMemo } from 'react';
 import { Competition, Fixture, Club, Player, SquadType } from '../types';
 import { world } from '../services/worldManager';
 import { LeagueTable } from './LeagueTable';
-import { Calendar, ListOrdered, Goal, Trophy, ChevronRight } from 'lucide-react';
+import { Calendar, ListOrdered, Goal, Trophy, ChevronRight, Zap, Star } from 'lucide-react';
+import { FMBox, FMTable, FMTableCell } from './FMUI';
 
 interface TournamentHubProps {
   competition: Competition;
@@ -23,6 +24,27 @@ export const TournamentHub: React.FC<TournamentHubProps> = ({ competition, fixtu
   const isCup = competition.type === 'CUP';
   const isContinental = competition.type.startsWith('CONTINENTAL');
 
+  // Stats Logic
+  const getCompStats = (p: Player) => p.statsByCompetition[competition.id] || { goals: 0, assists: 0, totalRating: 0, appearances: 0 };
+  
+  const statsPlayers = useMemo(() => {
+     // Get all players involved in clubs of this competition
+     const clubIds = new Set<string>();
+     const clubs = world.getClubsByCompetition(competition.id, fixtures);
+     if (clubs.length === 0) {
+        // Fallback for leagues not yet in fixture list but exist
+        world.getClubsByLeague(competition.id).forEach(c => clubIds.add(c.id));
+     } else {
+        clubs.forEach(c => clubIds.add(c.id));
+     }
+     
+     return world.players.filter(p => clubIds.has(p.clubId) && p.squad === 'SENIOR' && (p.statsByCompetition[competition.id]?.appearances || 0) > 0);
+  }, [competition.id, fixtures]);
+
+  const topScorers = useMemo(() => [...statsPlayers].sort((a,b) => getCompStats(b).goals - getCompStats(a).goals).slice(0, 10), [statsPlayers]);
+  const topAssisters = useMemo(() => [...statsPlayers].sort((a,b) => getCompStats(b).assists - getCompStats(a).assists).slice(0, 10), [statsPlayers]);
+  const topRated = useMemo(() => [...statsPlayers].filter(p => getCompStats(p).appearances > 2).sort((a,b) => (getCompStats(b).totalRating/getCompStats(b).appearances) - (getCompStats(a).totalRating/getCompStats(a).appearances)).slice(0, 10), [statsPlayers]);
+
   return (
     <div className="p-4 md:p-6 h-full flex flex-col gap-4 overflow-hidden">
       <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-slate-800 pb-4">
@@ -34,24 +56,27 @@ export const TournamentHub: React.FC<TournamentHubProps> = ({ competition, fixtu
           <p className="text-slate-400 text-xs font-bold uppercase tracking-[0.2em]">{competition.country} • Nivel {competition.tier}</p>
         </div>
 
-        <div className="flex bg-slate-800 p-1 rounded-xl border border-slate-700 w-full md:w-auto">
+        <div className="flex bg-slate-800 p-1 rounded-sm border border-slate-700 w-full md:w-auto">
           <button 
             onClick={() => setActiveTab('TABLE')}
-            className={`flex-1 md:px-6 py-2 text-[10px] font-black rounded-lg transition-all uppercase tracking-widest flex items-center justify-center gap-2 ${activeTab === 'TABLE' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+            className={`flex-1 md:px-6 py-2 rounded-sm transition-all flex items-center justify-center ${activeTab === 'TABLE' ? 'bg-slate-700 text-white shadow-lg border border-slate-600' : 'text-slate-500 hover:text-slate-300'}`}
+            title="Clasificación"
           >
-            <ListOrdered size={14} /> {isCup ? 'Cuadro' : 'Tabla'}
+            <ListOrdered size={18} />
           </button>
           <button 
             onClick={() => setActiveTab('CALENDAR')}
-            className={`flex-1 md:px-6 py-2 text-[10px] font-black rounded-lg transition-all uppercase tracking-widest flex items-center justify-center gap-2 ${activeTab === 'CALENDAR' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+            className={`flex-1 md:px-6 py-2 rounded-sm transition-all flex items-center justify-center ${activeTab === 'CALENDAR' ? 'bg-slate-700 text-white shadow-lg border border-slate-600' : 'text-slate-500 hover:text-slate-300'}`}
+            title="Calendario"
           >
-            <Calendar size={14} /> Partidos
+            <Calendar size={18} />
           </button>
           <button 
             onClick={() => setActiveTab('STATS')}
-            className={`flex-1 md:px-6 py-2 text-[10px] font-black rounded-lg transition-all uppercase tracking-widest flex items-center justify-center gap-2 ${activeTab === 'STATS' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+            className={`flex-1 md:px-6 py-2 rounded-sm transition-all flex items-center justify-center ${activeTab === 'STATS' ? 'bg-slate-700 text-white shadow-lg border border-slate-600' : 'text-slate-500 hover:text-slate-300'}`}
+            title="Estadísticas"
           >
-            <Goal size={14} /> Estadísticas
+            <Goal size={18} />
           </button>
         </div>
       </header>
@@ -124,13 +149,64 @@ export const TournamentHub: React.FC<TournamentHubProps> = ({ competition, fixtu
         )}
 
         {activeTab === 'STATS' && (
-           <div className="h-full">
-             <LeagueTable 
-                entries={[]} 
-                userClubId={userClubId}
-                currentLeagueId={competition.id}
-                currentSquadType='SENIOR'
-             />
+           <div className="h-full overflow-y-auto grid grid-cols-1 md:grid-cols-3 gap-4">
+              <FMBox title="Goleadores" noPadding className="h-full">
+                 <FMTable headers={['#', 'Nombre', 'Goles']} colWidths={['30px', 'auto', '40px']}>
+                    {topScorers.map((p, i) => (
+                       <tr key={p.id} className="hover:bg-slate-700/50">
+                          <FMTableCell className="text-center">{i+1}</FMTableCell>
+                          <FMTableCell>
+                             <div className="flex flex-col">
+                                <span className="font-bold truncate max-w-[120px]">{p.name}</span>
+                                <span className="text-[9px] text-slate-500 uppercase">{world.getClub(p.clubId)?.shortName}</span>
+                             </div>
+                          </FMTableCell>
+                          <FMTableCell className="text-center font-black text-green-400" isNumber>{getCompStats(p).goals}</FMTableCell>
+                       </tr>
+                    ))}
+                    {topScorers.length === 0 && <tr><td colSpan={3} className="p-4 text-center text-slate-500">Sin datos</td></tr>}
+                 </FMTable>
+              </FMBox>
+
+              <FMBox title="Asistencias" noPadding className="h-full">
+                 <FMTable headers={['#', 'Nombre', 'Asist']} colWidths={['30px', 'auto', '40px']}>
+                    {topAssisters.map((p, i) => (
+                       <tr key={p.id} className="hover:bg-slate-700/50">
+                          <FMTableCell className="text-center">{i+1}</FMTableCell>
+                          <FMTableCell>
+                             <div className="flex flex-col">
+                                <span className="font-bold truncate max-w-[120px]">{p.name}</span>
+                                <span className="text-[9px] text-slate-500 uppercase">{world.getClub(p.clubId)?.shortName}</span>
+                             </div>
+                          </FMTableCell>
+                          <FMTableCell className="text-center font-black text-blue-400" isNumber>{getCompStats(p).assists}</FMTableCell>
+                       </tr>
+                    ))}
+                    {topAssisters.length === 0 && <tr><td colSpan={3} className="p-4 text-center text-slate-500">Sin datos</td></tr>}
+                 </FMTable>
+              </FMBox>
+
+              <FMBox title="Calificación Media" noPadding className="h-full">
+                 <FMTable headers={['#', 'Nombre', 'Media']} colWidths={['30px', 'auto', '40px']}>
+                    {topRated.map((p, i) => {
+                       const stats = getCompStats(p);
+                       const avg = (stats.totalRating / stats.appearances).toFixed(2);
+                       return (
+                          <tr key={p.id} className="hover:bg-slate-700/50">
+                             <FMTableCell className="text-center">{i+1}</FMTableCell>
+                             <FMTableCell>
+                                <div className="flex flex-col">
+                                   <span className="font-bold truncate max-w-[120px]">{p.name}</span>
+                                   <span className="text-[9px] text-slate-500 uppercase">{world.getClub(p.clubId)?.shortName}</span>
+                                </div>
+                             </FMTableCell>
+                             <FMTableCell className="text-center font-black text-yellow-400" isNumber>{avg}</FMTableCell>
+                          </tr>
+                       );
+                    })}
+                    {topRated.length === 0 && <tr><td colSpan={3} className="p-4 text-center text-slate-500">Sin datos</td></tr>}
+                 </FMTable>
+              </FMBox>
            </div>
         )}
       </div>

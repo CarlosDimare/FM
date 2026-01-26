@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 /**
@@ -59,14 +60,22 @@ export const FMTable: React.FC<{
     headers: string[];
     children: React.ReactNode;
     colWidths?: string[];
-}> = ({ headers, children, colWidths }) => {
+    onHeaderClick?: (index: number) => void;
+}> = ({ headers, children, colWidths, onHeaderClick }) => {
     return (
         <div className="w-full h-full overflow-x-auto overflow-y-auto bg-slate-200 custom-scroll">
             <table className="w-full text-left border-collapse min-w-[600px] md:min-w-full">
                 <thead className="sticky top-0 bg-slate-300 z-10 text-[9px] uppercase font-black text-slate-800 shadow-sm border-b border-slate-500">
                     <tr>
                         {headers.map((h, i) => (
-                            <th key={i} className="px-2 py-2 bg-slate-400/20 whitespace-nowrap" style={{ width: colWidths?.[i] }}>{h}</th>
+                            <th 
+                                key={i} 
+                                className={`px-2 py-2 bg-slate-400/20 whitespace-nowrap ${onHeaderClick ? 'cursor-pointer hover:bg-slate-400/40 select-none' : ''}`} 
+                                style={{ width: colWidths?.[i] }}
+                                onClick={() => onHeaderClick && onHeaderClick(i)}
+                            >
+                                {h}
+                            </th>
                         ))}
                     </tr>
                 </thead>
@@ -78,8 +87,8 @@ export const FMTable: React.FC<{
     );
 };
 
-export const FMTableCell: React.FC<{ children: React.ReactNode; className?: string; isNumber?: boolean }> = ({ children, className = "", isNumber }) => (
-    <td className={`px-2 py-1.5 whitespace-nowrap ${isNumber ? 'font-mono text-slate-950 font-bold' : 'text-slate-950 font-bold'} ${className}`}>
+export const FMTableCell: React.FC<React.TdHTMLAttributes<HTMLTableCellElement> & { isNumber?: boolean }> = ({ children, className = "", isNumber, ...props }) => (
+    <td className={`px-2 py-1.5 whitespace-nowrap ${isNumber ? 'font-mono text-slate-950 font-bold' : 'text-slate-950 font-bold'} ${className}`} {...props}>
         {children}
     </td>
 );

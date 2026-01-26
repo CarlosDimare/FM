@@ -1,89 +1,26 @@
 
-// 1-20 Attribute Range type
-export type Attribute = number; 
-
 export enum Position {
-  GK = "POR",
-  SW = "LIB", DC = "DFC", DRC = "DF D/C", DLC = "DF I/C", DR = "DFD", DL = "DFI",
-  DM = "MCD", DMC = "MCD C", DMR = "MCD D", DML = "MCD I",
-  MC = "MC", MCR = "MC D", MCL = "MC I", MR = "MD", ML = "MI",
-  AM = "MP", AMC = "MP C", AMR = "MP D", AML = "MP I",
-  ST = "DL", STC = "DLC", STR = "DLD", STL = "DLI"
+  GK = 'GK', SW = 'SW', DC = 'DC', DLC = 'DLC', DRC = 'DRC', DR = 'DR', DL = 'DL',
+  DM = 'DM', DMC = 'DMC', DMR = 'DMR', DML = 'DML',
+  MC = 'MC', MCR = 'MCR', MCL = 'MCL', MR = 'MR', ML = 'ML',
+  AM = 'AM', AMC = 'AMC', AMR = 'AMR', AML = 'AML',
+  ST = 'ST', STC = 'STC', STR = 'STR', STL = 'STL'
 }
 
 export type SquadType = 'SENIOR' | 'RESERVE' | 'U20';
-export type TransferStatus = 'NONE' | 'TRANSFERABLE' | 'LOANABLE';
+export type MatchStage = 'REGULAR' | 'GROUP' | 'ROUND_OF_32' | 'ROUND_OF_16' | 'QUARTER_FINAL' | 'SEMI_FINAL' | 'FINAL';
 export type CompetitionType = 'LEAGUE' | 'CUP' | 'CONTINENTAL_ELITE' | 'CONTINENTAL_SMALL' | 'GLOBAL';
-
-// Inbox Types
+export type StaffRole = 'ASSISTANT_MANAGER' | 'PHYSIO' | 'FITNESS_COACH' | 'RESERVE_MANAGER' | 'YOUTH_MANAGER';
 export type MessageCategory = 'MARKET' | 'SQUAD' | 'STATEMENTS' | 'FINANCE' | 'COMPETITION';
+export type PitchZone = 'DEF' | 'MID' | 'ATT';
+export type Attribute = number;
+export type DialogueType = 'PRAISE_FORM' | 'CRITICIZE_FORM' | 'PRAISE_TRAINING' | 'WARN_CONDUCT' | 'DEMAND_MORE';
 
-export interface InboxMessage {
-  id: string;
-  date: Date;
-  category: MessageCategory;
-  subject: string;
-  body: string;
-  isRead: boolean;
-  relatedId?: string; // Player ID, Club ID or Competition ID
-}
-
-export interface TransferOffer {
-  id: string;
-  playerId: string;
-  fromClubId: string;
-  toClubId: string;
-  amount: number;
-  type: 'PURCHASE' | 'LOAN';
-  status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'COUNTER_OFFER' | 'COMPLETED';
-  date: Date;
-  responseDate: Date;
-  counterAmount?: number;
-  isViewed: boolean;
-}
-
-export interface MatchLog {
-  fixtureId: string;
-  date: Date;
-  homeTeamId: string;
-  awayTeamId: string;
-  homeScore: number;
-  awayScore: number;
-  events: MatchEvent[];
-  stats: Record<string, PlayerMatchStats>;
-}
-
-export const POSITION_ORDER: Record<string, number> = {
-  [Position.GK]: 1,
-  [Position.SW]: 2, [Position.DC]: 3, [Position.DRC]: 3, [Position.DLC]: 3, [Position.DR]: 4, [Position.DL]: 4,
-  [Position.DM]: 5, [Position.DMC]: 5, [Position.DMR]: 5, [Position.DML]: 5,
-  [Position.MC]: 6, [Position.MCR]: 6, [Position.MCL]: 6, [Position.MR]: 7, [Position.ML]: 7,
-  [Position.AM]: 8, [Position.AMC]: 8, [Position.AMR]: 8, [Position.AML]: 8,
-  [Position.ST]: 9, [Position.STC]: 9, [Position.STR]: 9, [Position.STL]: 9
-};
-
-export const ATTRIBUTE_LABELS: Record<string, string> = {
-  corners: "Córners", crossing: "Centros", dribbling: "Regate", finishing: "Remates", firstTouch: "Primer Toque", freeKickTaking: "Lanz. Faltas", heading: "Cabeceo", longShots: "Tiros Lejanos", longThrows: "Saques de Banda", marking: "Marcaje", passing: "Pases", penaltyTaking: "Penaltis", tackling: "Entradas", technique: "Técnica",
-  aggression: "Agresividad", anticipation: "Anticipación", bravery: "Valentía", composure: "Compostura", concentration: "Concentración", decisions: "Decisiones", determination: "Determinación", flair: "Talento", leadership: "Liderazgo", offTheBall: "Desmarques", positioning: "Colocación", teamwork: "Trabajo Equipo", vision: "Visión", workRate: "Sacrificio",
-  acceleration: "Aceleración", agility: "Agilidad", balance: "Equilibrio", jumpingReach: "Alcance Salto", naturalFitness: "Forma Natural", pace: "Velocidad", stamina: "Resistencia", strength: "Fuerza",
-  aerialReach: "Alcance Aéreo", commandOfArea: "Mando en Área", communication: "Comunicación", eccentricity: "Excentricidad", handling: "Agarre", kicking: "Saque", oneOnOnes: "Uno contra Uno", reflexes: "Reflejos", rushingOut: "Salidas", punching: "Despeje Puños", throwing: "Saque Mano",
-  coaching: "Entrenamiento", judgingAbility: "Juzgar Calidad", judgingPotential: "Juzgar Potencial", medical: "Medicina", physiotherapy: "Fisioterapia", motivation: "Motivación", manManagement: "Gestión Personal"
-};
-
-export interface PlayerMatchStats {
-  rating: number;
-  goals: number;
-  assists: number;
-  passesAttempted: number;
-  passesCompleted: number;
-  dribblesAttempted: number;
-  dribblesCompleted: number;
-  tacklesAttempted: number;
-  tacklesCompleted: number;
-  foulsCommitted: number;
-  shotsOnTarget: number;
-  saves: number;
-  participationPhrase?: string;
+export interface PlayerStats {
+  mental: Record<string, number>;
+  physical: Record<string, number>;
+  technical: Record<string, number>;
+  goalkeeping?: Record<string, number>;
 }
 
 export interface PlayerSeasonStats {
@@ -91,96 +28,46 @@ export interface PlayerSeasonStats {
   goals: number;
   assists: number;
   cleanSheets: number;
+  conceded: number;
   totalRating: number;
 }
-
-export interface PlayerStats {
-  mental: MentalAttributes;
-  technical: TechnicalAttributes;
-  physical: PhysicalAttributes;
-  goalkeeping?: GoalkeepingAttributes;
-}
-
-export interface MentalAttributes { [key: string]: Attribute }
-export interface TechnicalAttributes { [key: string]: Attribute }
-export interface PhysicalAttributes { [key: string]: Attribute }
-export interface GoalkeepingAttributes { [key: string]: Attribute }
 
 export interface Player {
   id: string;
   name: string;
   age: number;
   birthDate: Date;
-  nationality: string;
   height: number;
   weight: number;
+  nationality: string;
   positions: Position[];
   secondaryPositions: Position[];
   stats: PlayerStats;
   seasonStats: PlayerSeasonStats;
+  statsByCompetition: Record<string, PlayerSeasonStats>;
+  history: { year: number, clubId: string, stats: PlayerSeasonStats }[];
   currentAbility: number;
   potentialAbility: number;
+  reputation: number;
   fitness: number;
   morale: number;
   clubId: string;
+  isStarter: boolean;
   squad: SquadType;
-  isStarter: boolean; 
   tacticalPosition?: number;
-  salary: number;
   value: number;
-  transferStatus: TransferStatus;
-  injury?: {
-    type: string;
-    daysLeft: number;
-  };
-  suspension?: {
-    type: 'RED_CARD' | 'YELLOW_ACCUMULATION';
-    matchesLeft: number;
-  };
-  // Contract specific
-  contractExpiry: Date;
-  loyalty: number; // 1-20
-  negotiationAttempts: number;
-  requestedSalary?: number;
-  isUnhappyWithContract: boolean;
-  lastNegotiationDate?: Date;
-}
-
-export type StaffRole = 'ASSISTANT_MANAGER' | 'PHYSIO' | 'FITNESS_COACH' | 'RESERVE_MANAGER' | 'YOUTH_MANAGER';
-
-export interface StaffAttributes {
-  coaching: Attribute;
-  judgingAbility: Attribute;
-  judgingPotential: Attribute;
-  medical: Attribute;
-  physiotherapy: Attribute;
-  motivation: Attribute;
-  manManagement: Attribute;
-}
-
-export interface Staff {
-  id: string;
-  name: string;
-  age: number;
-  nationality: string;
-  role: StaffRole;
-  clubId: string;
-  attributes: StaffAttributes;
   salary: number;
-}
-
-export interface Tactic {
-  id: string;
-  name: string;
-  positions: number[];
-}
-
-export interface Competition {
-  id: string;
-  name: string;
-  country: string; // 'Europe' for continental
-  type: CompetitionType;
-  tier: number;
+  transferStatus: 'NONE' | 'TRANSFERABLE' | 'LOANABLE';
+  contractExpiry: Date;
+  loyalty: number;
+  negotiationAttempts: number;
+  isUnhappyWithContract: boolean;
+  developmentTrend?: 'STABLE' | 'RISING' | 'DECLINING';
+  yellowCardsAccumulated: number;
+  injury?: { type: string, daysLeft: number };
+  suspension?: { type: string, matchesLeft: number };
+  requestedSalary?: number;
+  lastNegotiationDate?: Date;
 }
 
 export interface ClubHonour {
@@ -192,7 +79,7 @@ export interface Club {
   id: string;
   name: string;
   shortName: string;
-  leagueId: string; // The primary league competition
+  leagueId: string;
   primaryColor: string;
   secondaryColor: string;
   finances: {
@@ -205,42 +92,15 @@ export interface Club {
   reputation: number;
   stadium: string;
   honours: ClubHonour[];
+  qualifiedFor?: string | null;
 }
 
-export type MatchStage = 'REGULAR' | 'GROUP' | 'ROUND_OF_32' | 'ROUND_OF_16' | 'QUARTER_FINAL' | 'SEMI_FINAL' | 'FINAL';
-
-export interface MatchEvent {
-  minute: number;
-  type: 'GOAL' | 'MISS' | 'CHANCE' | 'YELLOW_CARD' | 'RED_CARD' | 'INJURY' | 'SUB' | 'WHISTLE' | 'FOUL' | 'CORNER' | 'POSSESSION';
-  text: string;
-  teamId?: string;
-  playerId?: string;
-  assistId?: string;
-  subInId?: string;
-  subOutId?: string;
-  importance: 'LOW' | 'MEDIUM' | 'HIGH';
-  intensity: 1 | 2 | 3 | 4 | 5;
-}
-
-export interface MatchState {
-  isPlaying: boolean;
-  minute: number;
-  homeScore: number;
-  awayScore: number;
-  events: MatchEvent[];
-  homeTeamId: string;
-  awayTeamId: string;
-  homeStats: TeamMatchStats;
-  awayStats: TeamMatchStats;
-  playerStats: Record<string, PlayerMatchStats>;
-}
-
-export interface TeamMatchStats {
-  possession: number;
-  shots: number;
-  shotsOnTarget: number;
-  fouls: number;
-  corners: number;
+export interface Competition {
+  id: string;
+  name: string;
+  country: string;
+  type: CompetitionType;
+  tier: number;
 }
 
 export interface Fixture {
@@ -250,14 +110,14 @@ export interface Fixture {
   awayTeamId: string;
   date: Date;
   played: boolean;
-  homeScore?: number;
-  awayScore?: number;
   squadType: SquadType;
   stage: MatchStage;
-  isNeutral?: boolean;
-  groupId?: number; // 0-7 for Groups A-H
+  homeScore?: number;
+  awayScore?: number;
   penaltyHome?: number;
   penaltyAway?: number;
+  isNeutral?: boolean;
+  groupId?: number;
 }
 
 export interface TableEntry {
@@ -273,10 +133,174 @@ export interface TableEntry {
   points: number;
 }
 
-export type DialogueType = 'PRAISE_FORM' | 'CRITICIZE_FORM' | 'WARN_CONDUCT' | 'PRAISE_TRAINING' | 'DEMAND_MORE';
+export interface Tactic {
+  id: string;
+  name: string;
+  positions: number[];
+}
+
+export interface Staff {
+  id: string;
+  name: string;
+  age: number;
+  nationality: string;
+  role: StaffRole;
+  clubId: string;
+  attributes: {
+    coaching: number;
+    judgingAbility: number;
+    judgingPotential: number;
+    medical: number;
+    physiotherapy: number;
+    motivation: number;
+    manManagement: number;
+  };
+  salary: number;
+  contractExpiry: Date;
+  history: { year: number, clubId: string, role: StaffRole }[];
+}
+
+export interface TransferOffer {
+  id: string;
+  playerId: string;
+  fromClubId: string;
+  toClubId: string;
+  amount: number;
+  type: 'PURCHASE' | 'LOAN';
+  status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'COUNTER_OFFER' | 'COMPLETED';
+  date: Date;
+  responseDate: Date;
+  isViewed: boolean;
+  counterAmount?: number;
+}
+
+export interface InboxMessage {
+  id: string;
+  date: Date;
+  category: MessageCategory;
+  subject: string;
+  body: string;
+  isRead: boolean;
+  relatedId?: string;
+}
+
+export interface MatchLog {
+    // Placeholder if needed
+}
+
+export interface PlayerMatchStats {
+  rating: number;
+  goals: number;
+  assists: number;
+  shots: number;
+  passesAttempted: number;
+  passesCompleted: number;
+  dribblesAttempted: number;
+  dribblesCompleted: number;
+  tacklesAttempted: number;
+  tacklesCompleted: number;
+  foulsCommitted: number;
+  shotsOnTarget: number;
+  saves: number;
+  participationPhrase?: string;
+  sustainedInjury?: { type: string, days: number };
+  card?: 'YELLOW' | 'RED';
+}
+
+export interface TeamMatchStats {
+  possession: number;
+  shots: number;
+  shotsOnTarget: number;
+  fouls: number;
+  corners: number;
+}
+
+export interface MatchEvent {
+  minute: number;
+  type: 'GOAL' | 'CHANCE' | 'POSSESSION' | 'MISS' | 'YELLOW_CARD' | 'RED_CARD' | 'INJURY' | 'WHISTLE';
+  text: string;
+  teamId?: string;
+  playerId?: string;
+  importance: 'LOW' | 'MEDIUM' | 'HIGH';
+  intensity: 1 | 2 | 3 | 4 | 5;
+}
+
+export interface MatchState {
+    isPlaying: boolean;
+    minute: number;
+    homeScore: number;
+    awayScore: number;
+    events: MatchEvent[];
+    homeTeamId: string;
+    awayTeamId: string;
+    homeStats: TeamMatchStats;
+    awayStats: TeamMatchStats;
+    playerStats: Record<string, PlayerMatchStats>;
+}
 
 export interface DialogueResult {
   text: string;
   moraleChange: number;
-  reactionType: 'POSITIVE' | 'NEGATIVE' | 'NEUTRAL';
+  reactionType: 'POSITIVE' | 'NEUTRAL' | 'NEGATIVE';
 }
+
+export const ATTRIBUTE_LABELS: Record<string, string> = {
+  aggression: "Agresividad",
+  anticipation: "Anticipación",
+  bravery: "Valentía",
+  composure: "Serenidad",
+  concentration: "Concentración",
+  decisions: "Decisiones",
+  determination: "Determinación",
+  flair: "Talento",
+  leadership: "Liderazgo",
+  offTheBall: "Desmarque",
+  positioning: "Colocación",
+  teamwork: "Juego en Equipo",
+  vision: "Visión",
+  workRate: "Sacrificio",
+  corners: "Córners",
+  crossing: "Centros",
+  dribbling: "Regate",
+  finishing: "Remate",
+  firstTouch: "Control",
+  freeKickTaking: "Tiros Libres",
+  heading: "Cabeceo",
+  longShots: "Tiros Lejanos",
+  longThrows: "Saques Largos",
+  marking: "Marcaje",
+  passing: "Pases",
+  penaltyTaking: "Penaltis",
+  tackling: "Entradas",
+  technique: "Técnica",
+  acceleration: "Aceleración",
+  agility: "Agilidad",
+  balance: "Equilibrio",
+  jumpingReach: "Salto",
+  naturalFitness: "Recup. Física",
+  pace: "Velocidad",
+  stamina: "Resistencia",
+  strength: "Fuerza",
+  aerialReach: "Alcance Aéreo",
+  commandOfArea: "Mando en Área",
+  communication: "Comunicación",
+  eccentricity: "Excentricidad",
+  handling: "Blocaje",
+  kicking: "Saques Puerta",
+  oneOnOnes: "Uno contra Uno",
+  reflexes: "Reflejos",
+  rushingOut: "Salidas",
+  punching: "Puños",
+  throwing: "Saque con Mano",
+  coaching: "Entrenamiento",
+  judgingAbility: "Juzgar Calidad",
+  judgingPotential: "Juzgar Potencial",
+  medical: "Conoc. Médico",
+  physiotherapy: "Fisioterapia",
+  motivation: "Motivación",
+  manManagement: "Gestión Personal"
+};
+
+export const POSITION_ORDER: Record<string, number> = {
+   'GK': 1, 'SW': 2, 'DR': 3, 'DL': 4, 'DC': 5, 'WBR': 6, 'WBL': 7, 'DM': 8, 'MR': 9, 'ML': 10, 'MC': 11, 'AMR': 12, 'AML': 13, 'AMC': 14, 'ST': 15
+};

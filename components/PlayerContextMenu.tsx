@@ -1,6 +1,5 @@
 
 import React from 'react';
-// Fix: Import world from services/worldManager instead of types
 import { Player } from '../types';
 import { world } from '../services/worldManager';
 import { UserPlus, UserMinus, ArrowRightLeft, DollarSign, Clock, ShieldCheck, UserX } from 'lucide-react';
@@ -11,9 +10,10 @@ interface PlayerContextMenuProps {
   y: number;
   onClose: () => void;
   onUpdate: () => void;
+  currentDate?: Date;
 }
 
-export const PlayerContextMenu: React.FC<PlayerContextMenuProps> = ({ player, x, y, onClose, onUpdate }) => {
+export const PlayerContextMenu: React.FC<PlayerContextMenuProps> = ({ player, x, y, onClose, onUpdate, currentDate }) => {
   const handleAction = (action: () => void) => {
     action();
     onUpdate();
@@ -66,6 +66,13 @@ export const PlayerContextMenu: React.FC<PlayerContextMenuProps> = ({ player, x,
           label={player.transferStatus === 'LOANABLE' ? "Quitar de Cedibles" : "Declarar Cedible"} 
           onClick={() => handleAction(() => setStatus(player.transferStatus === 'LOANABLE' ? 'NONE' : 'LOANABLE'))} 
         />
+        {currentDate && player.clubId !== 'FREE_AGENT' && (
+           <ContextItem 
+             icon={<UserX size={14} className="text-red-500"/>} 
+             label="Rescindir Contrato" 
+             onClick={() => handleAction(() => world.rescindContract(player.id, currentDate))} 
+           />
+        )}
       </div>
     </div>
   );
