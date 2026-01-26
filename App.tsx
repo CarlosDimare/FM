@@ -447,7 +447,7 @@ const App: React.FC = () => {
 
     if (currentView === 'MATCH') {
         if (nextFixture && homeClub && awayClub) {
-            return <MatchView homeTeam={homeClub} awayTeam={awayClub} homePlayers={world.getPlayersByClub(nextFixture.homeTeamId).filter(p => p.isStarter)} awayPlayers={world.getPlayersByClub(nextFixture.awayTeamId).filter(p => p.isStarter)} onFinish={(h,a,stats) => { nextFixture.played = true; nextFixture.homeScore = h; nextFixture.awayScore = a; MatchSimulator.finalizeSeasonStats(world.getPlayersByClub(nextFixture.homeTeamId).filter(p => p.isStarter), world.getPlayersByClub(nextFixture.awayTeamId).filter(p => p.isStarter), stats, h, a, nextFixture.competitionId); LifecycleManager.processPostMatchSuspensions(nextFixture.homeTeamId, nextFixture.awayTeamId); setView('HOME'); updateNextFixture(fixtures, currentDate, userClub.id); setForceUpdate(v=>v+1); }} />;
+            return <MatchView currentDate={currentDate} homeTeam={homeClub} awayTeam={awayClub} homePlayers={world.getPlayersByClub(nextFixture.homeTeamId).filter(p => p.isStarter)} awayPlayers={world.getPlayersByClub(nextFixture.awayTeamId).filter(p => p.isStarter)} onFinish={(h,a,stats) => { nextFixture!.played = true; nextFixture!.homeScore = h; nextFixture!.awayScore = a; MatchSimulator.finalizeSeasonStats(world.getPlayersByClub(nextFixture!.homeTeamId).filter(p => p.isStarter), world.getPlayersByClub(nextFixture!.awayTeamId).filter(p => p.isStarter), stats, h, a, nextFixture!.competitionId); LifecycleManager.processPostMatchSuspensions(nextFixture!.homeTeamId, nextFixture!.awayTeamId); setView('HOME'); updateNextFixture(fixtures, currentDate, userClub.id); setForceUpdate(v=>v+1); }} />;
         }
         return <div className="p-8 text-center text-slate-500 font-black uppercase">Error: Datos de partido no disponibles</div>;
     }
@@ -492,9 +492,9 @@ const App: React.FC = () => {
     return null;
   };
 
-  if (gameState === 'LOADING') return <div className="h-screen w-screen bg-slate-400 flex items-center justify-center text-slate-950"><div className="animate-pulse flex flex-col items-center"><RefreshCw className="w-10 h-10 animate-spin mb-4 text-slate-900" /><h1 className="text-2xl font-black italic tracking-widest uppercase">OpenFM Argentina</h1></div></div>;
+  if (gameState === 'LOADING') return <div className="h-screen w-screen bg-slate-400 flex items-center justify-center text-slate-950"><div className="animate-pulse flex flex-col items-center"><RefreshCw className="w-10 h-10 animate-spin mb-4 text-slate-900" /><h1 className="text-2xl font-black italic tracking-widest uppercase">FM Argentina</h1></div></div>;
   
-  if (gameState === 'SETUP_LEAGUE') return <div className="h-screen w-screen bg-slate-400 flex items-center justify-center p-4"><div className="max-w-4xl w-full bg-slate-200 rounded-sm p-10 border border-slate-600 text-center shadow-2xl"><h1 className="text-5xl font-black text-slate-950 mb-10 tracking-tighter italic uppercase">OPEN<span className="text-slate-500">FM</span></h1><button onClick={() => { setSelectedLeague(world.competitions[0]); setGameState('SETUP_TEAM'); }} className="p-8 bg-slate-300 border border-slate-500 hover:bg-slate-400 rounded-sm text-left transition-all group shadow-md flex flex-col items-center text-center"><h3 className="text-2xl font-black text-slate-950 mb-1 italic uppercase">Liga Argentina</h3><p className="text-[10px] text-slate-600 font-black uppercase tracking-[0.3em]">Primera y Segunda División</p></button></div></div>;
+  if (gameState === 'SETUP_LEAGUE') return <div className="h-screen w-screen bg-slate-400 flex items-center justify-center p-4"><div className="max-w-4xl w-full bg-slate-200 rounded-sm p-10 border border-slate-600 text-center shadow-2xl"><h1 className="text-5xl font-black text-slate-950 mb-10 tracking-tighter italic uppercase">FM</h1><button onClick={() => { setSelectedLeague(world.competitions[0]); setGameState('SETUP_TEAM'); }} className="p-8 bg-slate-300 border border-slate-500 hover:bg-slate-400 rounded-sm text-left transition-all group shadow-md flex flex-col items-center text-center"><h3 className="text-2xl font-black text-slate-950 mb-1 italic uppercase">Liga Argentina</h3><p className="text-[10px] text-slate-600 font-black uppercase tracking-[0.3em]">Primera y Segunda División</p></button></div></div>;
   
   if (gameState === 'SETUP_TEAM') return <div className="h-screen w-screen bg-slate-400 flex items-center justify-center p-4"><div className="max-w-6xl w-full bg-slate-200 rounded-sm p-10 border border-slate-600 shadow-2xl max-h-[90vh] overflow-y-auto"><h1 className="text-3xl font-black text-slate-950 mb-8 italic uppercase border-b-4 border-slate-950 pb-2">Elige tu Equipo</h1><div className="space-y-8"><div><h3 className="text-slate-950 font-black mb-4 uppercase text-[12px] tracking-widest bg-slate-300 p-2 rounded-sm border-l-8 border-slate-950">Liga Profesional</h3><div className="grid grid-cols-2 md:grid-cols-5 gap-4">{world.getClubsByLeague('L_ARG_1').map(c => <button key={c.id} onClick={() => { setUserClub(c); initSeasonFixtures(currentDate); updateNextFixture(fixtures, currentDate, c.id); setGameState('PLAYING'); }} className="p-4 bg-slate-100 hover:bg-slate-300 border border-slate-500 rounded-sm text-left transition-all shadow-sm group border-l-4 hover:border-l-blue-600"><div className={`w-3 h-3 rounded-full mb-3 ${c.primaryColor} border border-slate-500`}></div><p className="font-black text-slate-950 truncate text-[11px] uppercase group-hover:text-blue-700">{c.name}</p></button>)}</div></div><div><h3 className="text-slate-950 font-black mb-4 uppercase text-[12px] tracking-widest bg-slate-300 p-2 rounded-sm border-l-8 border-slate-950">Primera Nacional</h3><div className="grid grid-cols-2 md:grid-cols-5 gap-4">{world.getClubsByLeague('L_ARG_2').map(c => <button key={c.id} onClick={() => { setUserClub(c); initSeasonFixtures(currentDate); updateNextFixture(fixtures, currentDate, c.id); setGameState('PLAYING'); }} className="p-4 bg-slate-100 hover:bg-slate-300 border border-slate-500 rounded-sm text-left transition-all shadow-sm group border-l-4 hover:border-l-blue-600"><div className={`w-3 h-3 rounded-full mb-3 ${c.primaryColor} border border-slate-500`}></div><p className="font-black text-slate-950 truncate text-[11px] uppercase group-hover:text-blue-700">{c.name}</p></button>)}</div></div></div></div></div>;
 
@@ -519,32 +519,33 @@ const App: React.FC = () => {
            <div className="flex items-center gap-3">
               <div className={`w-1.5 h-8 ${userClub ? userClub.secondaryColor.replace('text-', 'bg-') : 'bg-slate-800'} border-x border-black/10 opacity-80`}></div>
               
-              <h1 className={`text-sm font-black uppercase tracking-tight italic drop-shadow-sm truncate max-w-[120px] sm:max-w-none ${userClub ? '' : 'text-slate-950'}`}>
-                {userClub?.name || "OpenFM"}
+              <h1 className={`text-sm font-black uppercase tracking-tight italic drop-shadow-sm truncate max-w-[100px] sm:max-w-none ${userClub ? '' : 'text-slate-950'}`}>
+                {userClub?.name || "FM"}
               </h1>
-           </div>
-           
-           <div className={`hidden sm:block w-px h-6 mx-2 ${userClub ? 'bg-current opacity-30' : 'bg-slate-500'}`}></div>
-           
-           <div className={`hidden sm:block font-mono text-[11px] font-black uppercase tracking-widest ${userClub ? 'opacity-90' : 'text-slate-700'}`}>
-             {currentDate.toLocaleDateString()}
            </div>
         </div>
 
-        <div id="header-actions" className="flex items-center gap-2">
-          {!isMatchView && (
-            <FMButton 
-              variant={isPreMatchView ? "primary" : "primary"} 
-              onClick={advanceTime}
-              className={userClub ? (isPreMatchView ? "bg-slate-950 text-white animate-pulse border-white/40" : "bg-slate-900 text-white border-white/30 shadow-lg") : ""}
-            >
-                {isPreMatchView ? (
-                  <> <Zap size={10} fill="currentColor" /> Jugar Partido </>
-                ) : (
-                  <> <Play size={10} fill="currentColor" /> Continuar </>
-                )}
-            </FMButton>
-          )}
+        <div className="flex items-center gap-2 sm:gap-4">
+           {!isMatchView && (
+             <div className={`font-mono text-[10px] sm:text-[11px] font-black uppercase tracking-widest ${userClub ? 'opacity-90' : 'text-slate-700'}`}>
+               {currentDate.toLocaleDateString()}
+             </div>
+           )}
+           <div id="header-actions" className="flex items-center gap-2">
+             {!isMatchView && (
+               <FMButton 
+                 variant={isPreMatchView ? "primary" : "primary"} 
+                 onClick={advanceTime}
+                 className={userClub ? (isPreMatchView ? "bg-slate-950 text-white animate-pulse border-white/40" : "bg-slate-900 text-white border-white/30 shadow-lg") : ""}
+               >
+                   {isPreMatchView ? (
+                     <> <Zap size={10} fill="currentColor" /> Jugar Partido </>
+                   ) : (
+                     <> <Play size={10} fill="currentColor" /> Continuar </>
+                   )}
+               </FMButton>
+             )}
+           </div>
         </div>
       </header>
 

@@ -106,7 +106,6 @@ export const CONT_CLUBS: RealClubDef[] = [
     { name: "Dep. Táchira", short: "TAC", pCol: "bg-yellow-400", sCol: "text-black", stadium: "Pueblo Nuevo", rep: 6000 }
 ];
 
-// New list to populate Sudamericana with varied teams
 export const CONT_CLUBS_TIER2: RealClubDef[] = [
     // Brazil
     { name: "Athletico PR", short: "CAP", pCol: "bg-red-700", sCol: "text-black", stadium: "Ligga Arena", rep: 8400 },
@@ -148,12 +147,20 @@ export const WORLD_BOSSES: RealClubDef[] = [
    { name: "Bayern Munchen", short: "BAY", pCol: "bg-red-700", sCol: "text-white", stadium: "Allianz Arena", rep: 9600 }
 ];
 
+// Grid Logic Recap: 
+// 0=GK
+// Row 1 (Def): 1=DL, 2=DCL, 3=DC, 4=DCR, 5=DR
+// Row 2 (DM): 6-10
+// Row 3 (Mid): 11-15 (11=ML, 15=MR)
+// Row 4 (AM): 16-20
+// Row 5 (Att): 21-25
+// Row 6 (ST): 26-30
 export const TACTIC_PRESETS: Tactic[] = [
-   { id: '4-4-2', name: '4-4-2 Clásica', positions: [0, 6, 7, 8, 10, 16, 17, 19, 20, 27, 29] },
-   { id: '4-3-3', name: '4-3-3 Ofensiva', positions: [0, 6, 7, 8, 10, 13, 17, 19, 26, 28, 30] },
-   { id: '4-2-3-1', name: '4-2-3-1 Doble Pivote', positions: [0, 6, 7, 8, 10, 12, 14, 23, 26, 30, 28] },
-   { id: '3-5-2', name: '3-5-2 Carrileros', positions: [0, 7, 3, 9, 11, 15, 17, 18, 19, 27, 29] },
-   { id: '5-4-1', name: '5-4-1 Muro Defensivo', positions: [0, 6, 7, 3, 9, 10, 12, 14, 26, 30, 28] }
+   { id: '4-4-2', name: '4-4-2 Clásica', positions: [0, 1, 2, 4, 5, 11, 12, 14, 15, 27, 29] },
+   { id: '4-3-3', name: '4-3-3 Ofensiva', positions: [0, 1, 2, 4, 5, 8, 12, 14, 19, 20, 26] },
+   { id: '4-2-3-1', name: '4-2-3-1 Doble Pivote', positions: [0, 1, 2, 4, 5, 8, 10, 17, 19, 20, 26] },
+   { id: '3-5-2', name: '3-5-2 Carrileros', positions: [0, 2, 3, 4, 11, 15, 8, 12, 14, 27, 29] },
+   { id: '5-4-1', name: '5-4-1 Muro Defensivo', positions: [0, 1, 2, 3, 4, 5, 12, 14, 11, 15, 26] }
 ];
 
 export const NAMES_DB = {

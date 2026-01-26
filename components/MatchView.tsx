@@ -59,9 +59,10 @@ interface MatchViewProps {
   homePlayers: Player[];
   awayPlayers: Player[];
   onFinish: (homeScore: number, awayScore: number, matchStats: Record<string, PlayerMatchStats>) => void;
+  currentDate: Date;
 }
 
-export const MatchView: React.FC<MatchViewProps> = ({ homeTeam, awayTeam, homePlayers, awayPlayers, onFinish }) => {
+export const MatchView: React.FC<MatchViewProps> = ({ homeTeam, awayTeam, homePlayers, awayPlayers, onFinish, currentDate }) => {
   const [activeTab, setActiveTab] = useState<'LOG' | 'STATS' | 'RATINGS'>('LOG');
   const [matchState, setMatchState] = useState<MatchState & { manOfTheMatchId?: string }>(() => ({
     isPlaying: false,
@@ -194,13 +195,36 @@ export const MatchView: React.FC<MatchViewProps> = ({ homeTeam, awayTeam, homePl
     </div>
   );
 
+  const renderEventCard = (e: MatchEvent, i: number) => {
+    const team = e.teamId === homeTeam.id ? homeTeam : e.teamId === awayTeam.id ? awayTeam : null;
+    const isGoal = e.type === 'GOAL';
+    
+    const bgClass = team ? team.primaryColor : 'bg-slate-800';
+    const textClass = team ? team.secondaryColor : 'text-slate-300';
+    const borderClass = team ? team.primaryColor.replace('bg-', 'border-') : 'border-slate-600';
+
+    return (
+      <div 
+         key={i} 
+         className={`p-4 border-l-[8px] rounded-sm shadow-md flex items-start gap-4 transition-all animate-in slide-in-from-right-4 duration-500 ${bgClass} ${borderClass} ${isGoal ? 'ring-4 ring-yellow-500/50 ring-inset' : ''}`}
+     >
+         <span className={`font-mono font-black shrink-0 mt-1 opacity-70 ${textClass} text-xs`}>{e.minute}'</span>
+         <div className="flex-1">
+             <span className={`${getIntensityStyles(e.intensity)} ${textClass} block`}>{e.text}</span>
+             {isGoal && <div className="mt-2 text-yellow-400 font-black text-[10px] uppercase tracking-widest animate-bounce">¡GOLAZO!</div>}
+         </div>
+      </div>
+    );
+  };
+
   return (
     <div className="flex flex-col h-full bg-slate-300 overflow-hidden font-sans">
       {renderControls()}
       
       {/* Marcador Profesional */}
-      <div className="bg-slate-100 p-4 border-b border-slate-500 shadow-sm flex items-center z-20 relative">
-        <div className="flex-1 flex items-center justify-between">
+      <div className="bg-slate-100 p-4 border-b border-slate-500 shadow-sm flex flex-col items-center z-20 relative gap-1">
+        <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{currentDate.toLocaleDateString()}</div>
+        <div className="flex-1 flex items-center justify-between w-full">
             <div className="text-center w-1/3">
                 <h2 className="text-[9px] md:text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest truncate">{homeTeam.name}</h2>
                 <div className="text-4xl md:text-6xl font-black text-slate-950 tabular-nums drop-shadow-sm">{matchState.homeScore}</div>
@@ -239,38 +263,26 @@ export const MatchView: React.FC<MatchViewProps> = ({ homeTeam, awayTeam, homePl
                     <p className="font-black uppercase text-xs tracking-widest">Esperando el inicio...</p>
                 </div>
             )}
-            {matchState.events.map((e, i) => {
-               const team = e.teamId === homeTeam.id ? homeTeam : e.teamId === awayTeam.id ? awayTeam : null;
-               const isSpecial = e.intensity >= 4;
-               const isGoal = e.type === 'GOAL';
-               
-               // Use team colors for background and text
-               const bgClass = team ? team.primaryColor : 'bg-slate-800';
-               const textClass = team ? team.secondaryColor : 'text-slate-300';
-               const borderClass = team ? team.primaryColor.replace('bg-', 'border-') : 'border-slate-600';
-
-               return (
-                 <div 
-                    key={i} 
-                    className={`p-4 border-l-[8px] rounded-sm shadow-md flex items-start gap-4 transition-all animate-in slide-in-from-right-4 duration-500 ${bgClass} ${borderClass} ${isGoal ? 'ring-4 ring-yellow-500/50 ring-inset' : ''}`}
-                >
-                    <span className={`font-mono font-black shrink-0 mt-1 opacity-70 ${textClass} text-xs`}>{e.minute}'</span>
-                    <div className="flex-1">
-                        <span className={`${getIntensityStyles(e.intensity)} ${textClass} block`}>{e.text}</span>
-                        {isGoal && <div className="mt-2 text-yellow-400 font-black text-[10px] uppercase tracking-widest animate-bounce">¡GOLAZO!</div>}
-                    </div>
-                 </div>
-               );
-            })}
+            {matchState.events.map((e, i) => renderEventCard(e, i))}
           </div>
         )}
         {activeTab === 'STATS' && (
-          <div className="flex-1 p-6 md:p-10 space-y-8 overflow-y-auto">
-             {renderStatsRow("Posesión %", matchState.homeStats.possession, matchState.awayStats.possession)}
-             {renderStatsRow("Remates Totales", matchState.homeStats.shots, matchState.awayStats.shots)}
-             {renderStatsRow("Tiros al Arco", matchState.homeStats.shotsOnTarget, matchState.awayStats.shotsOnTarget)}
-             {renderStatsRow("Faltas Cometidas", matchState.homeStats.fouls, matchState.awayStats.fouls)}
-             {renderStatsRow("Córners", matchState.homeStats.corners, matchState.awayStats.corners)}
+          <div className="flex-1 p-6 md:p-10 space-y-8 overflow-y-auto flex flex-col">
+             <div className="space-y-8 flex-1">
+                {renderStatsRow("Posesión %", matchState.homeStats.possession, matchState.awayStats.possession)}
+                {renderStatsRow("Remates Totales", matchState.homeStats.shots, matchState.awayStats.shots)}
+                {renderStatsRow("Tiros al Arco", matchState.homeStats.shotsOnTarget, matchState.awayStats.shotsOnTarget)}
+                {renderStatsRow("Faltas Cometidas", matchState.homeStats.fouls, matchState.awayStats.fouls)}
+                {renderStatsRow("Córners", matchState.homeStats.corners, matchState.awayStats.corners)}
+             </div>
+
+             <div className="mt-auto pt-4 border-t border-slate-400">
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-2">Últimos Eventos</h4>
+                <div className="space-y-2">
+                    {matchState.events.slice(-3).reverse().map((e, i) => renderEventCard(e, i))}
+                    {matchState.events.length === 0 && <span className="text-xs text-slate-500 italic">El partido está por comenzar...</span>}
+                </div>
+             </div>
           </div>
         )}
         {activeTab === 'RATINGS' && (

@@ -53,6 +53,14 @@ const POS_MAP: Record<string, { top: string; left: string }> = {
   [Position.STL]: { top: "12%", left: "30%" }
 };
 
+const INTERACTION_LABELS: Record<string, string> = {
+   'PRAISE_FORM': 'Elogiar Forma',
+   'CRITICIZE_FORM': 'Criticar Forma',
+   'PRAISE_TRAINING': 'Elogiar Entrenamiento',
+   'DEMAND_MORE': 'Exigir Más',
+   'WARN_CONDUCT': 'Advertir Conducta'
+};
+
 const PositionMarker: React.FC<{ pos: Position, isPrimary?: boolean }> = ({ pos, isPrimary }) => {
    const coords = POS_MAP[pos];
    if (!coords) return null;
@@ -376,12 +384,12 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({ player, onClose, userC
             {activeTab === 'HISTORY' && (
                <div className="max-w-2xl mx-auto">
                   <FMTable 
-                     headers={['Año', 'Club', 'PJ', 'Gol', 'Asist', 'Media', ...(isGK ? ['Enc', 'Inv'] : [])]}
-                     colWidths={['60px', 'auto', '40px', '40px', '40px', '50px', ...(isGK ? ['40px', '40px'] : [])]}
+                     headers={['Año', 'Club', 'PJ', 'G', 'Ast', 'Med', ...(isGK ? ['Enc', 'Inv'] : [])]}
+                     colWidths={['45px', 'auto', '35px', '35px', '35px', '45px', ...(isGK ? ['35px', '35px'] : [])]}
                   >
                      <tr className="bg-blue-50 font-bold border-l-4 border-l-blue-600">
                         <FMTableCell className="font-mono text-blue-900">{currentDate.getFullYear()}</FMTableCell>
-                        <FMTableCell className="text-blue-900 italic">{club?.name}</FMTableCell>
+                        <FMTableCell className="text-blue-900 italic truncate max-w-[120px]">{club?.name}</FMTableCell>
                         <FMTableCell className="text-center" isNumber>{player.seasonStats.appearances}</FMTableCell>
                         <FMTableCell className="text-center text-green-700" isNumber>{player.seasonStats.goals}</FMTableCell>
                         <FMTableCell className="text-center text-blue-700" isNumber>{player.seasonStats.assists}</FMTableCell>
@@ -399,7 +407,7 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({ player, onClose, userC
                         return (
                            <tr key={i} className="hover:bg-slate-50 transition-colors">
                               <FMTableCell className="text-slate-500 font-mono">{h.year}</FMTableCell>
-                              <FMTableCell className="text-slate-700 italic">{hClub?.name || 'Desconocido'}</FMTableCell>
+                              <FMTableCell className="text-slate-700 italic truncate max-w-[120px]">{hClub?.name || 'Desconocido'}</FMTableCell>
                               <FMTableCell className="text-center" isNumber>{h.stats.appearances}</FMTableCell>
                               <FMTableCell className="text-center text-green-700/80" isNumber>{h.stats.goals}</FMTableCell>
                               <FMTableCell className="text-center text-blue-700/80" isNumber>{h.stats.assists}</FMTableCell>
@@ -426,8 +434,10 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({ player, onClose, userC
             {activeTab === 'INTERACTION' && (
                <div className="max-w-xl mx-auto space-y-8">
                   <div className="grid grid-cols-2 gap-3">
-                     {['PRAISE_FORM', 'CRITICIZE_FORM', 'PRAISE_TRAINING', 'DEMAND_MORE'].map(t => (
-                        <button key={t} onClick={() => handleInteraction(t as any)} className="p-4 border border-slate-200 rounded-sm text-[10px] font-black uppercase text-slate-600 hover:bg-slate-900 hover:text-white transition-all text-left">{t.replace('_', ' ')}</button>
+                     {Object.keys(INTERACTION_LABELS).map(t => (
+                        <button key={t} onClick={() => handleInteraction(t as any)} className="p-4 border border-slate-200 rounded-sm text-[10px] font-black uppercase text-slate-600 hover:bg-slate-900 hover:text-white transition-all text-left">
+                           {INTERACTION_LABELS[t]}
+                        </button>
                      ))}
                   </div>
                   {dialogueResult && <div className="p-6 bg-slate-50 border border-slate-200 italic text-slate-800 text-center font-medium">"{dialogueResult.text}"</div>}

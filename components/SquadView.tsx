@@ -22,7 +22,8 @@ export const SquadView: React.FC<SquadViewProps> = ({ players, onSelectPlayer, o
   };
 
   const handleHeaderClick = (index: number) => {
-      const fields: SortField[] = ['STATUS', 'POS', 'NAME', 'AGE', 'TREND', 'SAL', 'FIT', 'MOR', 'VAL'];
+      // Adjusted indices after removing Status column
+      const fields: SortField[] = ['POS', 'NAME', 'AGE', 'TREND', 'SAL', 'FIT', 'MOR', 'VAL'];
       if (fields[index]) handleSort(fields[index]);
   };
 
@@ -30,10 +31,7 @@ export const SquadView: React.FC<SquadViewProps> = ({ players, onSelectPlayer, o
     let res = 0;
     switch (sortField) {
       case 'STATUS': 
-          // Starters (-1) vs Bench (0) vs Others
-          // We want Starters first usually.
           res = (Number(b.isStarter) - Number(a.isStarter)); 
-          // If transfer status is involved? 
           break;
       case 'POS': res = (POSITION_ORDER[a.positions[0]] || 99) - (POSITION_ORDER[b.positions[0]] || 99); break;
       case 'NAME': res = a.name.localeCompare(b.name); break;
@@ -70,8 +68,8 @@ export const SquadView: React.FC<SquadViewProps> = ({ players, onSelectPlayer, o
     <div className="p-2 h-full flex flex-col gap-2 bg-slate-300">
       <FMBox title={`PLANTILLA (${players.length})`} className="flex-1" noPadding>
         <FMTable 
-            headers={['Estado', 'Pos', 'Nombre', 'Edad', 'Prog', 'Sueldo', 'Fis', 'Mor', 'Valor']}
-            colWidths={['60px', '50px', 'auto', '40px', '40px', '70px', '40px', '40px', '80px']}
+            headers={['Pos', 'Nombre', 'Edad', 'Prog', 'Sueldo', 'Fis', 'Mor', 'Valor']}
+            colWidths={['50px', 'auto', '40px', '40px', '70px', '40px', '40px', '80px']}
             onHeaderClick={handleHeaderClick}
         >
             {sortedPlayers.map(player => (
@@ -79,45 +77,40 @@ export const SquadView: React.FC<SquadViewProps> = ({ players, onSelectPlayer, o
                   key={player.id} 
                   onClick={() => onSelectPlayer(player)}
                   onContextMenu={(e) => onContextMenu && onContextMenu(e, player)}
-                  className={`hover:bg-slate-100 cursor-pointer transition-colors border-l-4 ${player.isStarter ? 'border-l-slate-900' : 'border-l-transparent'} ${player.transferStatus !== 'NONE' ? 'bg-orange-50/50' : ''} ${player.injury || (player.suspension?.matchesLeft || 0) > 0 ? 'bg-red-50/50' : ''}`}
+                  className={`hover:bg-slate-100 cursor-pointer transition-colors border-l-[6px] ${player.isStarter ? 'border-l-slate-900 bg-white' : 'border-l-transparent'} ${player.transferStatus !== 'NONE' ? 'bg-orange-50/50' : ''} ${player.injury || (player.suspension?.matchesLeft || 0) > 0 ? 'bg-red-50/50' : ''}`}
                 >
-                   {/* 1. STATUS */}
-                   <FMTableCell className="text-center">
-                        {player.isStarter ? <span className="text-slate-950 font-black text-[9px] uppercase tracking-tighter">TIT</span> : <span className="text-slate-400 font-bold text-[9px] uppercase tracking-tighter">SUPL</span>}
-                   </FMTableCell>
-                   
-                   {/* 2. POSITION */}
+                   {/* 1. POSITION */}
                    <FMTableCell className="font-mono font-bold text-slate-700 text-center">{player.positions[0]}</FMTableCell>
 
-                   {/* 3. NAME */}
-                   <FMTableCell className="font-black text-slate-950 uppercase italic tracking-tight truncate max-w-[120px] sm:max-w-none flex items-center gap-2">
+                   {/* 2. NAME */}
+                   <FMTableCell className="font-black text-slate-950 italic tracking-tight truncate max-w-[120px] sm:max-w-none flex items-center gap-2">
                       {player.name}
                       {player.transferStatus !== 'NONE' && <span className="text-[8px] text-orange-700 font-black border border-orange-300 bg-orange-100 px-1 rounded-sm">TRN</span>}
                       {getStatusIcon(player)}
                    </FMTableCell>
 
-                   {/* 4. AGE */}
+                   {/* 3. AGE */}
                    <FMTableCell className="text-center font-mono font-bold text-slate-900" isNumber>{player.age}</FMTableCell>
 
-                   {/* 5. TREND */}
+                   {/* 4. TREND */}
                    <FMTableCell className="text-center" title={player.developmentTrend || 'Estable'}>
                       {renderTrend(player.developmentTrend)}
                    </FMTableCell>
 
-                   {/* 6. SALARY */}
+                   {/* 5. SALARY */}
                    <FMTableCell className="text-right font-bold text-slate-600 hidden md:table-cell" isNumber>£{(player.salary / 1000).toFixed(0)}k</FMTableCell>
 
-                   {/* 7. FITNESS */}
+                   {/* 6. FITNESS */}
                    <FMTableCell className="text-center" isNumber>
                       <span className={`${player.fitness < 70 ? 'text-red-700' : 'text-slate-950'} font-black`}>{Math.round(player.fitness)}%</span>
                    </FMTableCell>
 
-                   {/* 8. MORALE */}
+                   {/* 7. MORALE */}
                    <FMTableCell className="text-center" isNumber>
                       <span className={`${player.morale < 60 ? 'text-red-700' : 'text-slate-950'} font-black`}>{Math.round(player.morale)}%</span>
                    </FMTableCell>
 
-                   {/* 9. VALUE */}
+                   {/* 8. VALUE */}
                    <FMTableCell className="text-right font-black hidden sm:table-cell" isNumber>£{(player.value / 1000000).toFixed(1)}M</FMTableCell>
                 </tr>
             ))}
