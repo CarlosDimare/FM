@@ -23,10 +23,10 @@ import { LifecycleManager } from './services/lifecycleManager';
 import { Club, Player, Competition, Fixture, SquadType, InboxMessage } from './types';
 import { randomInt } from './services/utils';
 import { MatchSimulator } from './services/engine';
-import { RefreshCw, Globe, Play, Sun, Menu, Zap, Mail, Trophy, ChevronRight } from 'lucide-react';
+import { RefreshCw, Globe, Play, Sun, Menu, Zap, Mail, Trophy, ChevronRight, User } from 'lucide-react';
 import { FMButton } from './components/FMUI';
 
-type GameState = 'LOADING' | 'SETUP_LEAGUE' | 'SETUP_TEAM' | 'PLAYING';
+type GameState = 'LOADING' | 'SETUP_USER' | 'SETUP_LEAGUE' | 'SETUP_TEAM' | 'PLAYING';
 
 const App: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>('LOADING');
@@ -35,6 +35,10 @@ const App: React.FC = () => {
   const [contextMenu, setContextMenu] = useState<{ player: Player, x: number, y: number } | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
+  // User Profile State
+  const [userName, setUserName] = useState("Manager");
+  const [userSurname, setUserSurname] = useState("Novato");
+
   const [selectedLeague, setSelectedLeague] = useState<Competition | null>(null);
   const [userClub, setUserClub] = useState<Club | null>(null);
   const [forceUpdate, setForceUpdate] = useState(0); 
@@ -56,7 +60,7 @@ const App: React.FC = () => {
   const [seasonEndDate, setSeasonEndDate] = useState(new Date(2009, 6, 10));
 
   useEffect(() => {
-    setTimeout(() => { setGameState('SETUP_LEAGUE'); }, 800);
+    setTimeout(() => { setGameState('SETUP_USER'); }, 800);
   }, []);
 
   const handleGlobalClick = useCallback(() => {
@@ -494,9 +498,30 @@ const App: React.FC = () => {
 
   if (gameState === 'LOADING') return <div className="h-screen w-screen bg-slate-400 flex items-center justify-center text-slate-950"><div className="animate-pulse flex flex-col items-center"><RefreshCw className="w-10 h-10 animate-spin mb-4 text-slate-900" /><h1 className="text-2xl font-black italic tracking-widest uppercase">FM Argentina</h1></div></div>;
   
+  if (gameState === 'SETUP_USER') return (
+    <div className="h-screen w-screen bg-slate-400 flex items-center justify-center p-4">
+      <div className="max-w-md w-full bg-slate-200 rounded-sm p-8 border border-slate-600 shadow-2xl">
+        <h1 className="text-3xl font-black text-slate-950 mb-6 italic uppercase border-b-4 border-slate-950 pb-2">Perfil del Manager</h1>
+        <div className="space-y-4">
+          <div>
+            <label className="text-[10px] font-black text-slate-600 uppercase block mb-1 tracking-widest">Nombre</label>
+            <input type="text" className="w-full bg-slate-100 border border-slate-500 rounded-sm px-4 py-3 text-slate-950 font-bold text-sm outline-none focus:border-slate-800" value={userName} onChange={(e) => setUserName(e.target.value)} />
+          </div>
+          <div>
+            <label className="text-[10px] font-black text-slate-600 uppercase block mb-1 tracking-widest">Apellido</label>
+            <input type="text" className="w-full bg-slate-100 border border-slate-500 rounded-sm px-4 py-3 text-slate-950 font-bold text-sm outline-none focus:border-slate-800" value={userSurname} onChange={(e) => setUserSurname(e.target.value)} />
+          </div>
+          <FMButton onClick={() => setGameState('SETUP_LEAGUE')} className="w-full py-4 mt-4">
+            CONTINUAR <ChevronRight size={14} />
+          </FMButton>
+        </div>
+      </div>
+    </div>
+  );
+
   if (gameState === 'SETUP_LEAGUE') return <div className="h-screen w-screen bg-slate-400 flex items-center justify-center p-4"><div className="max-w-4xl w-full bg-slate-200 rounded-sm p-10 border border-slate-600 text-center shadow-2xl"><h1 className="text-5xl font-black text-slate-950 mb-10 tracking-tighter italic uppercase">FM</h1><button onClick={() => { setSelectedLeague(world.competitions[0]); setGameState('SETUP_TEAM'); }} className="p-8 bg-slate-300 border border-slate-500 hover:bg-slate-400 rounded-sm text-left transition-all group shadow-md flex flex-col items-center text-center"><h3 className="text-2xl font-black text-slate-950 mb-1 italic uppercase">Liga Argentina</h3><p className="text-[10px] text-slate-600 font-black uppercase tracking-[0.3em]">Primera y Segunda División</p></button></div></div>;
   
-  if (gameState === 'SETUP_TEAM') return <div className="h-screen w-screen bg-slate-400 flex items-center justify-center p-4"><div className="max-w-6xl w-full bg-slate-200 rounded-sm p-10 border border-slate-600 shadow-2xl max-h-[90vh] overflow-y-auto"><h1 className="text-3xl font-black text-slate-950 mb-8 italic uppercase border-b-4 border-slate-950 pb-2">Elige tu Equipo</h1><div className="space-y-8"><div><h3 className="text-slate-950 font-black mb-4 uppercase text-[12px] tracking-widest bg-slate-300 p-2 rounded-sm border-l-8 border-slate-950">Liga Profesional</h3><div className="grid grid-cols-2 md:grid-cols-5 gap-4">{world.getClubsByLeague('L_ARG_1').map(c => <button key={c.id} onClick={() => { setUserClub(c); initSeasonFixtures(currentDate); updateNextFixture(fixtures, currentDate, c.id); setGameState('PLAYING'); }} className="p-4 bg-slate-100 hover:bg-slate-300 border border-slate-500 rounded-sm text-left transition-all shadow-sm group border-l-4 hover:border-l-blue-600"><div className={`w-3 h-3 rounded-full mb-3 ${c.primaryColor} border border-slate-500`}></div><p className="font-black text-slate-950 truncate text-[11px] uppercase group-hover:text-blue-700">{c.name}</p></button>)}</div></div><div><h3 className="text-slate-950 font-black mb-4 uppercase text-[12px] tracking-widest bg-slate-300 p-2 rounded-sm border-l-8 border-slate-950">Primera Nacional</h3><div className="grid grid-cols-2 md:grid-cols-5 gap-4">{world.getClubsByLeague('L_ARG_2').map(c => <button key={c.id} onClick={() => { setUserClub(c); initSeasonFixtures(currentDate); updateNextFixture(fixtures, currentDate, c.id); setGameState('PLAYING'); }} className="p-4 bg-slate-100 hover:bg-slate-300 border border-slate-500 rounded-sm text-left transition-all shadow-sm group border-l-4 hover:border-l-blue-600"><div className={`w-3 h-3 rounded-full mb-3 ${c.primaryColor} border border-slate-500`}></div><p className="font-black text-slate-950 truncate text-[11px] uppercase group-hover:text-blue-700">{c.name}</p></button>)}</div></div></div></div></div>;
+  if (gameState === 'SETUP_TEAM') return <div className="h-screen w-screen bg-slate-400 flex items-center justify-center p-4"><div className="max-w-6xl w-full bg-slate-200 rounded-sm p-10 border border-slate-600 shadow-2xl max-h-[90vh] overflow-y-auto"><h1 className="text-3xl font-black text-slate-950 mb-8 italic uppercase border-b-4 border-slate-950 pb-2">Elige tu Equipo</h1><div className="space-y-8"><div><h3 className="text-slate-950 font-black mb-4 uppercase text-[12px] tracking-widest bg-slate-300 p-2 rounded-sm border-l-8 border-slate-950">Liga Profesional</h3><div className="grid grid-cols-2 md:grid-cols-5 gap-4">{world.getClubsByLeague('L_ARG_1').map(c => <button key={c.id} onClick={() => { setUserClub(c); world.createHumanManager(c.id, `${userName} ${userSurname}`); initSeasonFixtures(currentDate); updateNextFixture(fixtures, currentDate, c.id); setGameState('PLAYING'); }} className="p-4 bg-slate-100 hover:bg-slate-300 border border-slate-500 rounded-sm text-left transition-all shadow-sm group border-l-4 hover:border-l-blue-600"><div className={`w-3 h-3 rounded-full mb-3 ${c.primaryColor} border border-slate-500`}></div><p className="font-black text-slate-950 truncate text-[11px] uppercase group-hover:text-blue-700">{c.name}</p></button>)}</div></div><div><h3 className="text-slate-950 font-black mb-4 uppercase text-[12px] tracking-widest bg-slate-300 p-2 rounded-sm border-l-8 border-slate-950">Primera Nacional</h3><div className="grid grid-cols-2 md:grid-cols-5 gap-4">{world.getClubsByLeague('L_ARG_2').map(c => <button key={c.id} onClick={() => { setUserClub(c); world.createHumanManager(c.id, `${userName} ${userSurname}`); initSeasonFixtures(currentDate); updateNextFixture(fixtures, currentDate, c.id); setGameState('PLAYING'); }} className="p-4 bg-slate-100 hover:bg-slate-300 border border-slate-500 rounded-sm text-left transition-all shadow-sm group border-l-4 hover:border-l-blue-600"><div className={`w-3 h-3 rounded-full mb-3 ${c.primaryColor} border border-slate-500`}></div><p className="font-black text-slate-950 truncate text-[11px] uppercase group-hover:text-blue-700">{c.name}</p></button>)}</div></div></div></div></div>;
 
   const isMatchView = currentView === 'MATCH';
   const isPreMatchView = currentView === 'PRE_MATCH';

@@ -156,6 +156,30 @@ export class WorldManager {
     });
   }
 
+  createHumanManager(clubId: string, name: string) {
+     const manager: Staff = {
+        id: generateUUID(),
+        name: name,
+        age: 35,
+        nationality: "Argentina", // Default
+        role: 'HEAD_COACH',
+        clubId: clubId,
+        attributes: {
+           coaching: 12,
+           judgingAbility: 12,
+           judgingPotential: 11,
+           medical: 2,
+           physiotherapy: 2,
+           motivation: 14,
+           manManagement: 13
+        },
+        salary: 12000,
+        contractExpiry: new Date(2009, 5, 30),
+        history: []
+     };
+     this.staff.unshift(manager); // Add to beginning so it appears first in list if not sorted
+  }
+
   createRandomPlayer(clubId: string, primaryPos: Position, minAge = 16, maxAge = 36, baseYear: number = 2008): Player {
     const club = this.getClub(clubId);
     const repBase = club ? club.reputation / 500 : 10;
@@ -303,21 +327,6 @@ export class WorldManager {
      const buyer = buyers[randomInt(0, buyers.length - 1)];
      if (!buyer) return;
 
-     // Identify User's Club (Assume human is managing the one with 'isUser' flag? No, we check inbox context usually, but here we scan all players)
-     // Since we don't have a direct 'userClub' reference in this class, we infer it or scan players belonging to user logic.
-     // For this simulation, let's assume we scan players who are NOT in AI clubs (but here all are mixed).
-     // We will target players based on ID or just pick a random player and if it belongs to user (checked in UI), it shows.
-     // Better: We iterate players who are listed or high performance.
-     
-     const userPlayers = this.players.filter(p => p.clubId === this.players[0].clubId); // Hack: Assuming p[0] is in user club or we need to pass userClubId. 
-     // Limitation: WorldManager doesn't know UserClubId. 
-     // FIX: We will just act on ALL players. If the player belongs to the user, they get an inbox message. 
-     // If they belong to AI, it goes to background transfers.
-     
-     // However, to make it specific to "Eventos producidos por la IA", we need to simulate offers specifically for the "Player Context".
-     // Let's iterate over ALL clubs to find potential bids.
-     
-     // Pick a target from any other club
      const potentialTargets = this.players.filter(p => p.clubId !== buyer.id && p.clubId !== 'FREE_AGENT' && p.currentAbility > 120);
      const target = potentialTargets[randomInt(0, potentialTargets.length - 1)];
      if (!target) return;
@@ -338,7 +347,6 @@ export class WorldManager {
         const exists = this.offers.some(o => o.playerId === target.id && o.fromClubId === buyer.id && o.status === 'PENDING');
         if (!exists) {
            this.makeTransferOffer(target.id, buyer.id, offerAmount, 'PURCHASE', currentDate);
-           // Notification is handled in makeTransferOffer if it involves user club (we will add check there)
         }
      } 
      // AI Logic: Loan if listed loanable and young
@@ -397,8 +405,6 @@ export class WorldManager {
         if (reaction < 0.6) {
            target.isUnhappyWithContract = true;
            target.morale = Math.max(0, target.morale - 20);
-           // Check if user player
-           // Note: We don't have userClubId here, but we can check via inbox logic later or assume UI handles highlighting
            this.addInboxMessage('STATEMENTS', 'Rumores de Fichaje', `El ${bigClub.name} ha declarado públicamente su interés en ${target.name}. El jugador podría verse tentado.`, currentDate, target.id);
         }
      }
@@ -406,13 +412,6 @@ export class WorldManager {
 
   // 4. BACKGROUND TRANSFERS (Refined)
   private processBackgroundTransfers(currentDate: Date) {
-     // AI vs AI transfers that complete instantly or negotiate in background
-     // Reuse logic from previous version but ensure it respects the TransferOffer flow for realism if desired, 
-     // OR keep it instant for performance but filtered better.
-     
-     // Let's stick to the "Need-based" instant transfer for AI-AI to keep simulation fast, 
-     // but ensure they pick from TRANSFER LISTED players primarily.
-     
      const buyer = this.clubs.filter(c => c.finances.transferBudget > 1000000)[randomInt(0, 10)];
      if (!buyer) return;
 
@@ -621,35 +620,23 @@ export class WorldManager {
     const responseDate = new Date(currentDate);
     responseDate.setDate(responseDate.getDate() + randomInt(2, 4));
     
+    // Check if targeting a user-controlled club. 
+    // Simplified: If responseDate is infinite, user must respond.
+    // For now, let's keep it simple.
+    
     const offer: TransferOffer = { id: generateUUID(), playerId, fromClubId, toClubId: player.clubId, amount, type, status: 'PENDING', date: new Date(currentDate), responseDate, isViewed: false };
     this.offers.push(offer);
-
-    // Notify User if it's an incoming offer for their player
-    // NOTE: This assumes we can't easily check 'isUserClub' here without passing it, but in the UI we filter by userClubId.
-    // The UI (MarketView/NegotiationsView) will pick this up automatically.
-    // However, to generate a notification (Inbox), we check if the recipient is the user in the context of the game loop.
-    // Since this method is generic, let's just create a notification if the 'toClub' has a human manager (which we infer by checking inbox existence or just add it universally and filter in view).
-    
-    // Simplification: We add the message. The InboxView filters messages relevant to the user.
-    // Ideally we'd check if `toClubId === userClubId`. 
-    // For now, we add a message. The UI will filter it if it's not relevant? 
-    // Actually, InboxView filters by nothing, it shows world.inbox. 
-    // We should only add messages for the user.
-    // Since we don't have userClubId here, we rely on the App.tsx loop which likely calls this only for user actions OR the AI logic above which we control.
-    
-    // In `generateAIOffersToUser` we call this. We can trigger notification there.
-    // For user actions (UI calls), the UI handles feedback.
-    
-    // Let's create the message here if it's an AI offer (inferred by fromClubId being AI? No easy way to know).
-    // Let's assume if it is NOT called from UI (which usually doesn't need inbox msg immediately for "sent"), it might be incoming.
-    // We will add the notification in the AI logic block instead to be safe.
-
     return offer;
   }
 
   processTransferDecisions(currentDate: Date) {
     this.offers.forEach(offer => {
       if (offer.status !== 'PENDING' || currentDate < offer.responseDate) return;
+      
+      // If the response date is very far in future (9999), it means it's waiting for manual user interaction. 
+      // We don't implement this fully yet, but we skip processing here.
+      if (offer.responseDate.getFullYear() === 9999) return;
+
       const player = this.players.find(p => p.id === offer.playerId);
       const toClub = this.getClub(offer.toClubId);
       const fromClub = this.getClub(offer.fromClubId);
@@ -657,134 +644,10 @@ export class WorldManager {
       
       const targetValue = player.value;
 
-      // DECISION LOGIC FOR AI CLUBS RECEIVING OFFERS
-      // If the 'toClub' is AI controlled (simplified: all clubs are AI except user, but we don't know user here).
-      // We assume standard logic. If the user is the recipient, the user must click Accept/Reject.
-      // So we ONLY process decision if the TO club is AI.
-      // How do we know if TO club is AI? We don't.
-      // FIX: We need to know who the user is.
-      // Workaround: We will assume offers expire if not answered by user?
-      // Or: We assume this function is ONLY for AI responding to User offers.
-      // But we just added AI-to-User offers. Those should WAIT for user input.
-      // So we need a flag or check.
-      
-      // We will skip processing if the offer is TO the player's current club, AND we assume the player's club might be the user.
-      // Currently, the game is single player. 
-      // Let's check `isUserPlayer`? No property.
-      // We will modify this to ONLY process offers where the `fromClub` is the User (User buying AI player).
-      // Offers where `toClub` is User (AI buying User player) should remain PENDING until User acts in NegotiationsView.
-      
-      // Since we don't pass userClubId, we are stuck.
-      // BUT: `generateAIOffersToUser` creates offers. We can mark them? No.
-      // We can rely on the fact that `TransferOfferModal` (User buying) sets status PENDING.
-      // `generateAIOffersToUser` (AI buying) sets status PENDING.
-      
-      // Heuristic: If the offer was created by `generateAIOffersToUser`, we want it to stay pending.
-      // If it was created by UI, we want AI to answer.
-      
-      // Let's assume the user checks their inbox.
-      // We will only auto-resolve offers where the USER is the SENDER.
-      // How to detect? We can't easily without the ID.
-      
-      // Patch: We will pass `userClubId` to `processAIActivity`? No, that's messy.
-      // We will make `processTransferDecisions` purely for AI answering. 
-      // If the `toClub` is the one receiving the offer, and it's an AI club, it answers.
-      // If it is the user club, it waits.
-      // Since we can't distinguish, we will randomize reaction time, BUT for now, let's just make AI accept/reject EVERYTHING 
-      // and then add a check "If user didn't respond".
-      
-      // BETTER FIX: logic inside `processTransferDecisions` handles "AI responding to offers".
-      // We need to skip offers directed AT the user.
-      // We can add a `isUserOffer` flag to `TransferOffer` type? 
-      // Or we can just check if the player belongs to the club that is currently managed.
-      // Since we don't have that global state here...
-      
-      // Let's assume all offers processed here are AI responses. 
-      // We need to protect the user's players.
-      // We can filter `this.players` to find if `p.clubId` is `userClubId`.
-      // Since we don't have `userClubId`, let's add `userClubId` as a param to `processTransferDecisions`? No, it's called in App.tsx.
-      // YES! App.tsx calls `world.processTransferDecisions(nextDay)`.
-      // We can change signature in App.tsx to `world.processTransferDecisions(nextDay, userClub.id)`.
-      
-      // NOTE: I will update the signature of `processTransferDecisions` below, but I cannot update App.tsx in this XML block (per instructions "Only return files... that need to be updated").
-      // Wait, if I change signature here, App.tsx breaks.
-      // I must assume I can't change App.tsx signature in this prompt response unless I include it.
-      // The user prompt asked to "Refine AI engine...". 
-      // I will infer `userClubId` from the offers context (e.g. if offer is from AI to AI, instant. If from AI to User, pending).
-      
-      // Let's use a probability heuristic. 
-      // Actually, standard FM: User gets an inbox item with "Accept/Reject" buttons.
-      // So `processTransferDecisions` should simply IGNORE offers where the target is the user.
-      // But without ID...
-      
-      // OK, looking at `App.tsx` (from context), `userClub` is state.
-      // I will assume for now that I will update `processTransferDecisions` to take a simplified approach:
-      // It processes offers. If the offer is a Purchase, and value is met -> Accept.
-      // We need to stop it from auto-accepting for the User.
-      
-      // I will add a property `isAiToUser` to the `TransferOffer` interface (in memory) or similar? 
-      // No, `TransferOffer` is defined in types.ts. I can't change types.ts easily without breaking things.
-      
-      // Strategy: I will rely on `responseDate`. 
-      // If it's an AI buying from User, the User is the one who sets the status to ACCEPTED/REJECTED.
-      // So `processTransferDecisions` should only touch PENDING offers where the *AI* is the decision maker.
-      // ie. `toClubId` is NOT the user.
-      
-      // Since I can't know `userClubId`, I will implement a check: 
-      // Does the Inbox contain a message about this offer for the user?
-      // If yes, it's user's turn. 
-      // Since `generateAIOffersToUser` doesn't add inbox message in my code above (I commented it out), 
-      // I will add the message there, and then here check... no that's circular.
-      
-      // I'll stick to: `processTransferDecisions` handles logic for AI responding.
-      // It calculates a decision. 
-      // If it's the User's player, we add a "Offer Received" message and DO NOT change status.
-      // If it's an AI player, we change status.
-      
-      // How to differentiate? 
-      // I will modify `generateAIOffersToUser` to add a specific flag to the offer object dynamically (JS allows this even if TS complains, or I cast).
-      // Or better: The `responseDate` for AI-to-User offers can be set to far future or checked specifically.
-      
-      // Let's just implement the logic to decide based on value.
-      // If the deal is good, AI accepts. 
-      // If the "Seller" is the User, the AI shouldn't accept FOR them.
-      // I will simply assume that `processTransferDecisions` is "AI Thinking".
-      // It should check: `if (playerBelongsToUser) return;`
-      // I'll add a helper `isUserClub(id)` that checks if the ID matches the first player's club in `players` (which is usually the user's context in single player simple apps) OR better, pass it.
-      
-      // I'll assume for this exercise that `processTransferDecisions` acts on ALL offers, 
-      // but I will add logic: "If this offer is directed at a club that has a HUMAN manager...".
-      // Since I can't know, I'll default to: logic applies to everyone, BUT for the user, 
-      // we generate an Inbox Message "Offer Received" instead of auto-resolving.
-      
-      // But wait, `generateAIOffersToUser` creates the offer.
-      // Then `processTransferDecisions` sees it.
-      // It sees "Pending". It checks price. It says "Accepted".
-      // Result: AI buys player automatically without user consent. BAD.
-      
-      // Solution: `generateAIOffersToUser` should NOT push to `this.offers` directly if we can't control flow.
-      // It pushes to `this.offers`. 
-      // `processTransferDecisions` must filter.
-      // I'll modify `processTransferDecisions` to look for a special marker or just use a hack:
-      // If the `fromClub` is an AI (Rep > X, etc), and `toClub` is the user...
-      // I'll try to detect user club by seeing which club has `isUser`? Not in type.
-      
-      // Fallback: I will update `generateAIOffersToUser` to set `responseDate` to `new Date(9999, 11, 31)`.
-      // Then `processTransferDecisions` checks `currentDate < offer.responseDate`.
-      // Since date is infinite, it skips processing.
-      // The User Manually accepts/rejects in UI.
-      // When User accepts, status becomes ACCEPTED.
-      // Then `completeTransfer` handles it.
-      
-      if (offer.responseDate.getFullYear() === 9999) return; // Skip user-targeted offers
-
       if (offer.type === 'PURCHASE') {
         const isListed = player.transferStatus === 'TRANSFERABLE';
         if (!isListed && offer.amount < targetValue * 3) {
           offer.status = 'COUNTER_OFFER'; offer.counterAmount = Math.round(targetValue * 3);
-          // Add inbox message only if User is the BUYER
-          // We assume user is buyer if the offer came from UI.
-          // UI offers usually have reasonable response dates.
           this.addInboxMessage('MARKET', `Contraoferta por ${player.name}`, `El ${toClub.name} pide £${(offer.counterAmount/1000000).toFixed(1)}M.`, currentDate, player.id);
         } else {
           offer.status = (offer.amount >= targetValue * 0.9) ? 'ACCEPTED' : 'REJECTED';
@@ -810,15 +673,10 @@ export class WorldManager {
     if (player && fromClub && toClub) {
       if (offer.type === 'PURCHASE') { fromClub.finances.balance -= offer.amount; toClub.finances.balance += offer.amount; }
       
-      // Execute Move
       if (offer.type === 'PURCHASE') {
          player.clubId = offer.fromClubId; 
          player.transferStatus = 'NONE';
       } else {
-         // Loan Logic: Complex, simplified here as just moving club but keeping owner?
-         // For this engine, we just move them and maybe add a note.
-         // Realistically we need 'loanedFrom' field. 
-         // For now, simple move.
          player.clubId = offer.fromClubId; 
       }
       
