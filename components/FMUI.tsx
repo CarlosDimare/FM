@@ -18,7 +18,7 @@ export const FMBox: React.FC<{
             {title && (
                 <div className="border-b border-[#a0b0a0] px-2 py-1 flex justify-between items-center shrink-0 h-8" 
                      style={{ background: 'linear-gradient(to bottom, #cfd8cf 0%, #a3b4a3 100%)' }}>
-                    <span className="text-[#1a1a1a] font-bold text-[11px] tracking-tight" style={{ fontFamily: 'Verdana, sans-serif' }}>{title}</span>
+                    <span className="text-[#1a1a1a] font-bold text-[11px] tracking-tight uppercase" style={{ fontFamily: 'Verdana, sans-serif' }}>{title}</span>
                     {headerRight && <div>{headerRight}</div>}
                 </div>
             )}
@@ -32,10 +32,9 @@ export const FMBox: React.FC<{
 export const FMButton: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'danger' | 'vacation' }> = ({ 
     className = "", variant = 'primary', children, ...props 
 }) => {
-    let baseStyles = "px-3 py-1.5 text-[10px] font-bold tracking-wide rounded-[2px] border shadow-sm active:translate-y-px transition-all flex items-center justify-center gap-2";
+    let baseStyles = "px-3 py-1.5 text-[10px] font-bold tracking-wide rounded-[2px] border shadow-sm active:translate-y-px transition-all flex items-center justify-center gap-2 uppercase";
     let variantStyles = "";
     
-    // Updated button styles to match the FM08 glossy/metallic vibe slightly better
     switch(variant) {
         case 'primary': 
             variantStyles = "bg-gradient-to-b from-[#3a4a3a] to-[#1a2a1a] border-[#0a1a0a] text-white hover:brightness-110";
@@ -66,8 +65,8 @@ export const FMTable: React.FC<{
 }> = ({ headers, children, colWidths, onHeaderClick }) => {
     return (
         <div className="w-full h-full overflow-x-auto overflow-y-auto bg-white custom-scroll">
-            <table className="w-full text-left border-collapse min-w-[600px] md:min-w-full">
-                <thead className="sticky top-0 z-10 text-[11px] font-bold text-[#1a1a1a] shadow-sm border-b border-[#8c9c8c]"
+            <table className="w-full text-left border-collapse min-w-full">
+                <thead className="sticky top-0 z-10 text-[10px] font-bold text-[#1a1a1a] shadow-sm border-b border-[#8c9c8c]"
                        style={{ 
                            background: 'linear-gradient(to bottom, #dbe6db 0%, #aabdaa 100%)',
                            fontFamily: 'Verdana, sans-serif'
@@ -76,7 +75,7 @@ export const FMTable: React.FC<{
                         {headers.map((h, i) => (
                             <th 
                                 key={i} 
-                                className={`px-2 py-1 whitespace-nowrap border-r border-[#9caea0]/50 last:border-0 ${onHeaderClick ? 'cursor-pointer hover:bg-[#9caea0]/40 select-none' : ''}`} 
+                                className={`px-2 py-1.5 whitespace-nowrap border-r border-[#9caea0]/50 last:border-0 uppercase tracking-tighter ${onHeaderClick ? 'cursor-pointer hover:bg-[#9caea0]/40 select-none' : ''}`} 
                                 style={{ width: colWidths?.[i] }}
                                 onClick={() => onHeaderClick && onHeaderClick(i)}
                             >
@@ -94,7 +93,7 @@ export const FMTable: React.FC<{
 };
 
 export const FMTableCell: React.FC<React.TdHTMLAttributes<HTMLTableCellElement> & { isNumber?: boolean }> = ({ children, className = "", isNumber, ...props }) => (
-    <td className={`px-2 py-1 whitespace-nowrap border-b border-[#e0e0e0] ${isNumber ? 'font-normal' : 'font-normal'} ${className}`} {...props}>
+    <td className={`px-2 py-1 whitespace-nowrap border-b border-[#e0e0e0] ${isNumber ? 'font-mono' : 'font-normal'} ${className}`} {...props}>
         {children}
     </td>
 );

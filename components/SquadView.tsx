@@ -108,44 +108,38 @@ export const SquadView: React.FC<SquadViewProps> = ({ players, onSelectPlayer, o
                     ${player.isStarter ? 'font-bold' : ''}
                   `}
                 >
-                   {/* 1. POSITION */}
                    <FMTableCell className="text-center text-slate-700">{player.positions[0]}</FMTableCell>
 
-                   {/* 2. NAME */}
-                   <FMTableCell className="text-slate-900 flex items-center">
-                      <img 
-                        src={getFlagUrl(player.nationality)} 
-                        alt={player.nationality} 
-                        className="w-4 h-3 object-cover shadow-sm rounded-[1px] mr-2" 
-                        title={player.nationality} 
-                      />
-                      <span>{player.name}</span>
-                      {getStatusIcons(player)}
+                   <FMTableCell className="text-slate-900">
+                      <div className="flex items-center">
+                        <img 
+                          src={getFlagUrl(player.nationality)} 
+                          alt={player.nationality} 
+                          className="w-4 h-3 object-cover shadow-sm rounded-[1px] mr-2 shrink-0" 
+                          title={player.nationality} 
+                        />
+                        <span className="truncate max-w-[80px] sm:max-w-none">{player.name}</span>
+                        {getStatusIcons(player)}
+                      </div>
                    </FMTableCell>
 
-                   {/* 3. AGE */}
                    <FMTableCell className="text-center" isNumber>{player.age}</FMTableCell>
 
-                   {/* 4. TREND */}
-                   <FMTableCell className="text-center" title={player.developmentTrend || 'Estable'}>
+                   <FMTableCell className="text-center hidden sm:table-cell" title={player.developmentTrend || 'Estable'}>
                       {renderTrend(player.developmentTrend)}
                    </FMTableCell>
 
-                   {/* 5. SALARY */}
-                   <FMTableCell className="text-right hidden md:table-cell" isNumber>£{(player.salary / 1000).toFixed(0)}k</FMTableCell>
+                   <FMTableCell className="text-right hidden lg:table-cell" isNumber>£{(player.salary / 1000).toFixed(0)}k</FMTableCell>
 
-                   {/* 6. FITNESS */}
                    <FMTableCell className="text-center" isNumber>
                       {Math.round(player.fitness)}%
                    </FMTableCell>
 
-                   {/* 7. MORALE */}
-                   <FMTableCell className="text-center" isNumber>
+                   <FMTableCell className="text-center hidden md:table-cell" isNumber>
                       {Math.round(player.morale)}%
                    </FMTableCell>
 
-                   {/* 8. VALUE */}
-                   <FMTableCell className="text-right hidden sm:table-cell" isNumber>£{(player.value / 1000000).toFixed(1)}M</FMTableCell>
+                   <FMTableCell className="text-right" isNumber>£{(player.value / 1000000).toFixed(1)}M</FMTableCell>
                 </tr>
             ))}
         </FMTable>
