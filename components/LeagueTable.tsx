@@ -40,92 +40,92 @@ export const LeagueTable: React.FC<LeagueTableProps> = ({
    }, [leaguePlayers, currentLeagueId]);
 
    const getRowClass = (index: number) => {
-      // Logic for indicators
       if (currentLeagueId === 'L_ARG_1') {
-         if (index < 5) return 'border-l-4 border-l-green-500'; // Libertadores
-         if (index >= 5 && index < 10) return 'border-l-4 border-l-blue-500'; // Sudamericana
-         if (entries.length > 2 && index >= entries.length - 2) return 'border-l-4 border-l-red-500'; // Relegation
+         if (index < 5) return 'border-l-[3px] border-l-green-600'; // Libertadores
+         if (index >= 5 && index < 10) return 'border-l-[3px] border-l-blue-600'; // Sudamericana
+         if (entries.length > 2 && index >= entries.length - 2) return 'border-l-[3px] border-l-red-600'; // Relegation
       } else if (currentLeagueId === 'L_ARG_2') {
-         if (index < 2) return 'border-l-4 border-l-green-500'; // Promotion
+         if (index < 2) return 'border-l-[3px] border-l-green-600'; // Promotion
       }
-      return 'border-l-4 border-l-transparent';
+      return 'border-l-[3px] border-l-transparent';
    };
 
    const getStatusLabel = (index: number) => {
       if (currentLeagueId === 'L_ARG_1') {
-         if (index < 5) return <span className="text-[7px] bg-green-900 text-green-100 px-1 rounded uppercase tracking-tighter">Lib</span>;
-         if (index >= 5 && index < 10) return <span className="text-[7px] bg-blue-900 text-blue-100 px-1 rounded uppercase tracking-tighter">Sud</span>;
-         if (entries.length > 2 && index >= entries.length - 2) return <span className="text-[7px] bg-red-900 text-red-100 px-1 rounded uppercase tracking-tighter">Des</span>;
+         if (index < 5) return <span className="text-[7px] bg-green-600 text-white px-1 rounded-[1px] uppercase tracking-tighter">Lib</span>;
+         if (index >= 5 && index < 10) return <span className="text-[7px] bg-blue-600 text-white px-1 rounded-[1px] uppercase tracking-tighter">Sud</span>;
+         if (entries.length > 2 && index >= entries.length - 2) return <span className="text-[7px] bg-red-600 text-white px-1 rounded-[1px] uppercase tracking-tighter">Des</span>;
       } else if (currentLeagueId === 'L_ARG_2') {
-         if (index < 2) return <span className="text-[7px] bg-green-900 text-green-100 px-1 rounded uppercase tracking-tighter">Asc</span>;
+         if (index < 2) return <span className="text-[7px] bg-green-600 text-white px-1 rounded-[1px] uppercase tracking-tighter">Asc</span>;
       }
       return null;
    };
 
    return (
-      <div className="flex flex-col h-full gap-2 p-2 overflow-hidden">
+      <div className="flex flex-col h-full gap-3 p-0 overflow-hidden">
          {/* Controls */}
-         <div className="flex gap-2 mb-2 overflow-x-auto scrollbar-hide shrink-0">
+         <div className="flex flex-wrap gap-2 shrink-0">
              {onSquadTypeChange && (
-                 <div className="flex bg-slate-800 rounded-sm p-0.5 gap-1 shrink-0">
+                 <div className="flex bg-[#bcc8bc] rounded-sm p-0.5 border border-[#a0b0a0] shadow-sm">
                      {['SENIOR', 'RESERVE', 'U20'].map(t => (
-                         <button key={t} onClick={() => onSquadTypeChange(t as any)} className={`px-2 py-0.5 text-[9px] font-bold ${currentSquadType === t ? 'bg-blue-600 text-white' : 'text-slate-400'}`}>{t}</button>
+                         <button key={t} onClick={() => onSquadTypeChange(t as any)} className={`px-2 py-1 text-[9px] font-bold uppercase transition-all rounded-[1px] ${currentSquadType === t ? 'bg-[#3a4a3a] text-white shadow-sm' : 'text-slate-700 hover:bg-[#ccd9cc]'}`}>{t}</button>
                      ))}
                  </div>
              )}
              {allLeagues && onLeagueChange && (
-                 <div className="flex bg-slate-800 rounded-sm p-0.5 gap-1 overflow-x-auto scrollbar-hide">
+                 <div className="flex bg-[#bcc8bc] rounded-sm p-0.5 border border-[#a0b0a0] overflow-x-auto scrollbar-hide shadow-sm max-w-full">
                      {allLeagues.map(l => (
-                         <button key={l.id} onClick={() => onLeagueChange(l.id)} className={`px-2 py-0.5 text-[9px] font-bold whitespace-nowrap ${currentLeagueId === l.id ? 'bg-slate-600 text-white' : 'text-slate-500'}`}>{l.name}</button>
+                         <button key={l.id} onClick={() => onLeagueChange(l.id)} className={`px-2 py-1 text-[9px] font-bold whitespace-nowrap transition-all rounded-[1px] uppercase ${currentLeagueId === l.id ? 'bg-[#3a4a3a] text-white shadow-sm' : 'text-slate-700 hover:bg-[#ccd9cc]'}`}>{l.name}</button>
                      ))}
                  </div>
              )}
          </div>
 
-         <div className="grid grid-cols-1 md:grid-cols-3 gap-2 flex-1 min-h-0 overflow-hidden">
-             <div className="md:col-span-2 h-full flex flex-col min-h-0">
-                 <FMBox title="Clasificación" className="h-full flex flex-col overflow-hidden" noPadding>
-                    <div className="flex-1 overflow-y-auto custom-scroll">
-                        <FMTable headers={['Pos', 'Club', 'PJ', 'G', 'E', 'P', 'DG', 'Pts']} colWidths={['40px', 'auto', '30px', '30px', '30px', '30px', '30px', '40px']}>
-                            {entries.length > 0 ? entries.map((e, i) => (
-                                <tr key={e.clubId} className={`${e.clubId === userClubId ? 'bg-blue-900/40 text-white' : ''} hover:bg-slate-700/50 ${getRowClass(i)}`}>
-                                    <FMTableCell className="text-center bg-slate-800/50">
-                                    <div className="flex items-center justify-center gap-1">
-                                        {i + 1} {getStatusLabel(i)}
-                                    </div>
-                                    </FMTableCell>
-                                    <FMTableCell className="font-bold truncate max-w-[120px]">{e.clubName}</FMTableCell>
-                                    <FMTableCell className="text-center" isNumber>{e.played}</FMTableCell>
-                                    <FMTableCell className="text-center text-green-400/70" isNumber>{e.won}</FMTableCell>
-                                    <FMTableCell className="text-center text-slate-500" isNumber>{e.drawn}</FMTableCell>
-                                    <FMTableCell className="text-center text-red-400/70" isNumber>{e.lost}</FMTableCell>
-                                    <FMTableCell className="text-center" isNumber>{e.gd}</FMTableCell>
-                                    <FMTableCell className="text-center font-bold text-white bg-slate-800/50" isNumber>{e.points}</FMTableCell>
-                                </tr>
-                            )) : (
-                                <tr><td colSpan={8} className="p-4 text-center text-slate-500 italic">Sin datos</td></tr>
-                            )}
-                        </FMTable>
-                    </div>
+         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 flex-1 min-h-0 overflow-hidden">
+             <div className="lg:col-span-2 h-full flex flex-col min-h-0">
+                 <FMBox title="Clasificación de Liga" className="h-full flex flex-col overflow-hidden" noPadding>
+                    <FMTable headers={['Pos', 'Club', 'PJ', 'G', 'E', 'P', 'DG', 'Pts']} colWidths={['45px', 'auto', '30px', '30px', '30px', '30px', '30px', '45px']}>
+                        {entries.length > 0 ? entries.map((e, i) => (
+                            <tr key={e.clubId} className={`
+                                transition-colors
+                                ${e.clubId === userClubId ? 'bg-blue-50' : i % 2 === 0 ? 'bg-white' : 'bg-[#f2f7f2]'}
+                                hover:bg-[#ccd9cc]
+                                ${getRowClass(i)}
+                            `}>
+                                <FMTableCell className="text-center font-bold text-slate-500">
+                                <div className="flex items-center justify-center gap-1">
+                                    {i + 1} {getStatusLabel(i)}
+                                </div>
+                                </FMTableCell>
+                                <FMTableCell className={`font-bold truncate max-w-[120px] ${e.clubId === userClubId ? 'text-blue-800' : 'text-[#1a1a1a]'}`}>{e.clubName}</FMTableCell>
+                                <FMTableCell className="text-center" isNumber>{e.played}</FMTableCell>
+                                <FMTableCell className="text-center text-green-700" isNumber>{e.won}</FMTableCell>
+                                <FMTableCell className="text-center text-slate-500" isNumber>{e.drawn}</FMTableCell>
+                                <FMTableCell className="text-center text-red-700" isNumber>{e.lost}</FMTableCell>
+                                <FMTableCell className="text-center" isNumber>{e.gd}</FMTableCell>
+                                <FMTableCell className="text-center font-black bg-slate-100/50" isNumber>{e.points}</FMTableCell>
+                            </tr>
+                        )) : (
+                            <tr><td colSpan={8} className="p-4 text-center text-slate-400 italic text-[10px] uppercase font-bold">No se han encontrado datos</td></tr>
+                        )}
+                    </FMTable>
                  </FMBox>
              </div>
 
              <div className="h-full flex flex-col min-h-0">
                  <FMBox title="Goleadores del Torneo" className="h-full flex flex-col overflow-hidden" noPadding>
-                     <div className="flex-1 overflow-y-auto custom-scroll">
-                        <FMTable headers={['#', 'Nombre', 'Goles']} colWidths={['30px', 'auto', '40px']}>
-                            {topScorers.filter(p => getCompGoals(p) > 0).map((p, i) => (
-                                <tr key={p.id} className="hover:bg-slate-700/50">
-                                    <FMTableCell className="text-center">{i + 1}</FMTableCell>
-                                    <FMTableCell className="truncate max-w-[100px]">{p.name}</FMTableCell>
-                                    <FMTableCell className="text-center font-bold text-green-400" isNumber>{getCompGoals(p)}</FMTableCell>
-                                </tr>
-                            ))}
-                            {topScorers.every(p => getCompGoals(p) === 0) && (
-                                <tr><td colSpan={3} className="p-4 text-center text-slate-500 italic">Sin goles registrados</td></tr>
-                            )}
-                        </FMTable>
-                     </div>
+                    <FMTable headers={['#', 'Nombre', 'Goles']} colWidths={['35px', 'auto', '45px']}>
+                        {topScorers.filter(p => getCompGoals(p) > 0).map((p, i) => (
+                            <tr key={p.id} className={`transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-[#f2f7f2]'} hover:bg-[#ccd9cc]`}>
+                                <FMTableCell className="text-center text-slate-400 font-bold">{i + 1}</FMTableCell>
+                                <FMTableCell className="truncate max-w-[100px] font-bold">{p.name}</FMTableCell>
+                                <FMTableCell className="text-center font-black text-green-700" isNumber>{getCompGoals(p)}</FMTableCell>
+                            </tr>
+                        ))}
+                        {topScorers.every(p => getCompGoals(p) === 0) && (
+                            <tr><td colSpan={3} className="p-4 text-center text-slate-400 italic text-[10px] uppercase font-bold">Sin goles registrados</td></tr>
+                        )}
+                    </FMTable>
                  </FMBox>
              </div>
          </div>

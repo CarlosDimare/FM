@@ -118,6 +118,9 @@ export interface Club {
   stadium: string;
   honours: ClubHonour[];
   qualifiedFor?: string | null;
+  // Facilities info
+  trainingFacilities: number;
+  youthFacilities: number;
 }
 
 export interface Competition {

@@ -58,7 +58,9 @@ export class WorldManager {
            },
            reputation: def.rep,
            stadium: def.stadium,
-           honours: this.generateRandomHonours()
+           honours: this.generateRandomHonours(),
+           trainingFacilities: Math.min(20, Math.floor(def.rep / 500) + randomInt(-2, 2)),
+           youthFacilities: Math.min(20, Math.floor(def.rep / 550) + randomInt(-3, 3))
         };
         this.clubs.push(club);
         this.generateSquadsForClub(club.id);
