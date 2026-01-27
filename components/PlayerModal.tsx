@@ -7,7 +7,7 @@ import { ProfileNarrativeEngine } from '../services/engine';
 import { DialogueSystem } from '../services/dialogueSystem';
 import { TransferOfferModal } from './TransferOfferModal';
 import { ContractNegotiationModal } from './ContractNegotiationModal';
-import { X, MessageSquare, Activity, Map, BarChart2, FileText, History, TrendingUp, TrendingDown, ShieldAlert, ArrowRightLeft, UserX, UserPlus, Users, Heart, ShieldAlert as DisciplineIcon, Award, Zap, ChevronRight, MessageCircle, AlertCircle } from 'lucide-react';
+import { X, MessageSquare, Activity, Map, FileText, History, TrendingUp, TrendingDown, ShieldAlert, ArrowRightLeft, UserX, UserPlus, Users, Heart, ShieldAlert as DisciplineIcon, Award, Zap, ChevronRight, MessageCircle, AlertCircle, Info } from 'lucide-react';
 import { FMTable, FMTableCell, FMButton } from './FMUI';
 import { getFlagUrl } from '../data/static';
 
@@ -70,7 +70,7 @@ const PositionMarker: React.FC<{ pos: Position, isPrimary?: boolean }> = ({ pos,
 };
 
 export const PlayerModal: React.FC<PlayerModalProps> = ({ player, onClose, userClubId, currentDate }) => {
-  const [activeTab, setActiveTab] = useState<'PROFILE' | 'INTERACTION' | 'POSITIONS' | 'STATS' | 'HISTORY' | 'CONTRACT'>('PROFILE');
+  const [activeTab, setActiveTab] = useState<'PROFILE' | 'PERSONAL' | 'POSITIONS' | 'HISTORY' | 'CONTRACT' | 'INTERACTION'>('PROFILE');
   const [attributeCategory, setAttributeCategory] = useState<'TECHNICAL' | 'PHYSICAL' | 'MENTAL'>('TECHNICAL');
   
   // Charla state
@@ -158,6 +158,34 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({ player, onClose, userC
 
   const borderColor = club && club.primaryColor === 'bg-white' ? 'border-slate-300' : 'border-black/20';
 
+  // --- Personal Info Helpers ---
+  const getReputationLabel = (rep: number) => {
+      if (rep > 9000) return "Mundial";
+      if (rep > 7000) return "Continental";
+      if (rep > 5000) return "Nacional";
+      if (rep > 3000) return "Regional";
+      return "Local";
+  };
+
+  const getMoodLabel = (morale: number) => {
+      if (morale > 90) return "Está pletórico";
+      if (morale > 75) return "Está contento en el equipo";
+      if (morale > 50) return "Bien";
+      if (morale > 30) return "Bajo de moral";
+      return "Muy descontento";
+  };
+
+  const InfoRow = ({ label, value }: { label: string, value: string }) => (
+     <div className="flex border-b border-slate-300 last:border-0">
+        <div className="w-1/3 bg-slate-200/50 p-2 text-[10px] font-bold text-slate-600 uppercase tracking-wide border-r border-slate-300 flex items-center">
+           {label}
+        </div>
+        <div className="w-2/3 p-2 text-xs font-bold text-green-700 bg-white/50 flex items-center">
+           {value}
+        </div>
+     </div>
+  );
+
   return (
     <>
       <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-[150] md:p-4 backdrop-blur-sm">
@@ -222,8 +250,8 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({ player, onClose, userC
           <div className="flex border-b border-slate-300 bg-slate-50 justify-between md:justify-start">
              {[
                 { id: 'PROFILE', label: 'Atributos', icon: Activity },
+                { id: 'PERSONAL', label: 'Información', icon: Info },
                 { id: 'POSITIONS', label: 'Posiciones', icon: Map },
-                { id: 'STATS', label: 'Estadísticas', icon: BarChart2 },
                 { id: 'HISTORY', label: 'Historial', icon: History },
                 { id: 'CONTRACT', label: 'Contrato', icon: FileText },
                 { id: 'INTERACTION', label: 'Charla', icon: MessageSquare }
@@ -300,6 +328,52 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({ player, onClose, userC
                   </div>
                </div>
             )}
+            
+            {activeTab === 'PERSONAL' && (
+               <div className="max-w-4xl mx-auto space-y-6">
+                  {/* Vista General */}
+                  <div className="bg-slate-100 border border-slate-300 rounded-sm overflow-hidden">
+                     <div className="bg-gradient-to-b from-slate-200 to-slate-300 px-4 py-2 border-b border-slate-400">
+                        <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider">Vista General</h3>
+                     </div>
+                     <div className="flex flex-col">
+                        <InfoRow label="Nombre" value={player.name} />
+                        <InfoRow label="Fecha de nacimiento" value={player.birthDate.toLocaleDateString()} />
+                        <InfoRow label="Lugar de nacimiento" value={player.nationality} />
+                        <InfoRow label="Idiomas" value="Español" />
+                        <InfoRow label="Equipos favoritos" value="Ninguno" />
+                        <InfoRow label="Empleados favoritos" value="Ninguno" />
+                        <InfoRow label="Descripción" value={headline} />
+                        <InfoRow label="Personalidad" value={personality} />
+                        <InfoRow label="Reputación" value={getReputationLabel(player.reputation)} />
+                     </div>
+                  </div>
+
+                  {/* Estado de Ánimo */}
+                  <div className="bg-slate-100 border border-slate-300 rounded-sm overflow-hidden">
+                     <div className="bg-gradient-to-b from-slate-200 to-slate-300 px-4 py-2 border-b border-slate-400">
+                        <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider">Estado de Ánimo</h3>
+                     </div>
+                     <div className="flex flex-col">
+                        <InfoRow label="Ánimo general" value={getMoodLabel(player.morale)} />
+                        <InfoRow label="Planes a corto plazo" value={playerMotive ? "Quiere resolver su situación contractual/deportiva" : "Sin planes inmediatos para el futuro"} />
+                        <InfoRow label="Promesas del mánager" value="Ninguna" />
+                        <InfoRow label="Buenas relaciones" value="Ninguna" />
+                     </div>
+                  </div>
+
+                  {/* Felicidad Internacional */}
+                  <div className="bg-slate-100 border border-slate-300 rounded-sm overflow-hidden">
+                     <div className="bg-gradient-to-b from-slate-200 to-slate-300 px-4 py-2 border-b border-slate-400">
+                        <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider">Felicidad Internacional</h3>
+                     </div>
+                     <div className="flex flex-col">
+                        <InfoRow label="Ánimo general" value="Nada" />
+                     </div>
+                  </div>
+               </div>
+            )}
+
             {activeTab === 'POSITIONS' && (
                <div className="flex flex-col items-center justify-center h-full min-h-[400px]">
                   <div className="relative w-full max-w-[320px] aspect-[68/105] shadow-2xl bg-[#1e3a29] border-4 border-slate-300 rounded-sm overflow-hidden ring-4 ring-slate-100">
@@ -394,18 +468,9 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({ player, onClose, userC
                   )}
                </div>
             )}
-            {activeTab === 'STATS' && (
-               <div className="max-w-md mx-auto space-y-4">
-                  <div className="grid grid-cols-2 gap-3">
-                     <StatBox label="Partidos" value={player.seasonStats.appearances} />
-                     <StatBox label="Goles" value={player.seasonStats.goals} color="text-green-700" />
-                     <StatBox label="Asistencias" value={player.seasonStats.assists} color="text-blue-700" />
-                     <StatBox label="Calif. Media" value={avgRating} bg="bg-slate-100" />
-                  </div>
-               </div>
-            )}
+            
             {activeTab === 'HISTORY' && (
-               <div className="max-w-2xl mx-auto">
+               <div className="max-w-3xl mx-auto">
                   <FMTable 
                      headers={['Año', 'Club', 'PJ', 'G', 'Ast', 'Med']}
                      colWidths={['45px', 'auto', '35px', '35px', '35px', '45px']}
@@ -558,10 +623,3 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({ player, onClose, userC
     </>
   );
 };
-
-const StatBox = ({ label, value, color = "text-slate-950", bg = "bg-white" }: { label: string, value: string | number, color?: string, bg?: string }) => (
-   <div className={`${bg} p-3 rounded-sm border border-slate-300 shadow-sm flex flex-col items-center justify-center`}>
-      <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">{label}</span>
-      <span className={`text-xl font-bold ${color}`}>{value}</span>
-   </div>
-);

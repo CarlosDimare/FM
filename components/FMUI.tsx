@@ -14,10 +14,11 @@ export const FMBox: React.FC<{
     headerRight?: React.ReactNode;
 }> = ({ title, children, className = "", noPadding = false, headerRight }) => {
     return (
-        <div className={`bg-slate-200 border border-slate-500 rounded-sm shadow-md flex flex-col ${className}`}>
+        <div className={`bg-[#e8ece8] border border-[#a0b0a0] rounded-sm shadow-md flex flex-col ${className}`}>
             {title && (
-                <div className="bg-gradient-to-b from-slate-300 to-slate-400 border-b border-slate-500 px-2 py-1 flex justify-between items-center shrink-0 h-8">
-                    <span className="text-slate-950 font-black text-[11px] uppercase tracking-tight">{title}</span>
+                <div className="border-b border-[#a0b0a0] px-2 py-1 flex justify-between items-center shrink-0 h-8" 
+                     style={{ background: 'linear-gradient(to bottom, #cfd8cf 0%, #a3b4a3 100%)' }}>
+                    <span className="text-[#1a1a1a] font-bold text-[11px] tracking-tight" style={{ fontFamily: 'Verdana, sans-serif' }}>{title}</span>
                     {headerRight && <div>{headerRight}</div>}
                 </div>
             )}
@@ -31,26 +32,27 @@ export const FMBox: React.FC<{
 export const FMButton: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'danger' | 'vacation' }> = ({ 
     className = "", variant = 'primary', children, ...props 
 }) => {
-    let baseStyles = "px-3 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-sm border shadow-sm active:translate-y-px transition-all flex items-center justify-center gap-2";
+    let baseStyles = "px-3 py-1.5 text-[10px] font-bold tracking-wide rounded-[2px] border shadow-sm active:translate-y-px transition-all flex items-center justify-center gap-2";
     let variantStyles = "";
     
+    // Updated button styles to match the FM08 glossy/metallic vibe slightly better
     switch(variant) {
         case 'primary': 
-            variantStyles = "bg-gradient-to-b from-slate-800 to-slate-950 border-slate-950 text-white hover:from-black hover:to-slate-900";
+            variantStyles = "bg-gradient-to-b from-[#3a4a3a] to-[#1a2a1a] border-[#0a1a0a] text-white hover:brightness-110";
             break;
         case 'secondary':
-            variantStyles = "bg-gradient-to-b from-slate-100 to-slate-300 border-slate-500 text-slate-950 hover:from-slate-200 hover:to-slate-400";
+            variantStyles = "bg-gradient-to-b from-[#f0f4f0] to-[#d0d8d0] border-[#a0b0a0] text-[#1a1a1a] hover:brightness-95";
             break;
         case 'danger':
-            variantStyles = "bg-gradient-to-b from-red-600 to-red-800 border-red-900 text-white hover:from-red-700 hover:to-red-900";
+            variantStyles = "bg-gradient-to-b from-[#c04040] to-[#802020] border-[#601010] text-white hover:brightness-110";
             break;
         case 'vacation':
-            variantStyles = "bg-gradient-to-b from-orange-500 to-orange-600 border-orange-700 text-white hover:from-orange-600 hover:to-orange-700";
+            variantStyles = "bg-gradient-to-b from-[#e0a040] to-[#b07020] border-[#805010] text-white hover:brightness-110";
             break;
     }
 
     return (
-        <button className={`${baseStyles} ${variantStyles} ${className} disabled:opacity-50 disabled:cursor-not-allowed`} {...props}>
+        <button className={`${baseStyles} ${variantStyles} ${className} disabled:opacity-50 disabled:cursor-not-allowed`} style={{ fontFamily: 'Verdana, sans-serif' }} {...props}>
             {children}
         </button>
     );
@@ -63,14 +65,18 @@ export const FMTable: React.FC<{
     onHeaderClick?: (index: number) => void;
 }> = ({ headers, children, colWidths, onHeaderClick }) => {
     return (
-        <div className="w-full h-full overflow-x-auto overflow-y-auto bg-slate-200 custom-scroll">
+        <div className="w-full h-full overflow-x-auto overflow-y-auto bg-white custom-scroll">
             <table className="w-full text-left border-collapse min-w-[600px] md:min-w-full">
-                <thead className="sticky top-0 bg-slate-300 z-10 text-[9px] uppercase font-black text-slate-800 shadow-sm border-b border-slate-500">
+                <thead className="sticky top-0 z-10 text-[11px] font-bold text-[#1a1a1a] shadow-sm border-b border-[#8c9c8c]"
+                       style={{ 
+                           background: 'linear-gradient(to bottom, #dbe6db 0%, #aabdaa 100%)',
+                           fontFamily: 'Verdana, sans-serif'
+                       }}>
                     <tr>
                         {headers.map((h, i) => (
                             <th 
                                 key={i} 
-                                className={`px-2 py-2 bg-slate-400/20 whitespace-nowrap ${onHeaderClick ? 'cursor-pointer hover:bg-slate-400/40 select-none' : ''}`} 
+                                className={`px-2 py-1 whitespace-nowrap border-r border-[#9caea0]/50 last:border-0 ${onHeaderClick ? 'cursor-pointer hover:bg-[#9caea0]/40 select-none' : ''}`} 
                                 style={{ width: colWidths?.[i] }}
                                 onClick={() => onHeaderClick && onHeaderClick(i)}
                             >
@@ -79,7 +85,7 @@ export const FMTable: React.FC<{
                         ))}
                     </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-400 text-[11px]">
+                <tbody className="text-[11px] text-[#1a1a1a]" style={{ fontFamily: 'Verdana, sans-serif' }}>
                     {children}
                 </tbody>
             </table>
@@ -88,7 +94,7 @@ export const FMTable: React.FC<{
 };
 
 export const FMTableCell: React.FC<React.TdHTMLAttributes<HTMLTableCellElement> & { isNumber?: boolean }> = ({ children, className = "", isNumber, ...props }) => (
-    <td className={`px-2 py-1.5 whitespace-nowrap ${isNumber ? 'font-mono text-slate-950 font-bold' : 'text-slate-950 font-bold'} ${className}`} {...props}>
+    <td className={`px-2 py-1 whitespace-nowrap border-b border-[#e0e0e0] ${isNumber ? 'font-normal' : 'font-normal'} ${className}`} {...props}>
         {children}
     </td>
 );

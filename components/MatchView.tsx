@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import { Club, Player, MatchState, MatchEvent, PlayerMatchStats, Position } from '../types';
 import { MatchSimulator } from '../services/engine';
 import { GAME_SPEED_MS } from '../constants';
-import { Play, Pause, List, BarChart3, Users, Zap, AlertCircle, CheckCircle } from 'lucide-react';
+import { Play, Pause, List, BarChart3, Users, Zap, AlertCircle, CheckCircle, Shield } from 'lucide-react';
 
 // Reuse POS_MAP logic locally or import. Recreating for self-containment in this component.
 const POS_MAP: Record<number, { top: string; left: string }> = {
@@ -221,24 +221,58 @@ export const MatchView: React.FC<MatchViewProps> = ({ homeTeam, awayTeam, homePl
     <div className="flex flex-col h-full bg-slate-300 overflow-hidden font-sans">
       {renderControls()}
       
-      {/* Marcador Profesional */}
-      <div className="bg-slate-100 p-4 border-b border-slate-500 shadow-sm flex flex-col items-center z-20 relative gap-1">
-        <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{currentDate.toLocaleDateString()}</div>
-        <div className="flex-1 flex items-center justify-between w-full">
-            <div className="text-center w-1/3">
-                <h2 className="text-[9px] md:text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest truncate">{homeTeam.name}</h2>
-                <div className="text-4xl md:text-6xl font-black text-slate-950 tabular-nums drop-shadow-sm">{matchState.homeScore}</div>
-            </div>
+      {/* FM08-Style LED Scoreboard */}
+      <div className="w-full flex h-14 md:h-20 shadow-xl z-20 relative bg-slate-800 border-b-2 border-slate-600">
+        {/* HOME TEAM */}
+        <div className={`flex-1 flex items-center justify-end pr-4 md:pr-8 relative overflow-hidden ${homeTeam.primaryColor}`}>
+            <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-black/10"></div>
+            {/* Background Shield for style */}
+            <Shield className="absolute -left-6 top-1/2 -translate-y-1/2 w-32 h-32 text-black/10 rotate-12" strokeWidth={2} />
             
-            <div className="flex flex-col items-center px-2">
-                <div className="bg-slate-950 text-white font-mono text-xl md:text-2xl px-4 py-1 rounded-sm mb-1 shadow-inner min-w-[3.5rem] text-center">{matchState.minute}'</div>
-                <div className="text-[8px] md:text-[9px] text-slate-500 font-black uppercase tracking-[0.2em] animate-pulse">EN VIVO</div>
-            </div>
-            
-            <div className="text-center w-1/3">
-                <h2 className="text-[9px] md:text-[10px] font-black text-slate-500 uppercase mb-1 tracking-widest truncate">{awayTeam.name}</h2>
-                <div className="text-4xl md:text-6xl font-black text-slate-950 tabular-nums drop-shadow-sm">{matchState.awayScore}</div>
-            </div>
+            <span className="relative z-10 font-black text-white text-lg md:text-3xl uppercase tracking-tight drop-shadow-md mr-2">
+                {homeTeam.name}
+            </span>
+            <Shield className="relative z-10 w-10 h-10 md:w-14 md:h-14 text-white opacity-80 fill-white/10 hidden sm:block" strokeWidth={1.5} />
+        </div>
+
+        {/* LED BOARD */}
+        <div className="shrink-0 bg-[#111] px-3 md:px-8 flex items-center gap-4 md:gap-8 border-x-4 border-yellow-500/80 relative"
+             style={{
+                 backgroundImage: 'radial-gradient(#333 1.5px, transparent 1.5px)',
+                 backgroundSize: '4px 4px'
+             }}
+        >
+           <div className="absolute inset-0 shadow-[inset_0_0_20px_rgba(0,0,0,1)] pointer-events-none"></div>
+           
+           {/* Home Score */}
+           <span className="relative z-10 font-mono font-bold text-3xl md:text-5xl text-yellow-400 tracking-widest drop-shadow-[0_0_8px_rgba(250,204,21,0.6)]">
+              {matchState.homeScore}
+           </span>
+
+           {/* Time */}
+           <div className="relative z-10 flex flex-col items-center justify-center">
+              <span className="font-mono font-bold text-lg md:text-xl text-slate-200 tracking-widest tabular-nums">
+                 {matchState.minute < 10 ? `0${matchState.minute}` : matchState.minute}:00
+              </span>
+              {matchState.isPlaying && <span className="w-1.5 h-1.5 bg-red-600 rounded-full animate-pulse mt-1"></span>}
+           </div>
+
+           {/* Away Score */}
+           <span className="relative z-10 font-mono font-bold text-3xl md:text-5xl text-yellow-400 tracking-widest drop-shadow-[0_0_8px_rgba(250,204,21,0.6)]">
+              {matchState.awayScore}
+           </span>
+        </div>
+
+        {/* AWAY TEAM */}
+        <div className={`flex-1 flex items-center justify-start pl-4 md:pl-8 relative overflow-hidden ${awayTeam.primaryColor}`}>
+            <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-black/10"></div>
+            {/* Background Shield for style */}
+            <Shield className="absolute -right-6 top-1/2 -translate-y-1/2 w-32 h-32 text-black/10 -rotate-12" strokeWidth={2} />
+
+            <Shield className="relative z-10 w-10 h-10 md:w-14 md:h-14 text-white opacity-80 fill-white/10 hidden sm:block" strokeWidth={1.5} />
+            <span className="relative z-10 font-black text-white text-lg md:text-3xl uppercase tracking-tight drop-shadow-md ml-2">
+                {awayTeam.name}
+            </span>
         </div>
       </div>
 
