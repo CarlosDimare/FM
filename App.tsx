@@ -22,10 +22,10 @@ import { world } from './services/worldManager';
 import { Scheduler } from './services/scheduler';
 import { LifecycleManager } from './services/lifecycleManager'; 
 import { Club, Player, Competition, Fixture, SquadType, InboxMessage } from './types';
-import { randomInt } from './services/utils';
+import { randomInt, saveGame, loadGame, checkSaveExists, listSaves, SaveMetadata, deleteSave, generateUUID } from './services/utils';
 import { MatchSimulator } from './services/engine';
-import { RefreshCw, Globe, Play, Sun, Menu, Zap, Mail, Trophy, ChevronRight, User, ArrowLeft } from 'lucide-react';
-import { FMButton } from './components/FMUI';
+import { RefreshCw, Globe, Play, Sun, Menu, Zap, Mail, Trophy, ChevronRight, User, ArrowLeft, Save, HardDrive, Trash2, X, Plus } from 'lucide-react';
+import { FMButton, FMBox } from './components/FMUI';
 
 type GameState = 'LOADING' | 'SETUP_USER' | 'SETUP_LEAGUE' | 'SETUP_TEAM' | 'PLAYING';
 
@@ -62,7 +62,16 @@ const App: React.FC = () => {
   // FIX: Extend season end to July 10th (Month 6) to allow ALL cup finals to finish.
   const [seasonEndDate, setSeasonEndDate] = useState(new Date(2009, 6, 10));
 
+  const [hasSave, setHasSave] = useState(false);
+  
+  // Save/Load Modals
+  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const [saveNameInput, setSaveNameInput] = useState("");
+  const [isLoadModalOpen, setIsLoadModalOpen] = useState(false);
+  const [availableSaves, setAvailableSaves] = useState<SaveMetadata[]>([]);
+
   useEffect(() => {
+    checkSaveExists().then(exists => setHasSave(exists));
     setTimeout(() => { setGameState('SETUP_USER'); }, 800);
   }, []);
 
@@ -346,6 +355,109 @@ const App: React.FC = () => {
      setView('HOME');
   };
 
+  // --- SAVE & LOAD HANDLERS ---
+
+  const handleOpenSaveModal = () => {
+     setSaveNameInput(`${userClub?.shortName} - ${currentDate.toLocaleDateString()}`);
+     setIsSaveModalOpen(true);
+  };
+
+  const confirmSaveGame = async () => {
+    if (!userClub || !saveNameInput.trim()) return;
+    try {
+        const id = generateUUID();
+        const saveData = {
+            id,
+            label: saveNameInput,
+            lastPlayed: new Date(),
+            metaTeamName: userClub.name,
+            metaManagerName: `${userName} ${userSurname}`,
+            gameState: {
+                currentDate,
+                userName,
+                userSurname,
+                userClubId: userClub.id,
+                fixtures,
+                seasonEndDate
+            },
+            worldState: {
+                players: world.players,
+                clubs: world.clubs,
+                competitions: world.competitions,
+                staff: world.staff,
+                tactics: world.tactics,
+                offers: world.offers,
+                inbox: world.inbox
+            }
+        };
+        await saveGame(saveData);
+        setHasSave(true);
+        setIsSaveModalOpen(false);
+        alert("Partida guardada correctamente.");
+    } catch (e) {
+        console.error(e);
+        alert("Error al guardar la partida.");
+    }
+  };
+
+  const handleOpenLoadModal = async () => {
+     const saves = await listSaves();
+     setAvailableSaves(saves);
+     setIsLoadModalOpen(true);
+  };
+
+  const confirmLoadGame = async (id: string) => {
+    try {
+        const data = await loadGame(id);
+        if (!data) { alert("No se pudo cargar la partida."); return; }
+        
+        // Restore World
+        world.players = data.worldState.players;
+        world.clubs = data.worldState.clubs;
+        world.competitions = data.worldState.competitions;
+        world.staff = data.worldState.staff;
+        world.tactics = data.worldState.tactics;
+        world.offers = data.worldState.offers;
+        world.inbox = data.worldState.inbox;
+        
+        // Restore App State
+        setCurrentDate(data.gameState.currentDate);
+        setUserName(data.gameState.userName);
+        setUserSurname(data.gameState.userSurname);
+        
+        const club = world.getClub(data.gameState.userClubId);
+        setUserClub(club || null);
+        
+        setFixtures(data.gameState.fixtures);
+        setSeasonEndDate(data.gameState.seasonEndDate);
+        
+        if (club) {
+            updateNextFixture(data.gameState.fixtures, data.gameState.currentDate, club.id);
+        }
+        
+        setIsLoadModalOpen(false);
+        setGameState('PLAYING');
+        setView('HOME');
+        setForceUpdate(v => v + 1);
+        
+    } catch (e) {
+        console.error(e);
+        alert("Error al cargar la partida.");
+    }
+  };
+
+  const handleDeleteSave = async (id: string, e: React.MouseEvent) => {
+     e.stopPropagation();
+     if(confirm("¿Estás seguro de borrar esta partida?")) {
+        await deleteSave(id);
+        const saves = await listSaves();
+        setAvailableSaves(saves);
+        if(saves.length === 0) setHasSave(false);
+     }
+  }
+
+  // --- RENDER ---
+
   const renderCurrentView = () => {
     if (!userClub) return null;
 
@@ -468,6 +580,7 @@ const App: React.FC = () => {
                         players={world.getPlayersByClub(viewExternalClub.id).filter(p => p.squad === 'SENIOR')} 
                         onSelectPlayer={setSelectedPlayer} 
                         customTitle={`PLANTILLA - ${viewExternalClub.name}`}
+                        currentDate={currentDate}
                     />
                 </div>
             </div>
@@ -490,7 +603,7 @@ const App: React.FC = () => {
 
     if (currentView.endsWith('_SQUAD')) {
         const type = currentView.split('_')[0] as SquadType;
-        return <SquadView players={world.getPlayersByClub(userClub.id).filter(p => p.squad === type)} onSelectPlayer={setSelectedPlayer} onContextMenu={handlePlayerContextMenu} />;
+        return <SquadView players={world.getPlayersByClub(userClub.id).filter(p => p.squad === type)} onSelectPlayer={setSelectedPlayer} onContextMenu={handlePlayerContextMenu} currentDate={currentDate} />;
     }
     if (currentView.endsWith('_TACTICS')) {
         const type = currentView.split('_')[0] as SquadType;
@@ -531,8 +644,41 @@ const App: React.FC = () => {
   if (gameState === 'LOADING') return <div className="h-screen w-screen bg-slate-400 flex items-center justify-center text-slate-950"><div className="animate-pulse flex flex-col items-center"><RefreshCw className="w-10 h-10 animate-spin mb-4 text-slate-900" /><h1 className="text-2xl font-black italic tracking-widest uppercase">FM Argentina</h1></div></div>;
   
   if (gameState === 'SETUP_USER') return (
-    <div className="h-screen w-screen bg-slate-400 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-slate-200 rounded-sm p-8 border border-slate-600 shadow-2xl">
+    <div className="h-screen w-screen bg-slate-400 flex items-center justify-center p-4 relative overflow-hidden">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-slate-200 via-slate-400 to-slate-500 opacity-50 pointer-events-none"></div>
+      
+      {/* LOAD GAME MODAL */}
+      {isLoadModalOpen && (
+         <div className="fixed inset-0 z-[200] bg-slate-900/80 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
+            <div className="bg-slate-200 w-full max-w-lg rounded-sm border-2 border-slate-500 shadow-2xl p-6 flex flex-col max-h-[80vh]">
+               <div className="flex justify-between items-center mb-6 border-b border-slate-400 pb-2">
+                  <h2 className="text-xl font-black text-slate-900 uppercase italic">Cargar Partida</h2>
+                  <button onClick={() => setIsLoadModalOpen(false)}><X size={20} className="text-slate-600 hover:text-red-600"/></button>
+               </div>
+               <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scroll">
+                  {availableSaves.length === 0 ? (
+                     <p className="text-center text-slate-500 italic py-10 font-bold uppercase text-xs">No hay partidas guardadas.</p>
+                  ) : (
+                     availableSaves.map(save => (
+                        <div key={save.id} className="bg-white border border-slate-300 p-3 rounded-sm hover:border-blue-500 hover:shadow-md transition-all group flex justify-between items-center cursor-pointer" onClick={() => confirmLoadGame(save.id)}>
+                           <div className="flex-1 min-w-0">
+                              <h4 className="font-black text-slate-900 uppercase text-xs truncate group-hover:text-blue-700">{save.label}</h4>
+                              <div className="flex gap-3 mt-1 text-[10px] text-slate-500 font-bold uppercase tracking-wide">
+                                 <span>{save.teamName}</span>
+                                 <span>•</span>
+                                 <span>{new Date(save.date).toLocaleDateString()}</span>
+                              </div>
+                           </div>
+                           <button onClick={(e) => handleDeleteSave(save.id, e)} className="p-2 text-slate-400 hover:text-red-600 transition-colors" title="Borrar Partida"><Trash2 size={16} /></button>
+                        </div>
+                     ))
+                  )}
+               </div>
+            </div>
+         </div>
+      )}
+
+      <div className="max-w-md w-full bg-slate-200 rounded-sm p-8 border border-slate-600 shadow-2xl z-10">
         <h1 className="text-3xl font-black text-slate-950 mb-6 italic uppercase border-b-4 border-slate-950 pb-2">Perfil del Manager</h1>
         <div className="space-y-4">
           <div>
@@ -544,8 +690,13 @@ const App: React.FC = () => {
             <input type="text" className="w-full bg-slate-100 border border-slate-500 rounded-sm px-4 py-3 text-slate-950 font-bold text-sm outline-none focus:border-slate-800" value={userSurname} onChange={(e) => setUserSurname(e.target.value)} />
           </div>
           <FMButton onClick={() => setGameState('SETUP_LEAGUE')} className="w-full py-4 mt-4">
-            CONTINUAR <ChevronRight size={14} />
+            NUEVA PARTIDA <ChevronRight size={14} />
           </FMButton>
+          {hasSave && (
+             <FMButton onClick={handleOpenLoadModal} variant="secondary" className="w-full py-3 mt-2 text-xs border-2 border-slate-400">
+                <HardDrive size={14} /> CARGAR PARTIDA
+             </FMButton>
+          )}
         </div>
       </div>
     </div>
@@ -562,6 +713,32 @@ const App: React.FC = () => {
     <div className="flex flex-col h-screen w-screen bg-slate-400 text-slate-950 overflow-hidden font-sans relative text-sm">
       <div className={`h-1 w-full ${userClub ? userClub.secondaryColor.replace('text-','bg-') : 'bg-slate-800'}`}></div>
       
+      {/* SAVE GAME MODAL */}
+      {isSaveModalOpen && (
+         <div className="fixed inset-0 z-[500] bg-slate-900/80 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
+            <div className="bg-slate-200 w-full max-w-sm rounded-sm border-2 border-slate-500 shadow-2xl p-6">
+               <h3 className="text-lg font-black text-slate-900 uppercase italic mb-4 border-b border-slate-400 pb-2">Guardar Partida</h3>
+               <div className="space-y-4">
+                  <div>
+                     <label className="text-[10px] font-black text-slate-600 uppercase block mb-1">Nombre del Archivo</label>
+                     <input 
+                        type="text" 
+                        autoFocus
+                        className="w-full bg-white border border-slate-400 rounded-sm px-3 py-2 text-slate-900 font-bold text-sm focus:border-slate-800 outline-none"
+                        value={saveNameInput}
+                        onChange={(e) => setSaveNameInput(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && confirmSaveGame()}
+                     />
+                  </div>
+                  <div className="flex gap-2">
+                     <FMButton variant="secondary" onClick={() => setIsSaveModalOpen(false)} className="flex-1">Cancelar</FMButton>
+                     <FMButton variant="primary" onClick={confirmSaveGame} className="flex-1">Guardar</FMButton>
+                  </div>
+               </div>
+            </div>
+         </div>
+      )}
+
       <header className={`h-12 border-b flex items-center justify-between px-4 shadow-sm z-[110] shrink-0 transition-colors duration-300 ${
           userClub 
             ? `${userClub.primaryColor} ${userClub.secondaryColor} border-black/20` 
@@ -608,7 +785,7 @@ const App: React.FC = () => {
 
       <div className="flex flex-1 overflow-hidden relative">
         {userClub && (
-            <Sidebar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} currentView={currentView} setView={(v) => { setView(v); setIsSidebarOpen(false); }} club={userClub} onVacation={() => setIsVacationModalOpen(true)} />
+            <Sidebar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} currentView={currentView} setView={(v) => { setView(v); setIsSidebarOpen(false); }} club={userClub} onVacation={() => setIsVacationModalOpen(true)} onSave={handleOpenSaveModal} />
         )}
         <main className="flex-1 flex flex-col min-w-0 bg-[#94a3b8] relative overflow-hidden">
           {renderCurrentView()}

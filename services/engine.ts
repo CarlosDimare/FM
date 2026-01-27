@@ -3,7 +3,6 @@ import { Player, Club, MatchEvent, PlayerMatchStats, TeamMatchStats, PitchZone, 
 import { randomInt } from './utils';
 import { world } from './worldManager';
 
-// Define constants used in engine
 const ZONES: Record<string, number[]> = {
     DEF: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
     MID: [16, 17, 18, 19, 20, 21, 22, 23, 24, 25],
@@ -90,11 +89,10 @@ export class MatchSimulator {
 
   private static getEffectiveAbility(p: Player, attributeKey?: string): number {
      const fatigueFactor = Math.max(0.4, p.fitness / 100); 
-     const moraleFactor = 0.9 + (p.morale / 100) * 0.2; // 0.9 to 1.1
+     const moraleFactor = 0.9 + (p.morale / 100) * 0.2;
      
      let baseAttr = p.currentAbility;
      if (attributeKey) {
-        // Find attribute in stats
         const allStats: Record<string, number> = { ...p.stats.mental, ...p.stats.physical, ...p.stats.technical, ...(p.stats.goalkeeping || {}) };
         if (allStats[attributeKey]) baseAttr = allStats[attributeKey] * 10;
      }
@@ -106,16 +104,12 @@ export class MatchSimulator {
     minute: number, homeTeam: Club, awayTeam: Club, homeEleven: Player[], awayEleven: Player[], playerStats: Record<string, PlayerMatchStats>, currentDate?: Date
   ): { event: MatchEvent | null, teamStats: { home: TeamMatchStats, away: TeamMatchStats }, slowMotion: boolean } {
     
-    // DESPERATION MODE: Last 15 minutes, if someone is losing, they push harder (more chances, but more counter-attacks)
     let chaosMultiplier = 1.0;
-    if (minute > 75) {
-       chaosMultiplier = 1.5;
-    }
+    if (minute > 75) chaosMultiplier = 1.5;
 
     const hMidPower = this.calculateZonePower(homeEleven, 'MID');
     const aMidPower = this.calculateZonePower(awayEleven, 'MID');
     
-    // Tactical Balance: Advantage to team with more players in Midfield
     const hMidCount = homeEleven.filter(p => ZONES.MID.includes(p.tacticalPosition!)).length;
     const aMidCount = awayEleven.filter(p => ZONES.MID.includes(p.tacticalPosition!)).length;
     const tacticalBonus = (hMidCount - aMidCount) * 2;
@@ -138,19 +132,16 @@ export class MatchSimulator {
     const attPlayers = isHomePossession ? homeEleven : awayEleven;
     const defPlayers = isHomePossession ? awayEleven : homeEleven;
 
-    // 1. Critical Events (Cards/Injuries)
     if (Math.random() < 0.009 * chaosMultiplier) {
        event = this.resolveDisciplinary(minute, defPlayers, defendingTeam, playerStats);
     } else if (Math.random() < 0.004) {
        event = this.resolveInjury(minute, attPlayers, defPlayers, homeTeam, awayTeam, playerStats, currentDate);
     }
     
-    // 2. Attack Sequence (Differentiated by skill)
     if (!event && Math.random() < 0.17 * chaosMultiplier) { 
        event = this.resolveAttackSequence(minute, attackingTeam, attPlayers, defendingTeam, defPlayers, playerStats);
     }
 
-    // 3. Possession Flow
     if (!event && Math.random() < 0.28) {
        event = this.resolvePossession(minute, attackingTeam, attPlayers);
     }
@@ -195,43 +186,76 @@ export class MatchSimulator {
         return (avgEffectiveAbility * 0.7) + (clubRep / 100 * 0.3);
      };
 
-     let homeStr = getTeamStrength(homePlayers, home.reputation) + 12; 
+     let homeStr = getTeamStrength(homePlayers, home.reputation) + 5; 
      let awayStr = getTeamStrength(awayPlayers, away.reputation);
      
-     homeStr += randomInt(-15, 25);
-     awayStr += randomInt(-15, 25);
+     homeStr += randomInt(-10, 15);
+     awayStr += randomInt(-10, 15);
 
      const diff = homeStr - awayStr;
      let homeScore = 0, awayScore = 0;
 
-     if (diff > 60) { homeScore = randomInt(2, 6); awayScore = randomInt(0, 1); }
-     else if (diff > 30) { homeScore = randomInt(1, 4); awayScore = randomInt(0, 1); }
-     else if (diff > 0) { homeScore = randomInt(1, 3); awayScore = randomInt(0, 2); }
-     else if (diff > -30) { homeScore = randomInt(0, 2); awayScore = randomInt(1, 3); }
-     else { homeScore = randomInt(0, 1); awayScore = randomInt(2, 6); }
+     // TONED DOWN: Even stricter score generation to avoid crazy season totals.
+     if (diff > 50) { homeScore = randomInt(1, 3); awayScore = randomInt(0, 1); }
+     else if (diff > 25) { homeScore = randomInt(0, 2); awayScore = randomInt(0, 1); }
+     else if (diff > 0) { homeScore = randomInt(0, 2); awayScore = randomInt(0, 2); }
+     else if (diff > -25) { homeScore = randomInt(0, 1); awayScore = randomInt(0, 2); }
+     else { homeScore = randomInt(0, 1); awayScore = randomInt(1, 3); }
 
      const stats: Record<string, PlayerMatchStats> = {};
      [...homePlayers, ...awayPlayers].forEach(p => {
-        stats[p.id] = { rating: 5.5 + Math.random() * 3, goals: 0, assists: 0, shots: 0, passesAttempted: 10, passesCompleted: 8, dribblesAttempted: 0, dribblesCompleted: 0, tacklesAttempted: 0, tacklesCompleted: 0, foulsCommitted: 0, shotsOnTarget: 0, saves: 0 };
-        // Simulate cards
-        if (Math.random() < 0.15) stats[p.id].card = 'YELLOW';
-        else if (Math.random() < 0.01) stats[p.id].card = 'RED';
+        stats[p.id] = { rating: 6.0 + Math.random() * 1.5, goals: 0, assists: 0, shots: 0, passesAttempted: 15, passesCompleted: 11, dribblesAttempted: 0, dribblesCompleted: 0, tacklesAttempted: 0, tacklesCompleted: 0, foulsCommitted: 0, shotsOnTarget: 0, saves: 0 };
+        if (Math.random() < 0.12) stats[p.id].card = 'YELLOW';
+        else if (Math.random() < 0.005) stats[p.id].card = 'RED';
      });
      
-     const assignGoals = (players: Player[], count: number) => {
-        const pool = players.filter(p => p.positions.some(pos => pos.includes('ST') || pos.includes('AM') || pos.includes('W')));
-        const finalPool = pool.length > 0 ? pool : players;
-        for(let i=0; i<count; i++) {
-           const scorer = finalPool[randomInt(0, finalPool.length-1)];
+     const assignEvents = (players: Player[], goalCount: number) => {
+        // Better distribution logic: Strikers get 60% weight, Midfielders 30%, Defenders 10%
+        const weightedPool: Player[] = [];
+        players.forEach(p => {
+           let weight = 1;
+           if (p.positions.some(pos => pos.includes('ST') || pos.includes('DL'))) weight = 6;
+           else if (p.positions.some(pos => pos.includes('AM') || pos.includes('W'))) weight = 4;
+           else if (p.positions.some(pos => pos.includes('M'))) weight = 2;
+           else if (p.positions.some(pos => pos.includes('D'))) weight = 1;
+           for(let w=0; w<weight; w++) weightedPool.push(p);
+        });
+
+        if (weightedPool.length === 0) return;
+
+        for(let i=0; i<goalCount; i++) {
+           const scorer = weightedPool[randomInt(0, weightedPool.length-1)];
            if(stats[scorer.id]) {
               stats[scorer.id].goals++;
               stats[scorer.id].shots++;
               stats[scorer.id].shotsOnTarget++;
+              stats[scorer.id].rating = Math.min(10, stats[scorer.id].rating + 1.2);
+           }
+           
+           // Assign Assist (70% chance)
+           if (Math.random() < 0.7) {
+              // Assisters are mostly M or AM or Fullbacks
+              const assistWeights: Player[] = [];
+              players.forEach(p => {
+                 if (p.id === scorer.id) return;
+                 let weight = 1;
+                 if (p.positions.some(pos => pos.includes('AM') || pos.includes('M') || pos.includes('W'))) weight = 5;
+                 else if (p.positions.some(pos => pos === Position.DR || pos === Position.DL)) weight = 2;
+                 for(let w=0; w<weight; w++) assistWeights.push(p);
+              });
+
+              if (assistWeights.length > 0) {
+                 const assister = assistWeights[randomInt(0, assistWeights.length-1)];
+                 if (stats[assister.id]) {
+                    stats[assister.id].assists++;
+                    stats[assister.id].rating = Math.min(10, stats[assister.id].rating + 0.8);
+                 }
+              }
            }
         }
      };
-     assignGoals(homePlayers, homeScore);
-     assignGoals(awayPlayers, awayScore);
+     assignEvents(homePlayers, homeScore);
+     assignEvents(awayPlayers, awayScore);
 
      return { homeScore, awayScore, stats };
   }
@@ -258,19 +282,14 @@ export class MatchSimulator {
   private static resolveDisciplinary(minute: number, players: Player[], team: Club, stats: Record<string, PlayerMatchStats>): MatchEvent | null {
      if (players.length === 0) return null;
      const p = players[randomInt(0, players.length - 1)];
-     
-     // Aggression increases chance of red cards
      const aggressionMod = (p.stats.mental.aggression - 10) * 0.01;
      const isRed = Math.random() < (0.12 + aggressionMod);
-     
      const yTexts = [`Tarjeta amarilla para ${p.name}.`, `${p.name} es amonestado.`, `Dura entrada de ${p.name}, amarilla.`];
      const rTexts = [`¡ROJA! ${p.name} expulsado.`, `¡A la calle ${p.name}!`, `Roja directa para ${p.name}.`];
-     
      if (stats[p.id]) {
-        // If already yellow, potential second yellow?
         if (stats[p.id].card === 'YELLOW' && !isRed) {
            if (Math.random() < 0.2) {
-              stats[p.id].card = 'RED'; // Convert to red (second yellow logic handled visually as Red)
+              stats[p.id].card = 'RED';
               return {
                  minute,
                  type: 'RED_CARD',
@@ -281,7 +300,7 @@ export class MatchSimulator {
                  intensity: 4
               };
            }
-           return null; // Ignore duplicate yellow
+           return null;
         } else {
            stats[p.id].card = isRed ? 'RED' : 'YELLOW';
         }
@@ -303,16 +322,9 @@ export class MatchSimulator {
      if (allPlayers.length === 0) return null;
      const p = allPlayers[randomInt(0, allPlayers.length - 1)];
      const team = p.clubId === h.id ? h : a;
-     
-     // Select Real Injury
      const injuryDef = INJURY_TYPES[randomInt(0, INJURY_TYPES.length - 1)];
      const days = randomInt(injuryDef.min, injuryDef.max);
-     
-     // Store injury in match stats so it can be applied later
-     if (stats[p.id]) {
-        stats[p.id].sustainedInjury = { type: injuryDef.name, days: days };
-     }
-     
+     if (stats[p.id]) stats[p.id].sustainedInjury = { type: injuryDef.name, days: days };
      const squadPlayers = world.getPlayersByClub(team.id).filter(sp => !sp.isStarter && !sp.injury && !sp.suspension);
      let subText = "";
      if (squadPlayers.length > 0) {
@@ -322,38 +334,28 @@ export class MatchSimulator {
         const idx = teamArray.findIndex(pl => pl.id === p.id);
         if (idx !== -1) teamArray[idx] = sub;
      }
-
      return { minute, type: 'INJURY', teamId: team.id, text: `${p.name} cae lesionado (${injuryDef.name}).${subText}`, importance: 'MEDIUM', intensity: 2 };
   }
 
   private static resolveAttackSequence(minute: number, attTeam: Club, attPlayers: Player[], defTeam: Club, defPlayers: Player[], stats: Record<string, PlayerMatchStats>): MatchEvent | null {
      if (attPlayers.length === 0 || defPlayers.length === 0) return null;
-
      const creator = attPlayers[randomInt(0, attPlayers.length - 1)];
      const finisher = attPlayers[randomInt(0, attPlayers.length - 1)];
      const gk = defPlayers.find(p => p.positions.includes(Position.GK)) || defPlayers[0];
-     
-     // VISION DUEL: Does the creator see the pass?
      const visionCheck = this.getEffectiveAbility(creator, 'vision') + randomInt(-20, 20);
      const defAnticipation = defPlayers.reduce((acc, dp) => acc + this.getEffectiveAbility(dp, 'anticipation'), 0) / defPlayers.length;
-     
      if (visionCheck < defAnticipation - 15) {
         return { minute, type: 'POSSESSION', text: `${defTeam.name} corta el intento de avance de ${creator.name}.`, teamId: defTeam.id, importance: 'LOW', intensity: 2 };
      }
-
      const attackType = randomInt(1, 5); 
      const typeMap: any = { 1: 'CROSS', 2: 'LONG_SHOT', 3: 'THROUGH_BALL', 4: 'CORNER', 5: 'NORMAL' };
      return this.resolveShot(minute, attTeam, finisher, gk, creator, stats, typeMap[attackType]);
   }
 
   private static resolveShot(minute: number, team: Club, shooter: Player, gk: Player, assister: Player, stats: Record<string, PlayerMatchStats>, type: string): MatchEvent {
-     // Record the shot attempt
      if (stats[shooter.id]) stats[shooter.id].shots++;
-
-     // ATTRIBUTE DUEL SYSTEM
      let attackAttr = 'finishing';
      let defenseAttr = 'reflexes';
-     
      if (type === 'CROSS' || type === 'CORNER') {
         attackAttr = 'heading';
         defenseAttr = 'aerialReach';
@@ -361,32 +363,24 @@ export class MatchSimulator {
         attackAttr = 'longShots';
         defenseAttr = 'positioning';
      }
-
-     // Mental factors
      const composure = this.getEffectiveAbility(shooter, 'composure') / 10;
      const pressure = randomInt(0, 10);
-     
      const shotPower = this.getEffectiveAbility(shooter, attackAttr) + composure - pressure + randomInt(-20, 30);
      const savePower = this.getEffectiveAbility(gk, defenseAttr) + (gk.stats.mental.positioning * 5) + randomInt(-20, 20);
-     
      const isTarget = shotPower > savePower - 25;
      if (isTarget && stats[shooter.id]) stats[shooter.id].shotsOnTarget++;
-     
      if (shotPower > savePower) {
         if (stats[shooter.id]) stats[shooter.id].goals++;
         if (assister.id !== shooter.id && stats[assister.id]) stats[assister.id].assists++;
-
         let goalText = "";
         if (type === 'CROSS') goalText = PHRASES.GOAL_HEADER[randomInt(0, 1)](team.name, shooter.name, assister.name);
         else if (type === 'LONG_SHOT') goalText = PHRASES.GOAL_LONG[randomInt(0, 1)](team.name, shooter.name);
         else goalText = PHRASES.GOAL_NORMAL[randomInt(0, 3)](team.name, shooter.name);
-        
         return { minute, type: 'GOAL', teamId: team.id, playerId: shooter.id, text: goalText, importance: 'HIGH', intensity: 5 };
      } else if (isTarget) {
         if (stats[gk.id]) stats[gk.id].saves++;
         return { minute, type: 'CHANCE', text: PHRASES.CHANCE_SAVE[randomInt(0, 3)](team.name, shooter.name, gk.name), teamId: team.id, importance: 'MEDIUM', intensity: 4 }; 
      }
-     
      return { minute, type: 'MISS', text: PHRASES.CHANCE_MISS[randomInt(0, 3)](team.name, shooter.name), teamId: team.id, importance: 'LOW', intensity: 4 }; 
   }
 
@@ -421,13 +415,9 @@ export class MatchSimulator {
     Object.values(playerStats).forEach(ps => { 
        onTarget += ps.shotsOnTarget; 
        fouls += ps.foulsCommitted;
-       totalShots += ps.shots; // Sum real shots from player stats
+       totalShots += ps.shots; 
     });
-    
-    // Fallback if simulation didn't record misses correctly in previous versions, but now it should.
-    // If totalShots < onTarget (impossible but check), fix it.
     if (totalShots < onTarget) totalShots = Math.round(onTarget * 1.5);
-
     return { possession: Math.round(possession), shots: totalShots, shotsOnTarget: onTarget, fouls: randomInt(5, 15), corners: randomInt(2, 8) };
   }
 
@@ -442,23 +432,17 @@ export class MatchSimulator {
         const myScore = isHome ? homeScore : awayScore;
         const opponentScore = isHome ? awayScore : homeScore;
         const moraleMod = myScore > opponentScore ? 5 : myScore === opponentScore ? 0 : -8;
-
         players.forEach(p => {
           const stats = matchStats[p.id];
           if (!stats) return;
-          
-          // 1. Update Global Season Stats
           p.seasonStats.appearances += 1;
           p.seasonStats.goals += stats.goals;
           p.seasonStats.assists += stats.assists;
           p.seasonStats.totalRating += stats.rating;
-          
           if (p.positions.includes(Position.GK)) {
              if (opponentScore === 0) p.seasonStats.cleanSheets += 1;
-             p.seasonStats.conceded += opponentScore; // Track conceded goals
+             p.seasonStats.conceded += opponentScore;
           }
-
-          // 2. Update Competition Specific Stats
           if (!p.statsByCompetition[competitionId]) {
              p.statsByCompetition[competitionId] = { appearances: 0, goals: 0, assists: 0, cleanSheets: 0, conceded: 0, totalRating: 0 };
           }
@@ -471,40 +455,26 @@ export class MatchSimulator {
              if (opponentScore === 0) compStats.cleanSheets += 1;
              compStats.conceded += opponentScore;
           }
-          
-          // 3. Process Injuries from Match
           if (stats.sustainedInjury) {
-             p.injury = {
-                type: stats.sustainedInjury.type,
-                daysLeft: stats.sustainedInjury.days
-             };
-             // Ensure injured players are removed from starter list immediately for future logic
+             p.injury = { type: stats.sustainedInjury.type, daysLeft: stats.sustainedInjury.days };
              p.isStarter = false;
              p.tacticalPosition = undefined;
           }
-
-          // 4. Process Cards & Suspensions
           if (stats.card === 'RED') {
-             // Direct Red: 1 to 3 matches ban
              const matches = randomInt(1, 3);
              p.suspension = { type: 'RED_CARD', matchesLeft: matches };
-             // Removed from squad
              p.isStarter = false;
              p.tacticalPosition = undefined;
           } else if (stats.card === 'YELLOW') {
              p.yellowCardsAccumulated = (p.yellowCardsAccumulated || 0) + 1;
-             // Suspension logic: 5 yellows = 1 match ban
              if (p.yellowCardsAccumulated >= 5) {
                 p.suspension = { type: 'YELLOW_ACCUMULATION', matchesLeft: 1 };
-                p.yellowCardsAccumulated = 0; // Reset or keep accumulating? Typically resets or goes to higher threshold. Lets reset for simplicity.
+                p.yellowCardsAccumulated = 0;
                 p.isStarter = false;
                 p.tacticalPosition = undefined;
              }
           }
-
-          // Fatigue and Morale logic remains global
           const fatigue = 28 - (p.stats.physical.stamina * 0.8) + randomInt(0, 6);
-          // Apply rounding to prevent decimals
           p.fitness = Math.max(0, Math.round(p.fitness - fatigue));
           p.morale = Math.max(0, Math.min(100, Math.round(p.morale + moraleMod + (stats.rating > 7.5 ? 2 : -2))));
         });
@@ -515,12 +485,37 @@ export class MatchSimulator {
 }
 
 export class ProfileNarrativeEngine {
-    static generateScoutingReport(player: Player): string[] {
-        return [
-            "Jugador con gran potencial.",
-            "Destaca por su técnica depurada.",
-            "Necesita mejorar su consistencia."
-        ];
+    static getPersonalityLabel(player: Player): string {
+        const { mental } = player.stats;
+        
+        // Detailed Logic to prevent everyone being 'Equilibrada'
+        if (mental.professionalism >= 18) return "Profesional ejemplar";
+        if (mental.professionalism <= 5) return "Poco profesional";
+        
+        if (mental.determination >= 18 && mental.workRate >= 18) return "Determinación férrea";
+        if (mental.determination <= 5) return "Poca determinación";
+
+        if (mental.ambition >= 18) return "Muy ambicioso";
+        if (mental.ambition <= 5) return "Nada ambicioso";
+        
+        if (mental.loyalty >= 18) return "Muy leal";
+        if (mental.loyalty <= 4) return "Mercenario";
+        
+        if (mental.temperament <= 4) return "Temperamental";
+        if (mental.temperament >= 17) return "Sereno";
+
+        if (mental.pressure >= 18) return "Inmune a la presión";
+        if (mental.pressure <= 5) return "Poco resistente a la presión";
+        
+        if (mental.leadership >= 17) return "Líder natural";
+        
+        // Mid-tier combinations
+        if (mental.professionalism >= 15) return "Bastante profesional";
+        if (mental.ambition >= 15) return "Ambicioso";
+        if (mental.loyalty >= 15) return "Leal";
+        if (mental.determination >= 15) return "Determinado";
+
+        return "Equilibrada";
     }
 
     static generateHeadline(player: Player): string {

@@ -15,9 +15,33 @@ export type MessageCategory = 'MARKET' | 'SQUAD' | 'STATEMENTS' | 'FINANCE' | 'C
 export type PitchZone = 'DEF' | 'MID' | 'ATT';
 export type Attribute = number;
 export type DialogueType = 'PRAISE_FORM' | 'CRITICIZE_FORM' | 'PRAISE_TRAINING' | 'WARN_CONDUCT' | 'DEMAND_MORE';
+export type DialogueTone = 'MILD' | 'MODERATE' | 'AGGRESSIVE';
 
 export interface PlayerStats {
-  mental: Record<string, number>;
+  mental: {
+    aggression: number;
+    anticipation: number;
+    bravery: number;
+    composure: number;
+    concentration: number;
+    decisions: number;
+    determination: number;
+    flair: number;
+    leadership: number;
+    offTheBall: number;
+    positioning: number;
+    teamwork: number;
+    vision: number;
+    workRate: number;
+    // Hidden Personality attributes
+    professionalism: number;
+    ambition: number;
+    pressure: number;
+    temperament: number;
+    loyalty: number;
+    adaptability: number;
+    sportsmanship: number;
+  };
   physical: Record<string, number>;
   technical: Record<string, number>;
   goalkeeping?: Record<string, number>;
@@ -243,6 +267,7 @@ export interface DialogueResult {
   text: string;
   moraleChange: number;
   reactionType: 'POSITIVE' | 'NEUTRAL' | 'NEGATIVE';
+  canReplica?: boolean;
 }
 
 export const ATTRIBUTE_LABELS: Record<string, string> = {
@@ -260,6 +285,13 @@ export const ATTRIBUTE_LABELS: Record<string, string> = {
   teamwork: "Juego en Equipo",
   vision: "Visión",
   workRate: "Sacrificio",
+  professionalism: "Profesionalismo",
+  ambition: "Ambición",
+  pressure: "Manejo de Presión",
+  temperament: "Temperamento",
+  loyalty: "Lealtad",
+  adaptability: "Adaptabilidad",
+  sportsmanship: "Juego Limpio",
   corners: "Córners",
   crossing: "Centros",
   dribbling: "Regate",

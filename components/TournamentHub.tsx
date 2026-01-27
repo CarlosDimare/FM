@@ -38,12 +38,13 @@ export const TournamentHub: React.FC<TournamentHubProps> = ({ competition, fixtu
         clubs.forEach(c => clubIds.add(c.id));
      }
      
-     return world.players.filter(p => clubIds.has(p.clubId) && p.squad === 'SENIOR' && (p.statsByCompetition[competition.id]?.appearances || 0) > 0);
-  }, [competition.id, fixtures]);
+     // IMPORTANT: Filter by who actually played in this specific competition
+     return world.players.filter(p => clubIds.has(p.clubId) && (p.statsByCompetition[competition.id]?.appearances || 0) > 0);
+  }, [competition.id, fixtures, world.players.length]);
 
-  const topScorers = useMemo(() => [...statsPlayers].sort((a,b) => getCompStats(b).goals - getCompStats(a).goals).slice(0, 10), [statsPlayers]);
-  const topAssisters = useMemo(() => [...statsPlayers].sort((a,b) => getCompStats(b).assists - getCompStats(a).assists).slice(0, 10), [statsPlayers]);
-  const topRated = useMemo(() => [...statsPlayers].filter(p => getCompStats(p).appearances > 2).sort((a,b) => (getCompStats(b).totalRating/getCompStats(b).appearances) - (getCompStats(a).totalRating/getCompStats(a).appearances)).slice(0, 10), [statsPlayers]);
+  const topScorers = useMemo(() => [...statsPlayers].sort((a,b) => getCompStats(b).goals - getCompStats(a).goals).slice(0, 15), [statsPlayers]);
+  const topAssisters = useMemo(() => [...statsPlayers].sort((a,b) => getCompStats(b).assists - getCompStats(a).assists).slice(0, 15), [statsPlayers]);
+  const topRated = useMemo(() => [...statsPlayers].filter(p => getCompStats(p).appearances >= 2).sort((a,b) => (getCompStats(b).totalRating/getCompStats(b).appearances) - (getCompStats(a).totalRating/getCompStats(a).appearances)).slice(0, 15), [statsPlayers]);
 
   return (
     <div className="p-4 md:p-6 h-full flex flex-col gap-4 overflow-hidden">

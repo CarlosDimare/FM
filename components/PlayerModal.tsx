@@ -1,13 +1,13 @@
 
 import React, { useState } from 'react';
-import { Player, Attribute, DialogueType, DialogueResult, ATTRIBUTE_LABELS, Position, SquadType } from '../types';
+import { Player, Attribute, DialogueType, DialogueResult, ATTRIBUTE_LABELS, Position, SquadType, DialogueTone } from '../types';
 import { world } from '../services/worldManager';
 import { getAttributeColor } from '../constants';
 import { ProfileNarrativeEngine } from '../services/engine';
 import { DialogueSystem } from '../services/dialogueSystem';
 import { TransferOfferModal } from './TransferOfferModal';
 import { ContractNegotiationModal } from './ContractNegotiationModal';
-import { X, MessageSquare, Activity, Map, BarChart2, FileText, History, TrendingUp, TrendingDown, ShieldAlert, ArrowRightLeft, UserX, UserPlus, Users } from 'lucide-react';
+import { X, MessageSquare, Activity, Map, BarChart2, FileText, History, TrendingUp, TrendingDown, ShieldAlert, ArrowRightLeft, UserX, UserPlus, Users, Heart, ShieldAlert as DisciplineIcon, Award, Zap, ChevronRight, MessageCircle, AlertCircle } from 'lucide-react';
 import { FMTable, FMTableCell, FMButton } from './FMUI';
 import { getFlagUrl } from '../data/static';
 
@@ -54,14 +54,6 @@ const POS_MAP: Record<string, { top: string; left: string }> = {
   [Position.STL]: { top: "12%", left: "30%" }
 };
 
-const INTERACTION_LABELS: Record<string, string> = {
-   'PRAISE_FORM': 'Elogiar Forma',
-   'CRITICIZE_FORM': 'Criticar Forma',
-   'PRAISE_TRAINING': 'Elogiar Entrenamiento',
-   'DEMAND_MORE': 'Exigir Más',
-   'WARN_CONDUCT': 'Advertir Conducta'
-};
-
 const PositionMarker: React.FC<{ pos: Position, isPrimary?: boolean }> = ({ pos, isPrimary }) => {
    const coords = POS_MAP[pos];
    if (!coords) return null;
@@ -79,25 +71,60 @@ const PositionMarker: React.FC<{ pos: Position, isPrimary?: boolean }> = ({ pos,
 
 export const PlayerModal: React.FC<PlayerModalProps> = ({ player, onClose, userClubId, currentDate }) => {
   const [activeTab, setActiveTab] = useState<'PROFILE' | 'INTERACTION' | 'POSITIONS' | 'STATS' | 'HISTORY' | 'CONTRACT'>('PROFILE');
-  const [attributeCategory, setAttributeCategory] = useState<'TECHNICAL' | 'MENTAL' | 'PHYSICAL'>('TECHNICAL');
+  const [attributeCategory, setAttributeCategory] = useState<'TECHNICAL' | 'PHYSICAL' | 'MENTAL'>('TECHNICAL');
+  
+  // Charla state
+  const [selectedTopic, setSelectedTopic] = useState<DialogueType | null>(null);
+  const [selectedTone, setSelectedTone] = useState<DialogueTone | null>(null);
   const [dialogueResult, setDialogueResult] = useState<DialogueResult | null>(null);
+  const [interactionStage, setInteractionStage] = useState<'TOPIC' | 'TONE' | 'RESULT' | 'REPLICA'>('TOPIC');
+
   const [showOfferModal, setShowOfferModal] = useState(false);
   const [showRenewalModal, setShowRenewalModal] = useState(false);
   
-  // Force update to reflect immediate changes in actions
   const [, setForceUpdate] = useState(0);
 
   if (!player) return null;
   const isUserPlayer = player.clubId === userClubId;
   const club = world.getClub(player.clubId);
-  const report = ProfileNarrativeEngine.generateScoutingReport(player);
   const headline = ProfileNarrativeEngine.generateHeadline(player);
-  const isGK = player.positions.includes(Position.GK);
+  const personality = ProfileNarrativeEngine.getPersonalityLabel(player);
+  const playerMotive = DialogueSystem.checkPlayerMotives(player, currentDate);
 
-  const handleInteraction = (type: DialogueType) => {
-     const result = DialogueSystem.getPlayerReaction(player, type);
+  const resetCharla = () => {
+    setSelectedTopic(null);
+    setSelectedTone(null);
+    setDialogueResult(null);
+    setInteractionStage('TOPIC');
+  };
+
+  const handleTopicSelect = (type: DialogueType) => {
+    setSelectedTopic(type);
+    setInteractionStage('TONE');
+  };
+
+  const handleToneSelect = (tone: DialogueTone) => {
+     if (!selectedTopic) return;
+     const result = DialogueSystem.getPlayerReaction(player, selectedTopic, tone, currentDate);
+     player.morale = Math.max(0, Math.min(100, player.morale + result.moraleChange));
+     setSelectedTone(tone);
+     setDialogueResult(result);
+     setInteractionStage('RESULT');
+  };
+
+  const handleMotiveAction = (action: 'PROMISE' | 'IGNORE') => {
+    const result = DialogueSystem.resolveInitiatedMotive(player, action, currentDate);
+    player.morale = Math.max(0, Math.min(100, player.morale + result.moraleChange));
+    setDialogueResult(result);
+    setInteractionStage('RESULT');
+  };
+
+  const handleReplica = () => {
+     if (!selectedTone) return;
+     const result = DialogueSystem.getReplicaResponse(player, selectedTone);
      player.morale = Math.max(0, Math.min(100, player.morale + result.moraleChange));
      setDialogueResult(result);
+     setInteractionStage('REPLICA');
   };
 
   const changeSquad = (newSquad: SquadType) => {
@@ -135,47 +162,57 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({ player, onClose, userC
     <>
       <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-[150] md:p-4 backdrop-blur-sm">
         <div className="bg-white w-full h-full md:h-auto md:max-w-5xl md:max-h-[95vh] md:rounded-sm shadow-2xl border border-slate-300 flex flex-col overflow-hidden">
-          {/* Dynamic Header */}
+          {/* Dynamic Header Reordered */}
           <div className={`${headerClasses} p-4 md:p-6 flex justify-between items-start border-b ${borderColor}`}>
             <div className="flex-1 min-w-0 pr-4">
-              <div className="flex flex-col lg:flex-row lg:items-end gap-x-4 gap-y-1 mb-2">
+              <div className="flex flex-col gap-y-1 mb-2">
                  <div className="flex flex-wrap items-baseline gap-2 md:gap-3">
                     <h2 className="text-2xl md:text-3xl font-black truncate tracking-tighter uppercase italic drop-shadow-sm flex items-center gap-2">
                         <img 
                           src={getFlagUrl(player.nationality)} 
                           alt={player.nationality} 
                           className="w-6 h-4 md:w-8 md:h-5 object-cover shadow-sm rounded-[1px]" 
-                          title={player.nationality} 
                         />
                         {player.name}
                     </h2>
                     <div className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest bg-white/20 px-2 py-0.5 rounded border border-white/30 backdrop-blur-sm self-center">{club?.name}</div>
+                 </div>
+
+                 {/* 1. Metadata below Name */}
+                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-black uppercase text-[10px] tracking-tight opacity-90 mt-1">
+                    <span className="text-xs bg-black/10 px-2 rounded-sm">{player.positions[0]}</span>
+                    <span>{player.nationality}</span>
+                    <span className="opacity-60 font-normal">•</span>
+                    <span>{player.age} AÑOS</span>
+                    <span className="opacity-60 font-normal">•</span>
+                    <span>{player.height} CM</span>
+                    <span className="opacity-60 font-normal">•</span>
+                    <span>{player.weight} KG</span>
+                 </div>
+
+                 {/* 2. Headline below metadata */}
+                 <div className="text-xs md:text-sm text-current opacity-95 font-black uppercase italic tracking-tight leading-tight mt-2">
+                    "{headline}"
+                 </div>
+
+                 {/* 3. Personality below headline */}
+                 <div className="flex flex-wrap gap-2 mt-2">
+                    <div className="flex items-center gap-1 bg-black/20 text-current px-2 py-0.5 rounded border border-white/20" title="Personalidad">
+                        <span className="text-[8px] font-black uppercase">{personality}</span>
+                    </div>
+
                     {player.developmentTrend === 'RISING' && (
-                       <div className="flex items-center gap-1 bg-green-500/20 text-current px-2 py-0.5 rounded border border-green-500/30 self-center" title="En progresión">
-                          <TrendingUp size={10} /> <span className="text-[8px] font-black uppercase">Mejorando</span>
+                       <div className="flex items-center gap-1 bg-green-500/20 text-current px-2 py-0.5 rounded border border-green-500/30" title="En progresión">
+                          <TrendingUp size={10} className="text-green-400" /> <span className="text-[8px] font-black uppercase">Mejorando</span>
                        </div>
                     )}
-                    {player.developmentTrend === 'DECLINING' && (
-                       <div className="flex items-center gap-1 bg-red-500/20 text-current px-2 py-0.5 rounded border border-red-500/30 self-center" title="En declive">
-                          <TrendingDown size={10} /> <span className="text-[8px] font-black uppercase">Declive</span>
+
+                    {playerMotive && (
+                       <div className="flex items-center gap-1 bg-orange-600 text-white px-2 py-0.5 rounded border border-orange-700 shadow-sm" title="Conflictivo">
+                          <AlertCircle size={10} className="text-white" /> <span className="text-[8px] font-black uppercase tracking-tighter">Descontento</span>
                        </div>
                     )}
                  </div>
-              </div>
-              
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-bold uppercase text-[10px] tracking-tight opacity-90 mt-1 mb-3">
-                 <span className="font-black text-xs bg-black/10 px-2 rounded-sm">{player.positions[0]}</span>
-                 <span>{player.nationality}</span>
-                 <span className="opacity-60">•</span>
-                 <span>{player.age} AÑOS</span>
-                 <span className="opacity-60">•</span>
-                 <span>{player.height} CM</span>
-                 <span className="opacity-60">•</span>
-                 <span>{player.weight} KG</span>
-              </div>
-
-              <div className="text-sm md:text-base text-current opacity-95 font-medium leading-tight">
-                 "{headline}"
               </div>
             </div>
             
@@ -193,7 +230,7 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({ player, onClose, userC
              ].map((tab) => (
                <button 
                   key={tab.id}
-                  onClick={() => { setActiveTab(tab.id as any); setDialogueResult(null); }}
+                  onClick={() => { setActiveTab(tab.id as any); resetCharla(); }}
                   title={tab.label}
                   className={`flex-1 md:flex-none px-4 md:px-6 py-4 transition-all border-b-2 ${activeTab === tab.id ? 'text-slate-950 border-slate-950 bg-white' : 'text-slate-400 border-transparent hover:text-slate-600'}`}
                >
@@ -205,15 +242,14 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({ player, onClose, userC
           <div className="overflow-y-auto flex-1 p-4 md:p-8 bg-white">
             {activeTab === 'PROFILE' && (
                <div className="space-y-6">
-                  {/* Mobile Sub-Nav */}
                   <div className="flex gap-2 p-1 bg-slate-100 rounded-sm mb-4">
-                     {['TECHNICAL', 'MENTAL', 'PHYSICAL'].map(cat => (
+                     {['TECHNICAL', 'PHYSICAL', 'MENTAL'].map(cat => (
                         <button 
                            key={cat}
                            onClick={() => setAttributeCategory(cat as any)}
                            className={`flex-1 py-2 text-[9px] font-black uppercase tracking-widest rounded-sm transition-all ${attributeCategory === cat ? 'bg-slate-900 text-white shadow' : 'text-slate-500 hover:text-slate-900'}`}
                         >
-                           {cat === 'TECHNICAL' ? 'Técnica' : cat === 'MENTAL' ? 'Mental' : 'Físico'}
+                           {cat === 'TECHNICAL' ? 'Técnica' : cat === 'PHYSICAL' ? 'Físico' : 'Mental'}
                         </button>
                      ))}
                   </div>
@@ -224,38 +260,42 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({ player, onClose, userC
                            {Object.entries(player.stats.technical).map(([k,v]) => <AttributeRow key={k} label={k} value={v}/>)}
                         </div>
                      )}
-                     {attributeCategory === 'MENTAL' && (
-                        <div className="space-y-0.5 animate-in fade-in slide-in-from-left-2 duration-200">
-                           {Object.entries(player.stats.mental).map(([k,v]) => <AttributeRow key={k} label={k} value={v}/>)}
-                        </div>
-                     )}
                      {attributeCategory === 'PHYSICAL' && (
                         <div className="space-y-0.5 animate-in fade-in slide-in-from-left-2 duration-200">
                            {Object.entries(player.stats.physical).map(([k,v]) => <AttributeRow key={k} label={k} value={v}/>)}
                         </div>
                      )}
+                     {attributeCategory === 'MENTAL' && (
+                        <div className="space-y-0.5 animate-in fade-in slide-in-from-left-2 duration-200">
+                           {Object.entries(player.stats.mental).filter(([k]) => !['professionalism','ambition','pressure','temperament','loyalty','adaptability','sportsmanship'].includes(k)).map(([k,v]) => <AttributeRow key={k} label={k} value={v as number}/>)}
+                           <div className="mt-4 pt-4 border-t border-slate-100">
+                              <div className="flex items-center justify-center gap-2 bg-slate-100 text-slate-800 px-3 py-2 rounded border border-slate-200 shadow-sm">
+                                 <span className="text-[10px] font-black uppercase tracking-widest">{personality}</span>
+                              </div>
+                           </div>
+                        </div>
+                     )}
                   </div>
 
-                  {/* Desktop Full View */}
                   <div className="hidden md:grid md:grid-cols-3 gap-8">
                      <div className="space-y-4">
                         <h3 className="text-slate-400 font-black text-[10px] uppercase tracking-widest border-b border-slate-100 pb-1">Técnica</h3>
                         <div className="space-y-0.5">{Object.entries(player.stats.technical).map(([k,v]) => <AttributeRow key={k} label={k} value={v}/>)}</div>
                      </div>
                      <div className="space-y-4">
-                        <h3 className="text-slate-400 font-black text-[10px] uppercase tracking-widest border-b border-slate-100 pb-1">Mental</h3>
-                        <div className="space-y-0.5">{Object.entries(player.stats.mental).map(([k,v]) => <AttributeRow key={k} label={k} value={v}/>)}</div>
-                     </div>
-                     <div className="space-y-4">
                         <h3 className="text-slate-400 font-black text-[10px] uppercase tracking-widest border-b border-slate-100 pb-1">Físico</h3>
                         <div className="space-y-0.5">{Object.entries(player.stats.physical).map(([k,v]) => <AttributeRow key={k} label={k} value={v}/>)}</div>
                      </div>
-                  </div>
-
-                  <div className="bg-slate-50 p-4 rounded-sm border border-slate-200 mt-6">
-                     <h3 className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-3">Informe de Ojeo</h3>
-                     <div className="space-y-2">
-                       {report.map((line, i) => <p key={i} className="text-[11px] text-slate-700 italic font-medium leading-relaxed">" {line} "</p>)}
+                     <div className="space-y-4">
+                        <h3 className="text-slate-400 font-black text-[10px] uppercase tracking-widest border-b border-slate-100 pb-1">Mental</h3>
+                        <div className="space-y-0.5">
+                           {Object.entries(player.stats.mental).filter(([k]) => !['professionalism','ambition','pressure','temperament','loyalty','adaptability','sportsmanship'].includes(k)).map(([k,v]) => <AttributeRow key={k} label={k} value={v as number}/>)}
+                        </div>
+                        <div className="mt-4 pt-2">
+                           <div className="flex items-center justify-center gap-2 bg-slate-100 text-slate-800 px-3 py-2 rounded border border-slate-200 shadow-sm hover:bg-slate-200 transition-colors">
+                              <span className="text-[10px] font-black uppercase tracking-widest">{personality}</span>
+                           </div>
+                        </div>
                      </div>
                   </div>
                </div>
@@ -263,9 +303,7 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({ player, onClose, userC
             {activeTab === 'POSITIONS' && (
                <div className="flex flex-col items-center justify-center h-full min-h-[400px]">
                   <div className="relative w-full max-w-[320px] aspect-[68/105] shadow-2xl bg-[#1e3a29] border-4 border-slate-300 rounded-sm overflow-hidden ring-4 ring-slate-100">
-                     {/* Detailed Pitch SVG */}
                      <svg width="100%" height="100%" viewBox="0 0 68 105" className="absolute inset-0 w-full h-full">
-                        {/* Grass Patterns */}
                         <defs>
                            <pattern id="grass" width="68" height="10" patternUnits="userSpaceOnUse">
                               <rect width="68" height="5" fill="#2d5a40" />
@@ -273,38 +311,23 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({ player, onClose, userC
                            </pattern>
                         </defs>
                         <rect width="100%" height="100%" fill="url(#grass)" />
-                        
-                        {/* Lines */}
                         <g fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="1">
-                           {/* Outer Boundary */}
                            <rect x="2" y="2" width="64" height="101" />
-                           {/* Halfway Line */}
                            <line x1="2" y1="52.5" x2="66" y2="52.5" />
-                           {/* Center Circle */}
                            <circle cx="34" cy="52.5" r="9" />
                            <circle cx="34" cy="52.5" r="0.5" fill="white" />
-                           
-                           {/* Top Box */}
                            <rect x="19" y="2" width="30" height="16" />
                            <rect x="26" y="2" width="16" height="5.5" />
-                           
-                           {/* Bottom Box */}
                            <rect x="19" y="87" width="30" height="16" />
                            <rect x="26" y="97.5" width="16" height="5.5" />
-                           
-                           {/* Arcs */}
                            <path d="M 26,18 A 9,9 0 0,0 42,18" />
                            <path d="M 26,87 A 9,9 0 0,1 42,87" />
-                           
-                           {/* Corners */}
                            <path d="M 2,5 A 3,3 0 0,0 5,2" />
                            <path d="M 63,2 A 3,3 0 0,0 66,5" />
                            <path d="M 2,100 A 3,3 0 0,1 5,103" />
                            <path d="M 66,100 A 3,3 0 0,0 63,103" />
                         </g>
                      </svg>
-
-                     {/* Players chips */}
                      {player.positions.map(p => <PositionMarker key={p} pos={p} isPrimary />)}
                      {player.secondaryPositions.map(p => <PositionMarker key={p} pos={p} />)}
                   </div>
@@ -345,8 +368,6 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({ player, onClose, userC
                         >
                            <ShieldAlert size={12} /> {player.transferStatus === 'LOANABLE' ? 'No Cedible' : 'Cedible'}
                         </FMButton>
-                        
-                        {/* Move Squad Buttons */}
                         {player.squad !== 'SENIOR' && (
                            <FMButton onClick={() => changeSquad('SENIOR')} variant="secondary" className="w-full">
                               <UserPlus size={12} /> A Primera
@@ -375,26 +396,19 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({ player, onClose, userC
             )}
             {activeTab === 'STATS' && (
                <div className="max-w-md mx-auto space-y-4">
-                  {/* Mobile Compact Grid */}
                   <div className="grid grid-cols-2 gap-3">
                      <StatBox label="Partidos" value={player.seasonStats.appearances} />
                      <StatBox label="Goles" value={player.seasonStats.goals} color="text-green-700" />
                      <StatBox label="Asistencias" value={player.seasonStats.assists} color="text-blue-700" />
                      <StatBox label="Calif. Media" value={avgRating} bg="bg-slate-100" />
-                     {isGK && (
-                        <>
-                           <StatBox label="Encajados" value={player.seasonStats.conceded} color="text-red-700" />
-                           <StatBox label="Valla Invicta" value={player.seasonStats.cleanSheets} />
-                        </>
-                     )}
                   </div>
                </div>
             )}
             {activeTab === 'HISTORY' && (
                <div className="max-w-2xl mx-auto">
                   <FMTable 
-                     headers={['Año', 'Club', 'PJ', 'G', 'Ast', 'Med', ...(isGK ? ['Enc', 'Inv'] : [])]}
-                     colWidths={['45px', 'auto', '35px', '35px', '35px', '45px', ...(isGK ? ['35px', '35px'] : [])]}
+                     headers={['Año', 'Club', 'PJ', 'G', 'Ast', 'Med']}
+                     colWidths={['45px', 'auto', '35px', '35px', '35px', '45px']}
                   >
                      <tr className="bg-blue-50 font-bold border-l-4 border-l-blue-600">
                         <FMTableCell className="font-mono text-blue-900">{currentDate.getFullYear()}</FMTableCell>
@@ -403,12 +417,6 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({ player, onClose, userC
                         <FMTableCell className="text-center text-green-700" isNumber>{player.seasonStats.goals}</FMTableCell>
                         <FMTableCell className="text-center text-blue-700" isNumber>{player.seasonStats.assists}</FMTableCell>
                         <FMTableCell className="text-center bg-blue-100" isNumber>{avgRating}</FMTableCell>
-                        {isGK && (
-                           <>
-                              <FMTableCell className="text-center text-red-700" isNumber>{player.seasonStats.conceded}</FMTableCell>
-                              <FMTableCell className="text-center text-slate-700" isNumber>{player.seasonStats.cleanSheets}</FMTableCell>
-                           </>
-                        )}
                      </tr>
                      {player.history.slice().reverse().map((h, i) => {
                         const hClub = world.getClub(h.clubId);
@@ -421,35 +429,125 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({ player, onClose, userC
                               <FMTableCell className="text-center text-green-700/80" isNumber>{h.stats.goals}</FMTableCell>
                               <FMTableCell className="text-center text-blue-700/80" isNumber>{h.stats.assists}</FMTableCell>
                               <FMTableCell className="text-center font-bold bg-slate-100" isNumber>{hRating}</FMTableCell>
-                              {isGK && (
-                                 <>
-                                    <FMTableCell className="text-center text-red-700/80" isNumber>{h.stats.conceded || 0}</FMTableCell>
-                                    <FMTableCell className="text-center text-slate-600" isNumber>{h.stats.cleanSheets}</FMTableCell>
-                                 </>
-                              )}
                            </tr>
                         )
                      })}
-                     {player.history.length === 0 && (
-                        <tr>
-                           <td colSpan={isGK ? 8 : 6} className="p-8 text-center text-slate-400 italic text-[10px] uppercase font-black tracking-widest">
-                              No hay registros históricos previos.
-                           </td>
-                        </tr>
-                     )}
                   </FMTable>
                </div>
             )}
             {activeTab === 'INTERACTION' && (
-               <div className="max-w-xl mx-auto space-y-8">
-                  <div className="grid grid-cols-2 gap-3">
-                     {Object.keys(INTERACTION_LABELS).map(t => (
-                        <button key={t} onClick={() => handleInteraction(t as any)} className="p-4 border border-slate-200 rounded-sm text-[10px] font-black uppercase text-slate-600 hover:bg-slate-900 hover:text-white transition-all text-left">
-                           {INTERACTION_LABELS[t]}
-                        </button>
-                     ))}
-                  </div>
-                  {dialogueResult && <div className="p-6 bg-slate-50 border border-slate-200 italic text-slate-800 text-center font-medium">"{dialogueResult.text}"</div>}
+               <div className="max-w-3xl mx-auto space-y-6">
+                  {/* Player Initiated Conversations (Motives) */}
+                  {playerMotive && interactionStage === 'TOPIC' && (
+                    <div className="bg-amber-50 border border-amber-200 p-6 rounded-sm mb-6 animate-in slide-in-from-top-2">
+                       <div className="flex items-center gap-2 text-amber-700 font-black text-[10px] uppercase tracking-widest mb-3">
+                          <MessageSquare size={14} /> El jugador quiere hablar
+                       </div>
+                       <p className="text-slate-800 font-medium italic text-lg leading-relaxed mb-4">
+                          "{playerMotive}"
+                       </p>
+                       <div className="flex gap-2">
+                          <FMButton variant="primary" onClick={() => handleMotiveAction('PROMISE')} className="text-[10px] shadow-md border-slate-700">Prometer buscar solución</FMButton>
+                          <FMButton variant="secondary" onClick={() => handleMotiveAction('IGNORE')} className="text-[10px] shadow-sm border-slate-400">Ignorar petición</FMButton>
+                       </div>
+                    </div>
+                  )}
+
+                  {interactionStage === 'TOPIC' && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                       {/* Theme: Rendimiento */}
+                       <div className="space-y-4">
+                          <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-slate-100 pb-1 flex items-center gap-2">
+                             <Award size={14} /> Rendimiento
+                          </h4>
+                          <div className="flex flex-col gap-2">
+                             <button onClick={() => handleTopicSelect('PRAISE_FORM')} className="p-4 border border-slate-300 rounded-sm text-[10px] font-black uppercase tracking-widest text-slate-700 bg-white hover:bg-slate-900 hover:text-white transition-all text-center shadow-sm">Elogiar Forma</button>
+                             <button onClick={() => handleTopicSelect('CRITICIZE_FORM')} className="p-4 border border-slate-300 rounded-sm text-[10px] font-black uppercase tracking-widest text-slate-700 bg-white hover:bg-slate-900 hover:text-white transition-all text-center shadow-sm">Criticar Forma</button>
+                             <button onClick={() => handleTopicSelect('PRAISE_TRAINING')} className="p-4 border border-slate-300 rounded-sm text-[10px] font-black uppercase tracking-widest text-slate-700 bg-white hover:bg-slate-900 hover:text-white transition-all text-center shadow-sm">Elogiar Entrenamiento</button>
+                          </div>
+                       </div>
+
+                       {/* Theme: Conducta y Otros */}
+                       <div className="space-y-4">
+                          <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-slate-100 pb-1 flex items-center gap-2">
+                             <DisciplineIcon size={14} /> Disciplina y Otros
+                          </h4>
+                          <div className="flex flex-col gap-2">
+                             <button onClick={() => handleTopicSelect('DEMAND_MORE')} className="p-4 border border-slate-300 rounded-sm text-[10px] font-black uppercase tracking-widest text-slate-700 bg-white hover:bg-slate-900 hover:text-white transition-all text-center shadow-sm">Exigir Más</button>
+                             <button onClick={() => handleTopicSelect('WARN_CONDUCT')} className="p-4 border border-slate-300 rounded-sm text-[10px] font-black uppercase tracking-widest text-slate-700 bg-white hover:bg-slate-900 hover:text-white transition-all text-center shadow-sm">Advertir Conducta</button>
+                             <button className="p-4 border border-slate-300 rounded-sm text-[10px] font-black uppercase tracking-widest text-slate-400 bg-slate-50 cursor-not-allowed text-center shadow-sm">Preguntar por el futuro</button>
+                          </div>
+                       </div>
+                    </div>
+                  )}
+
+                  {interactionStage === 'TONE' && selectedTopic && (
+                    <div className="space-y-6 animate-in fade-in duration-300">
+                       <header className="text-center">
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Selecciona el tono de la charla</p>
+                          <h4 className="text-lg font-black text-slate-900 uppercase italic">¿Qué le quieres decir?</h4>
+                       </header>
+                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          {Object.entries(DialogueSystem.getTopicOptions(selectedTopic)).map(([tone, phrase]) => (
+                             <button 
+                                key={tone}
+                                onClick={() => handleToneSelect(tone as DialogueTone)}
+                                className={`p-6 border-2 rounded-sm text-left transition-all group flex flex-col gap-4 h-full ${
+                                   tone === 'MILD' ? 'border-green-300 hover:bg-green-50' :
+                                   tone === 'MODERATE' ? 'border-blue-300 hover:bg-blue-50' :
+                                   'border-red-300 hover:bg-red-50'
+                                }`}
+                             >
+                                <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full self-start ${
+                                   tone === 'MILD' ? 'bg-green-100 text-green-700' :
+                                   tone === 'MODERATE' ? 'bg-blue-100 text-blue-700' :
+                                   'bg-red-100 text-red-700'
+                                }`}>{tone}</span>
+                                <p className="text-xs font-bold text-slate-700 leading-relaxed italic">"{phrase}"</p>
+                             </button>
+                          ))}
+                       </div>
+                       <div className="flex justify-center mt-4">
+                          <FMButton variant="secondary" onClick={resetCharla}>Cambiar de tema</FMButton>
+                       </div>
+                    </div>
+                  )}
+
+                  {(interactionStage === 'RESULT' || interactionStage === 'REPLICA') && dialogueResult && (
+                     <div className="mt-8 p-10 bg-slate-50 border border-slate-200 rounded-sm relative animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-6 py-1.5 border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                           <MessageCircle size={14}/> Reacción del Jugador
+                        </div>
+                        
+                        <div className="text-slate-800 text-center font-bold italic text-2xl leading-relaxed">
+                           "{dialogueResult.text}"
+                        </div>
+                        
+                        <div className="mt-8 flex flex-col items-center gap-6">
+                           <span className={`text-[10px] font-black px-4 py-1 rounded-full uppercase tracking-tighter shadow-sm ${
+                              dialogueResult.reactionType === 'POSITIVE' ? 'bg-green-100 text-green-700' :
+                              dialogueResult.reactionType === 'NEGATIVE' ? 'bg-red-100 text-red-700' :
+                              'bg-slate-200 text-slate-600'
+                           }`}>
+                              Efecto: {dialogueResult.moraleChange > 0 ? '+' : ''}{dialogueResult.moraleChange} Moral
+                           </span>
+
+                           <div className="flex gap-3">
+                              {interactionStage === 'RESULT' && dialogueResult.canReplica && (
+                                 <FMButton variant="primary" onClick={handleReplica} className="px-10 py-3">Réplica</FMButton>
+                              )}
+                              <FMButton variant="secondary" onClick={resetCharla} className="px-10 py-3">Finalizar Charla</FMButton>
+                           </div>
+                        </div>
+                     </div>
+                  )}
+
+                  {!dialogueResult && !selectedTopic && !playerMotive && (
+                     <div className="text-center py-20 text-slate-300 flex flex-col items-center gap-4 border-2 border-dashed border-slate-100 rounded-sm">
+                        <MessageSquare size={48} className="opacity-20" />
+                        <p className="font-black uppercase tracking-widest text-[10px]">Inicia una conversación temática con el jugador</p>
+                     </div>
+                  )}
                </div>
             )}
           </div>

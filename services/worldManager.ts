@@ -12,7 +12,7 @@ export class WorldManager {
   tactics: Tactic[] = [...TACTIC_PRESETS];
   offers: TransferOffer[] = [];
   inbox: InboxMessage[] = [];
-  matchHistory: MatchLog[] = []; // Persistent history
+  matchHistory: MatchLog[] = []; 
 
   constructor() { this.initWorld(); }
 
@@ -26,20 +26,12 @@ export class WorldManager {
       { id: "W_CLUB", name: "Mundial de Clubes", country: "Global", type: 'GLOBAL', tier: 1 },
     ];
 
-    // Load Argentine Leagues
     this.loadRealClubs(ARG_PRIMERA, "L_ARG_1");
     this.loadRealClubs(ARG_NACIONAL, "L_ARG_2");
-    
-    // Load Continental Opponents
-    // We assign them to a dummy ID so they don't appear in the main tables but exist in world
-    // Merge both Elite and Tier 2 lists into the pool
     this.loadRealClubs([...CONT_CLUBS, ...CONT_CLUBS_TIER2], "L_SAM_OTHER");
-    
-    // Load World Bosses (Real Madrid etc) for Club World Cup
     this.loadRealClubs(WORLD_BOSSES, "L_EUR_ELITE");
 
     this.players.forEach(p => {
-       // Random initial transfer status for immersion
        if (Math.random() < 0.08) {
           if (p.age < 22 && p.currentAbility < 120 && p.potentialAbility > 140) p.transferStatus = 'LOANABLE';
           else if (p.age > 28) p.transferStatus = 'TRANSFERABLE';
@@ -58,7 +50,7 @@ export class WorldManager {
            primaryColor: def.pCol,
            secondaryColor: def.sCol,
            finances: {
-              balance: def.rep * 2500, // Richer clubs have more rep
+              balance: def.rep * 2500,
               transferBudget: def.rep * 800,
               wageBudget: def.rep * 80,
               monthlyIncome: def.rep * 200,
@@ -162,7 +154,7 @@ export class WorldManager {
         id: generateUUID(),
         name: name,
         age: 35,
-        nationality: "Argentina", // Default
+        nationality: "Argentina",
         role: 'HEAD_COACH',
         clubId: clubId,
         attributes: {
@@ -178,7 +170,7 @@ export class WorldManager {
         contractExpiry: new Date(2009, 5, 30),
         history: []
      };
-     this.staff.unshift(manager); // Add to beginning so it appears first in list if not sorted
+     this.staff.unshift(manager);
   }
 
   createRandomPlayer(clubId: string, primaryPos: Position, minAge = 16, maxAge = 36, baseYear: number = 2008): Player {
@@ -186,29 +178,19 @@ export class WorldManager {
     const repBase = club ? club.reputation / 500 : 10;
     const tier = randomInt(Math.max(1, repBase - 5), Math.min(20, repBase + 5)); 
 
-    // Nationality & Name Generation
     let nat = "Argentina";
     let firstName = "";
     let lastName = "";
 
-    // Determine Nationality based on club
     if (club) {
-        // 90% chance to be from the club's country, 10% foreign
         if (Math.random() < 0.9) {
             nat = club.country;
         } else {
-            // Random foreigner (neighbor or european)
             const foreignOptions = Object.keys(REGEN_DB);
-            // Add Argentina to mix if club is not argentine
             if (club.country !== "Argentina") foreignOptions.push("argentina");
-            
             const pickedKey = foreignOptions[randomInt(0, foreignOptions.length - 1)];
-            // Map key back to display name if needed, or stick to simple
             if (pickedKey === "argentina") nat = "Argentina";
             else {
-                // Find matching display name or just Capitalize
-                // Simple mapping back from key to display name would be ideal but for now we rely on REGEN_DB structure
-                // Reverse look up FLAGS keys or just capitalize
                 nat = pickedKey.charAt(0).toUpperCase() + pickedKey.slice(1);
                 if (pickedKey === "espana") nat = "España";
                 if (pickedKey === "inglaterra") nat = "Inglaterra";
@@ -223,7 +205,6 @@ export class WorldManager {
         nat = NATIONS[randomInt(0, NATIONS.length - 1)];
     }
 
-    // Generate Name based on Nationality
     const normalizeKey = (str: string) => str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     const regenKey = normalizeKey(nat);
 
@@ -232,10 +213,8 @@ export class WorldManager {
         firstName = db.nombres[randomInt(0, db.nombres.length - 1)];
         lastName = db.apellidos[randomInt(0, db.apellidos.length - 1)];
     } else {
-        // Fallback to generic/Argentine names
         firstName = NAMES_DB.firstNames[randomInt(0, NAMES_DB.firstNames.length - 1)];
         lastName = NAMES_DB.lastNames[randomInt(0, NAMES_DB.lastNames.length - 1)];
-        // Force nat to Argentina if we used Argentine names and nat wasn't specific
         if (!club && !NATIONS.includes(nat)) nat = "Argentina";
     }
 
@@ -260,8 +239,33 @@ export class WorldManager {
     const birthYear = baseYear - age;
     const birthDate = new Date(birthYear, randomInt(0, 11), randomInt(1, 28));
 
+    // Refined hidden mental attributes to create personality variety
+    // We use lower skew or plain random for some to hit extremes (18-20 or 1-5)
     const stats: PlayerStats = {
-      mental: { aggression: weightedRandom(1, 20), anticipation: weightedRandom(tier - 3, Math.min(20, tier + 4)), bravery: weightedRandom(1, 20), composure: weightedRandom(tier - 3, Math.min(20, tier + 4)), concentration: weightedRandom(1, 20), decisions: weightedRandom(tier - 2, Math.min(20, tier + 4)), determination: weightedRandom(1, 20), flair: weightedRandom(1, 20), leadership: weightedRandom(1, 20), offTheBall: weightedRandom(1, 20), positioning: weightedRandom(tier - 3, Math.min(20, tier + 4)), teamwork: weightedRandom(1, 20), vision: weightedRandom(tier - 4, Math.min(20, tier + 5)), workRate: weightedRandom(1, 20) },
+      mental: { 
+        aggression: weightedRandom(1, 20), 
+        anticipation: weightedRandom(tier - 3, Math.min(20, tier + 4)), 
+        bravery: weightedRandom(1, 20), 
+        composure: weightedRandom(tier - 3, Math.min(20, tier + 4)), 
+        concentration: weightedRandom(1, 20), 
+        decisions: weightedRandom(tier - 2, Math.min(20, tier + 4)), 
+        determination: randomInt(1, 20), // More spread for "Determinación férrea"
+        flair: weightedRandom(1, 20), 
+        leadership: randomInt(1, 20), // More spread for "Líder natural"
+        offTheBall: weightedRandom(1, 20), 
+        positioning: weightedRandom(tier - 3, Math.min(20, tier + 4)), 
+        teamwork: weightedRandom(1, 20), 
+        vision: weightedRandom(tier - 4, Math.min(20, tier + 5)), 
+        workRate: randomInt(1, 20),
+        // Hidden personality attributes - increased spread
+        professionalism: randomInt(1, 20),
+        ambition: randomInt(1, 20),
+        pressure: randomInt(1, 20),
+        temperament: randomInt(1, 20),
+        loyalty: randomInt(1, 20),
+        adaptability: weightedRandom(1, 20),
+        sportsmanship: weightedRandom(1, 20)
+      },
       technical: { corners: weightedRandom(1, 20), crossing: weightedRandom(1, 20), dribbling: weightedRandom(1, 20), finishing: isAtt ? weightedRandom(tier, 20) : weightedRandom(1, 15), firstTouch: weightedRandom(tier - 2, Math.min(20, tier + 3)), freeKickTaking: weightedRandom(1, 20), heading: weightedRandom(1, 20), longShots: weightedRandom(1, 20), longThrows: weightedRandom(1, 20), marking: isDef ? weightedRandom(tier, 20) : weightedRandom(1, 15), passing: weightedRandom(tier - 3, Math.min(20, tier + 4)), penaltyTaking: weightedRandom(1, 20), tackling: isDef ? weightedRandom(tier, 20) : weightedRandom(1, 15), technique: weightedRandom(tier - 2, Math.min(20, tier + 4)) },
       physical: { acceleration: weightedRandom(5, 20), agility: weightedRandom(5, 20), balance: weightedRandom(5, 20), jumpingReach: height > 190 ? weightedRandom(14, 20) : weightedRandom(5, 16), naturalFitness: weightedRandom(10, 20), pace: weightedRandom(5, 20), stamina: weightedRandom(10, 20), strength: weight > 85 ? weightedRandom(14, 20) : weightedRandom(5, 16) }
     };
@@ -289,7 +293,7 @@ export class WorldManager {
       statsByCompetition: {},
       history: [],
       currentAbility, potentialAbility, reputation, fitness: 100, morale: 100, clubId: clubId, isStarter: false, squad: 'SENIOR',
-      value, salary, transferStatus: 'NONE', contractExpiry, loyalty: weightedRandom(5, 20), negotiationAttempts: 0,
+      value, salary, transferStatus: 'NONE', contractExpiry, loyalty: stats.mental.loyalty, negotiationAttempts: 0,
       isUnhappyWithContract: false,
       developmentTrend: 'STABLE',
       yellowCardsAccumulated: 0
@@ -360,48 +364,34 @@ export class WorldManager {
      return result;
   }
 
-  // CORE AI LOGIC
   processAIActivity(currentDate: Date) {
-     this.generateAIOffersToUser(currentDate); // AI bidding on User players
-     this.processBackgroundTransfers(currentDate); // AI vs AI transfers
+     this.generateAIOffersToUser(currentDate);
+     this.processBackgroundTransfers(currentDate);
      this.processAIRenewals(currentDate);
-     this.manageAISquads(currentDate); // List players for transfer/loan
-     this.processAIUnsettling(currentDate); // Big clubs unsettling players
+     this.manageAISquads(currentDate);
+     this.processAIUnsettling(currentDate);
      this.updatePlayerMarketValues(); 
   }
 
-  // 1. AI OFFERS TO USER
   private generateAIOffersToUser(currentDate: Date) {
-     if (Math.random() > 0.05) return; // Only 5% chance per day to initiate user offers loop
-
-     // Find a rich club looking for players
+     if (Math.random() > 0.05) return;
      const buyers = this.clubs.filter(c => c.finances.transferBudget > 3000000 && c.reputation > 5000);
      const buyer = buyers[randomInt(0, buyers.length - 1)];
      if (!buyer) return;
-
      const potentialTargets = this.players.filter(p => p.clubId !== buyer.id && p.clubId !== 'FREE_AGENT' && p.currentAbility > 120);
      const target = potentialTargets[randomInt(0, potentialTargets.length - 1)];
      if (!target) return;
-
      const sellerClub = this.getClub(target.clubId);
      if (!sellerClub) return;
-
-     // Determine Offer Type
      const isTransferListed = target.transferStatus === 'TRANSFERABLE';
      const isLoanListed = target.transferStatus === 'LOANABLE';
-     
-     // AI Logic: Buy if listed OR if they are rich and want a star
      if (isTransferListed || (buyer.reputation > sellerClub.reputation + 500 && buyer.finances.transferBudget > target.value * 1.5)) {
-        // Make Purchase Offer
         const offerAmount = isTransferListed ? target.value : Math.round(target.value * (randomInt(11, 15) / 10));
-        
-        // Check if offer already exists
         const exists = this.offers.some(o => o.playerId === target.id && o.fromClubId === buyer.id && o.status === 'PENDING');
         if (!exists) {
            this.makeTransferOffer(target.id, buyer.id, offerAmount, 'PURCHASE', currentDate);
         }
      } 
-     // AI Logic: Loan if listed loanable and young
      else if (isLoanListed && target.age < 23 && buyer.reputation < sellerClub.reputation) {
         const exists = this.offers.some(o => o.playerId === target.id && o.fromClubId === buyer.id && o.status === 'PENDING');
         if (!exists) {
@@ -410,21 +400,14 @@ export class WorldManager {
      }
   }
 
-  // 2. AI SQUAD MANAGEMENT (Listing players)
   private manageAISquads(currentDate: Date) {
-     // Run periodically, not every day for everyone
      if (Math.random() > 0.1) return;
-
      this.clubs.forEach(club => {
         const squad = this.getPlayersByClub(club.id);
-        
-        // A. TRANSFER LIST DEADWOOD
         const deadwood = squad.filter(p => p.age > 29 && p.squad !== 'SENIOR' && p.contractExpiry.getFullYear() <= currentDate.getFullYear() + 1);
         deadwood.forEach(p => {
            if (Math.random() < 0.3) p.transferStatus = 'TRANSFERABLE';
         });
-
-        // B. LOAN LIST YOUNGSTERS
         const youngsters = squad.filter(p => p.age < 21 && p.potentialAbility > p.currentAbility + 20 && p.squad !== 'SENIOR');
         youngsters.forEach(p => {
            if (Math.random() < 0.3) p.transferStatus = 'LOANABLE';
@@ -432,27 +415,19 @@ export class WorldManager {
      });
   }
 
-  // 3. AI UNSETTLING (Big clubs declaring interest)
   private processAIUnsettling(currentDate: Date) {
      if (Math.random() > 0.05) return;
-
-     const bigClubs = this.clubs.filter(c => c.reputation > 8000); // River, Boca, Flamengo, etc.
+     const bigClubs = this.clubs.filter(c => c.reputation > 8000);
      const bigClub = bigClubs[randomInt(0, bigClubs.length - 1)];
-     
      if (!bigClub) return;
-
-     // Find a player performing well in a smaller club
      const targets = this.players.filter(p => {
         const club = this.getClub(p.clubId);
         if (!club || club.reputation >= bigClub.reputation) return false;
-        
         const avgRating = p.seasonStats.appearances > 5 ? p.seasonStats.totalRating / p.seasonStats.appearances : 0;
         return avgRating > 7.4 && p.age < 28 && p.currentAbility > 130;
      });
-
      const target = targets[randomInt(0, targets.length - 1)];
      if (target) {
-        // Declare interest
         const reaction = Math.random();
         if (reaction < 0.6) {
            target.isUnhappyWithContract = true;
@@ -462,19 +437,13 @@ export class WorldManager {
      }
   }
 
-  // 4. BACKGROUND TRANSFERS (Refined)
   private processBackgroundTransfers(currentDate: Date) {
      const buyer = this.clubs.filter(c => c.finances.transferBudget > 1000000)[randomInt(0, 10)];
      if (!buyer) return;
-
-     // Needs analysis... (Simplified)
      const squad = this.getPlayersByClub(buyer.id);
-     if (squad.length > 28) return; // Squad full
-
+     if (squad.length > 28) return;
      const listedPlayers = this.players.filter(p => p.transferStatus === 'TRANSFERABLE' && p.clubId !== buyer.id && p.value <= buyer.finances.transferBudget);
-     
-     const target = listedPlayers.find(p => p.currentAbility > 120 && p.reputation <= buyer.reputation); // simplified rep check via value/ability
-
+     const target = listedPlayers.find(p => p.currentAbility > 120 && p.reputation <= buyer.reputation);
      if (target) {
         const seller = this.getClub(target.clubId);
         if (seller) {
@@ -483,14 +452,12 @@ export class WorldManager {
            buyer.finances.transferBudget -= fee;
            seller.finances.balance += fee;
            seller.finances.transferBudget += fee;
-           
            target.clubId = buyer.id;
            target.squad = 'SENIOR';
            target.isStarter = false;
            target.transferStatus = 'NONE';
-           target.morale = 80; // Reset morale
+           target.morale = 80;
            target.isUnhappyWithContract = false;
-
            if (target.value > 5000000) {
               this.addInboxMessage('MARKET', 'Fichaje Destacado', `${buyer.name} ha fichado a ${target.name} del ${seller.name} por £${(fee/1000000).toFixed(1)}M.`, currentDate);
            }
@@ -502,14 +469,12 @@ export class WorldManager {
      this.players.forEach(p => {
         if (p.clubId !== 'FREE_AGENT' && p.contractExpiry < currentDate) {
            const isUserPlayer = p.clubId === userClubId;
-           // Release logic
            p.clubId = 'FREE_AGENT';
            p.isStarter = false;
            p.tacticalPosition = undefined;
            p.salary = 0;
            p.transferStatus = 'NONE';
            p.value = 0;
-
            if (isUserPlayer) {
               this.addInboxMessage('SQUAD', 'Baja por Fin de Contrato', `${p.name} ha abandonado el club al finalizar su contrato. Ahora es agente libre.`, currentDate, p.id);
            }
@@ -520,18 +485,15 @@ export class WorldManager {
   rescindContract(playerId: string, currentDate: Date) {
      const player = this.players.find(p => p.id === playerId);
      if (!player || player.clubId === 'FREE_AGENT') return;
-
-     const compensation = player.salary * 12; // Simple estimation logic
+     const compensation = player.salary * 12;
      const club = this.getClub(player.clubId);
      if (club) club.finances.balance -= compensation;
-
      player.clubId = 'FREE_AGENT';
      player.isStarter = false;
      player.tacticalPosition = undefined;
      player.salary = 0;
      player.transferStatus = 'NONE';
      player.value = 0;
-
      this.addInboxMessage('SQUAD', 'Rescisión de Contrato', `Has rescindido el contrato de ${player.name} pagando una compensación de £${compensation.toLocaleString()}. El jugador es ahora libre.`, currentDate, player.id);
   }
 
@@ -544,9 +506,7 @@ export class WorldManager {
            if (avgRating > 7.5) formFactor = 1.3;
            else if (avgRating < 6.0) formFactor = 0.8;
         }
-        
         const baseValue = (p.currentAbility * p.currentAbility * 2500) * ageFactor * formFactor;
-        
         const noise = randomInt(-5, 5) / 100;
         p.value = Math.max(1000, Math.round(baseValue * (1 + noise)));
      });
@@ -555,30 +515,20 @@ export class WorldManager {
   selectBestEleven(clubId: string, squadType: SquadType = 'SENIOR'): Player[] {
      const defaultFormation = [0, 6, 7, 8, 10, 16, 17, 19, 20, 27, 29];
      const allPlayers = this.getPlayersByClub(clubId).filter(p => p.squad === squadType && !p.injury && (!p.suspension || p.suspension.matchesLeft === 0));
-     
-     this.getPlayersByClub(clubId).forEach(p => { 
-        if (p.squad === squadType) p.isStarter = false; 
-     });
-
+     this.getPlayersByClub(clubId).forEach(p => { if (p.squad === squadType) p.isStarter = false; });
      const starters: Player[] = [];
      const usedIds = new Set<string>();
-
      const getBestForSlot = (tacticalIndex: number): Player | null => {
         let role = 'MID';
         if (tacticalIndex === 0) role = 'GK';
         else if (tacticalIndex >= 1 && tacticalIndex <= 15) role = 'DEF';
         else if (tacticalIndex >= 26) role = 'ATT';
-
         const candidates = allPlayers.filter(p => !usedIds.has(p.id) && this.playerFitsRole(p, role));
         return candidates.sort((a,b) => (b.currentAbility * (b.fitness/100)) - (a.currentAbility * (a.fitness/100)))[0];
      };
-
      defaultFormation.forEach(slot => {
         let player = getBestForSlot(slot);
-        if (!player) {
-           player = allPlayers.find(p => !usedIds.has(p.id));
-        }
-
+        if (!player) player = allPlayers.find(p => !usedIds.has(p.id));
         if (player) {
            player.isStarter = true;
            player.tacticalPosition = slot;
@@ -586,7 +536,6 @@ export class WorldManager {
            usedIds.add(player.id);
         }
      });
-
      return starters;
   }
 
@@ -626,14 +575,11 @@ export class WorldManager {
        const diffTime = p.contractExpiry.getTime() - currentDate.getTime();
        const monthsLeft = diffTime / (1000 * 60 * 60 * 24 * 30);
        const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-       // User Team 6-month warning (approx 180 days)
        if (userClubId && p.clubId === userClubId) {
           if (daysLeft === 180) {
              this.addInboxMessage('SQUAD', 'Contrato por finalizar', `El contrato de ${p.name} finaliza en 6 meses. A partir de ahora es libre de negociar con otros clubes.`, currentDate, p.id);
           }
        }
-
        const avgRating = p.seasonStats.appearances > 5 ? p.seasonStats.totalRating / p.seasonStats.appearances : 0;
        if (!p.requestedSalary) {
           if (monthsLeft < 12 || (avgRating > 7.5 && p.morale > 80)) {
@@ -671,11 +617,6 @@ export class WorldManager {
     if (!player) throw new Error("Player not found");
     const responseDate = new Date(currentDate);
     responseDate.setDate(responseDate.getDate() + randomInt(2, 4));
-    
-    // Check if targeting a user-controlled club. 
-    // Simplified: If responseDate is infinite, user must respond.
-    // For now, let's keep it simple.
-    
     const offer: TransferOffer = { id: generateUUID(), playerId, fromClubId, toClubId: player.clubId, amount, type, status: 'PENDING', date: new Date(currentDate), responseDate, isViewed: false };
     this.offers.push(offer);
     return offer;
@@ -684,18 +625,12 @@ export class WorldManager {
   processTransferDecisions(currentDate: Date) {
     this.offers.forEach(offer => {
       if (offer.status !== 'PENDING' || currentDate < offer.responseDate) return;
-      
-      // If the response date is very far in future (9999), it means it's waiting for manual user interaction. 
-      // We don't implement this fully yet, but we skip processing here.
       if (offer.responseDate.getFullYear() === 9999) return;
-
       const player = this.players.find(p => p.id === offer.playerId);
       const toClub = this.getClub(offer.toClubId);
       const fromClub = this.getClub(offer.fromClubId);
       if (!player || !toClub || !fromClub) return;
-      
       const targetValue = player.value;
-
       if (offer.type === 'PURCHASE') {
         const isListed = player.transferStatus === 'TRANSFERABLE';
         if (!isListed && offer.amount < targetValue * 3) {
@@ -724,17 +659,14 @@ export class WorldManager {
     const toClub = this.getClub(offer.toClubId);
     if (player && fromClub && toClub) {
       if (offer.type === 'PURCHASE') { fromClub.finances.balance -= offer.amount; toClub.finances.balance += offer.amount; }
-      
       if (offer.type === 'PURCHASE') {
          player.clubId = offer.fromClubId; 
          player.transferStatus = 'NONE';
       } else {
          player.clubId = offer.fromClubId; 
       }
-      
       player.squad = 'SENIOR'; 
       player.isStarter = false; 
-      
       this.updateClubMonthlyExpenses(fromClub.id); this.updateClubMonthlyExpenses(toClub.id);
       offer.status = 'COMPLETED';
     }

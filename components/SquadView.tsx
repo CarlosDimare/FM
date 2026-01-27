@@ -1,20 +1,23 @@
 
-import React, { useState } from 'react';
+import React from 'react';
+import { useState } from 'react';
 import { Player, POSITION_ORDER } from '../types';
 import { FMBox, FMTable, FMTableCell } from './FMUI';
-import { TrendingUp, TrendingDown, Minus, Ambulance, AlertOctagon } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Plus, Square, AlertCircle } from 'lucide-react';
 import { getFlagUrl } from '../data/static';
+import { DialogueSystem } from '../services/dialogueSystem';
 
 interface SquadViewProps {
   players: Player[];
   onSelectPlayer: (player: Player) => void;
   onContextMenu?: (e: React.MouseEvent, player: Player) => void;
   customTitle?: string;
+  currentDate: Date; // Added prop
 }
 
 type SortField = 'STATUS' | 'POS' | 'NAME' | 'AGE' | 'TREND' | 'SAL' | 'FIT' | 'MOR' | 'VAL';
 
-export const SquadView: React.FC<SquadViewProps> = ({ players, onSelectPlayer, onContextMenu, customTitle }) => {
+export const SquadView: React.FC<SquadViewProps> = ({ players, onSelectPlayer, onContextMenu, customTitle, currentDate }) => {
   const [sortField, setSortField] = useState<SortField>('VAL');
   const [sortDesc, setSortDesc] = useState(true);
 
@@ -24,7 +27,6 @@ export const SquadView: React.FC<SquadViewProps> = ({ players, onSelectPlayer, o
   };
 
   const handleHeaderClick = (index: number) => {
-      // Adjusted indices after removing Status column
       const fields: SortField[] = ['POS', 'NAME', 'AGE', 'TREND', 'SAL', 'FIT', 'MOR', 'VAL'];
       if (fields[index]) handleSort(fields[index]);
   };
@@ -56,14 +58,36 @@ export const SquadView: React.FC<SquadViewProps> = ({ players, onSelectPlayer, o
     return <Minus size={14} className="text-slate-400 mx-auto" />;
   };
 
-  const getStatusIcon = (player: Player) => {
+  const getStatusIcons = (player: Player) => {
+     const icons = [];
+     
      if (player.injury) {
-        return <span className="bg-red-600 text-white text-[8px] font-black px-1 rounded flex items-center gap-1"><Ambulance size={10} /> {player.injury.daysLeft}d</span>;
+        icons.push(
+           <div key="inj" className="flex items-center gap-1 bg-white border border-red-500 rounded px-1 h-5 shadow-sm" title={`Lesionado: ${player.injury.type}`}>
+              <Plus size={10} className="text-red-600 stroke-[4px]" />
+              <span className="text-[8px] text-red-600 font-black">{player.injury.daysLeft}d</span>
+           </div>
+        );
      }
+     
      if (player.suspension && player.suspension.matchesLeft > 0) {
-        return <span className="bg-red-600 text-white text-[8px] font-black px-1 rounded flex items-center gap-1"><AlertOctagon size={10} /> {player.suspension.matchesLeft}p</span>;
+        icons.push(
+           <div key="susp" className="flex items-center gap-1 bg-white border border-red-500 rounded px-1 h-5 shadow-sm" title="Sancionado">
+              <Square size={10} className="fill-red-600 text-red-600 rounded-[1px]" />
+              <span className="text-[8px] text-red-600 font-black">{player.suspension.matchesLeft}p</span>
+           </div>
+        );
      }
-     return null;
+
+     if (DialogueSystem.checkPlayerMotives(player, currentDate)) {
+        icons.push(
+           <div key="unhappy" className="flex items-center justify-center bg-orange-600 rounded px-1 h-5 shadow-sm border border-orange-700" title="Descontento">
+              <AlertCircle size={10} className="text-white" />
+           </div>
+        );
+     }
+
+     return icons.length > 0 ? <div className="flex gap-1 items-center">{icons}</div> : null;
   };
 
   return (
@@ -92,9 +116,9 @@ export const SquadView: React.FC<SquadViewProps> = ({ players, onSelectPlayer, o
                         className="w-4 h-3 object-cover shadow-sm rounded-[1px]" 
                         title={player.nationality} 
                       />
-                      {player.name}
+                      <span className="truncate">{player.name}</span>
                       {player.transferStatus !== 'NONE' && <span className="text-[8px] text-orange-700 font-black border border-orange-300 bg-orange-100 px-1 rounded-sm">TRN</span>}
-                      {getStatusIcon(player)}
+                      {getStatusIcons(player)}
                    </FMTableCell>
 
                    {/* 3. AGE */}
