@@ -2,7 +2,8 @@
 import React, { useState, useRef } from 'react';
 import { Player, Position, Club } from '../types';
 import { world } from '../services/worldManager';
-import { Save, RefreshCw, X, ChevronRight, MoreHorizontal } from 'lucide-react';
+import { MatchSimulator } from '../services/engine';
+import { Save, RefreshCw, X, ChevronRight, MoreHorizontal, UserCheck } from 'lucide-react';
 import { FMButton } from './FMUI';
 
 interface TacticsViewProps {
@@ -12,7 +13,7 @@ interface TacticsViewProps {
    onContextMenu?: (e: React.MouseEvent, player: Player) => void;
 }
 
-// 0=GK, 1-5=DEF, 6-10=DM, 11-15=MID, 16-20=AM, 21-25=FW, 26-30=ST
+// 0=GK, 1-5=DEF, 6-10=DM, 11-15=MID, 16-20=AM, 26-30=ATT
 const SLOT_COORDS: Record<number, { t: number, l: number }> = {
    0: { t: 90, l: 50 },
    
@@ -47,13 +48,30 @@ const SLOT_COORDS: Record<number, { t: number, l: number }> = {
    30: { t: 12, l: 60 }, // STCR
 };
 
-const PlayerPill: React.FC<{ player: Player, primary: string, secondary: string }> = ({ player, primary, secondary }) => {
+const PlayerPill: React.FC<{ player: Player, primary: string, secondary: string, slotIndex: number }> = ({ player, primary, secondary, slotIndex }) => {
+   const efficiency = MatchSimulator.calculatePositionEfficiency(player, slotIndex);
+   
+   // Efficiency Visuals
+   let ringColor = 'border-white';
+   let bgColor = player.positions.includes(Position.GK) ? 'bg-yellow-400 text-black border-yellow-600' : `${primary} ${secondary}`;
+   
+   if (efficiency < 0.6) {
+       // Severe mismatch
+       ringColor = 'border-red-500 ring-2 ring-red-500/50';
+   } else if (efficiency < 0.9) {
+       // Moderate mismatch (Adaptable)
+       ringColor = 'border-yellow-400 ring-2 ring-yellow-400/50';
+   } else {
+       // Natural
+       ringColor = 'border-green-400 ring-2 ring-green-400/30';
+   }
+
    return (
       <div className={`
          w-12 h-12 md:w-16 md:h-16 rounded-full flex flex-col items-center justify-center 
-         shadow-lg border-2 border-white transition-transform hover:scale-110 z-20 relative
-         ${player.positions.includes(Position.GK) ? 'bg-yellow-400 text-black border-yellow-600' : `${primary} ${secondary}`}
-      `}>
+         shadow-lg border-2 transition-transform hover:scale-110 z-20 relative
+         ${bgColor} ${ringColor}
+      `} title={`Eficacia Posicional: ${(efficiency*100).toFixed(0)}%`}>
          <div className="text-[10px] md:text-xs font-black leading-none">{player.positions[0]}</div>
          <div className="absolute -bottom-3 bg-black/70 text-white px-1.5 py-0.5 rounded-sm text-[8px] md:text-[9px] font-bold uppercase whitespace-nowrap border border-white/20 truncate max-w-[60px] md:max-w-[80px]">
             {player.name.split(' ').pop()}
@@ -84,7 +102,6 @@ export const TacticsView: React.FC<TacticsViewProps> = ({ players, club, onUpdat
    const getPlayerAtSlot = (idx: number) => starters.find(p => p.tacticalPosition === idx);
 
    const handlePitchMouseDown = (e: React.MouseEvent, slotIdx: number) => {
-      // Allow browser context menu if control key is pressed (for dev), otherwise custom logic
       if (e.button === 2) { 
          // Right click -> Start Arrow
          e.preventDefault();
@@ -110,7 +127,6 @@ export const TacticsView: React.FC<TacticsViewProps> = ({ players, club, onUpdat
    const handleGlobalMouseMove = (e: React.MouseEvent) => {
       if (!pitchRef.current) return;
       const rect = pitchRef.current.getBoundingClientRect();
-      // Relative coordinates for arrow drawing
       setMousePos({
          x: e.clientX - rect.left,
          y: e.clientY - rect.top
@@ -120,31 +136,22 @@ export const TacticsView: React.FC<TacticsViewProps> = ({ players, club, onUpdat
    const handleSlotMouseUp = (e: React.MouseEvent, slotIdx: number) => {
       e.preventDefault();
       
-      // Handle Drop
       if (draggingId) {
          const draggedPlayer = players.find(p => p.id === draggingId);
          if (draggedPlayer) {
             const targetPlayer = getPlayerAtSlot(slotIdx);
             
-            // If target has player, swap. If not, just move.
-            // If dragged was on bench, set as starter.
-            
             if (draggedPlayer.isStarter && draggedPlayer.tacticalPosition !== undefined) {
-               // Moving starter to another slot
                if (targetPlayer) {
-                  // Swap
                   const oldPos = draggedPlayer.tacticalPosition;
                   draggedPlayer.tacticalPosition = slotIdx;
                   targetPlayer.tacticalPosition = oldPos;
                   onUpdatePlayer(targetPlayer);
                } else {
-                  // Move to empty
                   draggedPlayer.tacticalPosition = slotIdx;
                }
             } else {
-               // Moving bench to starter
                if (targetPlayer) {
-                  // Swap bench player with starter
                   targetPlayer.isStarter = false;
                   targetPlayer.tacticalPosition = undefined;
                   onUpdatePlayer(targetPlayer);
@@ -157,12 +164,11 @@ export const TacticsView: React.FC<TacticsViewProps> = ({ players, club, onUpdat
          setDraggingId(null);
       }
 
-      // Handle Arrow End
       if (drawingStartSlot !== null) {
          const p = getPlayerAtSlot(drawingStartSlot);
          if (p) {
             if (slotIdx === drawingStartSlot) {
-               p.tacticalArrow = undefined; // Click on self clears arrow
+               p.tacticalArrow = undefined; 
             } else {
                p.tacticalArrow = slotIdx;
             }
@@ -177,7 +183,21 @@ export const TacticsView: React.FC<TacticsViewProps> = ({ players, club, onUpdat
       if (drawingStartSlot !== null) setDrawingStartSlot(null);
    };
 
-   // RENDER HELPERS
+   const handleAutoPick = () => {
+      // Use world manager to pick best team, forcing current tactic preservation isn't strict in worldManager logic yet,
+      // so we rely on worldManager picking based on the CURRENT staff preferred formation or we pass the current slots.
+      // For now, world.selectBestEleven resets to the coach's preferred tactic.
+      // To improve UX, we should ideally respect the CURRENT layout, but the prompt asked for "Elegir 11" 
+      // which usually implies "Ask Assistant" (who uses their preferred style).
+      
+      // Let's just trigger the world manager logic which resets starters
+      world.selectBestEleven(club.id, 'SENIOR'); 
+      // Force UI update via callback hack or parent re-render trigger
+      // Since `players` prop is passed by reference, mutating it in `world` works, but React needs a nudge.
+      // We call onUpdatePlayer for one player to trigger parent state change.
+      if (players.length > 0) onUpdatePlayer(players[0]);
+   };
+
    const renderArrows = () => {
       if (!pitchRef.current) return null;
       return (
@@ -265,9 +285,16 @@ export const TacticsView: React.FC<TacticsViewProps> = ({ players, club, onUpdat
                       <option value="" disabled>Formación</option>
                       {world.getTactics().map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                    </select>
-                   <button onClick={() => setIsSaveModalOpen(true)} className="p-1 bg-white border border-[#a0b0a0] hover:bg-slate-100"><Save size={14}/></button>
+                   <button onClick={handleAutoPick} className="p-1 px-3 bg-white border border-[#a0b0a0] hover:bg-slate-100 flex items-center gap-1 text-[10px] font-bold uppercase" title="Pedir al 2do Entrenador">
+                      <UserCheck size={14}/> Elegir 11
+                   </button>
+                   <button onClick={() => setIsSaveModalOpen(true)} className="p-1 bg-white border border-[#a0b0a0] hover:bg-slate-100" title="Guardar"><Save size={14}/></button>
                 </div>
-                <div className="text-[9px] font-black uppercase text-slate-500 tracking-widest hidden sm:block">Arrastrar: Mover • Click Der: Flecha</div>
+                <div className="flex items-center gap-4 text-[9px] font-black uppercase text-slate-500 tracking-widest hidden sm:flex">
+                    <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full border border-green-500 bg-transparent"></div> Natural</span>
+                    <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full border border-yellow-500 bg-transparent"></div> Adaptable</span>
+                    <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full border border-red-500 bg-transparent"></div> Pobre</span>
+                </div>
             </div>
 
             {/* The Visual Pitch */}
@@ -309,7 +336,12 @@ export const TacticsView: React.FC<TacticsViewProps> = ({ players, club, onUpdat
 
                             {player && (
                                <div className={`absolute pointer-events-none transition-opacity ${isDragged ? 'opacity-50' : 'opacity-100'}`}>
-                                  <PlayerPill player={player} primary={club.primaryColor} secondary={club.secondaryColor} />
+                                  <PlayerPill 
+                                    player={player} 
+                                    primary={club.primaryColor} 
+                                    secondary={club.secondaryColor} 
+                                    slotIndex={slotIdx}
+                                  />
                                </div>
                             )}
                          </div>
@@ -342,9 +374,7 @@ export const TacticsView: React.FC<TacticsViewProps> = ({ players, club, onUpdat
                            <span className={p.fitness < 90 ? 'text-red-600' : 'text-green-700'}>{Math.round(p.fitness)}% Fis</span>
                         </p>
                      </div>
-                     {/* Quick Action for mobile if drag is hard */}
                      <button className="lg:hidden p-2 text-slate-400 hover:text-blue-600" onClick={() => {
-                        // Find first empty slot logic
                         const used = new Set(starters.map(s=>s.tacticalPosition));
                         const slot = [0,1,2,3,4,5,11,12,13,14,15,26,27].find(s => !used.has(s));
                         if(slot !== undefined) {

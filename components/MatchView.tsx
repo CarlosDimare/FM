@@ -4,7 +4,8 @@ import { createPortal } from 'react-dom';
 import { Club, Player, MatchState, MatchEvent, PlayerMatchStats, Position } from '../types';
 import { MatchSimulator } from '../services/engine';
 import { GAME_SPEED_MS } from '../constants';
-import { Play, Pause, List, BarChart3, Users, Zap, AlertCircle, CheckCircle, Shield } from 'lucide-react';
+import { Play, Pause, List, BarChart3, Users, Zap, AlertCircle, CheckCircle, Shield, Table } from 'lucide-react';
+import { MatchStatsTable } from './MatchStatsTable';
 
 // Reuse POS_MAP logic locally or import. Recreating for self-containment in this component.
 const POS_MAP: Record<number, { top: string; left: string }> = {
@@ -13,7 +14,7 @@ const POS_MAP: Record<number, { top: string; left: string }> = {
    2: { top: "75%", left: "30%" }, // DCR
    3: { top: "75%", left: "50%" }, // DC
    4: { top: "75%", left: "70%" }, // DCL
-   5: { top: "75%", left: "85%" }, // DL
+   5: { top: "75%", left: "85%" }, // DR
    6: { top: "75%", left: "25%" }, // DLC
    7: { top: "75%", left: "75%" }, // DRC
    
@@ -63,7 +64,7 @@ interface MatchViewProps {
 }
 
 export const MatchView: React.FC<MatchViewProps> = ({ homeTeam, awayTeam, homePlayers, awayPlayers, onFinish, currentDate }) => {
-  const [activeTab, setActiveTab] = useState<'LOG' | 'STATS' | 'RATINGS'>('LOG');
+  const [activeTab, setActiveTab] = useState<'LOG' | 'STATS' | 'PLANTILLA'>('LOG');
   const [matchState, setMatchState] = useState<MatchState & { manOfTheMatchId?: string }>(() => ({
     isPlaying: false,
     minute: 0,
@@ -79,6 +80,11 @@ export const MatchView: React.FC<MatchViewProps> = ({ homeTeam, awayTeam, homePl
 
   const [tickDuration, setTickDuration] = useState(GAME_SPEED_MS);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+     // Log initial analysis on mount
+     MatchSimulator.analyzeMatchup(homeTeam, awayTeam, homePlayers, awayPlayers);
+  }, []);
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -180,7 +186,7 @@ export const MatchView: React.FC<MatchViewProps> = ({ homeTeam, awayTeam, homePl
       case 2: return "text-[12px] leading-snug font-bold";
       case 3: return "text-[14px] leading-normal font-black";
       case 4: return "text-[16px] leading-tight font-black italic tracking-tight";
-      case 5: return "text-[24px] leading-[1.1] font-black italic uppercase tracking-tighter drop-shadow-sm";
+      case 5: return "text-[24px] rounded-sm uppercase tracking-tighter drop-shadow-sm font-black italic";
       default: return "text-[14px]";
     }
   };
@@ -283,8 +289,8 @@ export const MatchView: React.FC<MatchViewProps> = ({ homeTeam, awayTeam, homePl
         <button onClick={() => setActiveTab('STATS')} className={`flex-1 flex items-center justify-center transition-all ${activeTab === 'STATS' ? 'text-slate-950 border-b-4 border-slate-950 bg-slate-100' : 'text-slate-400 hover:text-slate-700'}`}>
             <BarChart3 size={20} />
         </button>
-        <button onClick={() => setActiveTab('RATINGS')} className={`flex-1 flex items-center justify-center transition-all ${activeTab === 'RATINGS' ? 'text-slate-950 border-b-4 border-slate-950 bg-slate-100' : 'text-slate-400 hover:text-slate-700'}`}>
-            <Users size={20} />
+        <button onClick={() => setActiveTab('PLANTILLA')} className={`flex-1 flex items-center justify-center transition-all ${activeTab === 'PLANTILLA' ? 'text-slate-950 border-b-4 border-slate-950 bg-slate-100' : 'text-slate-400 hover:text-slate-700'}`}>
+            <Table size={20} />
         </button>
       </div>
 
@@ -319,93 +325,24 @@ export const MatchView: React.FC<MatchViewProps> = ({ homeTeam, awayTeam, homePl
              </div>
           </div>
         )}
-        {activeTab === 'RATINGS' && (
-          <div className="flex-1 overflow-y-auto bg-slate-200">
-             <PitchRatingView team={homeTeam} players={homePlayers} stats={matchState.playerStats} />
-             <div className="h-4 bg-slate-300 border-y border-slate-400"></div>
-             <PitchRatingView team={awayTeam} players={awayPlayers} stats={matchState.playerStats} isAway />
+        {activeTab === 'PLANTILLA' && (
+          <div className="flex-1 overflow-y-auto bg-slate-200 p-2 md:p-4">
+             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 lg:gap-6">
+                {/* Home Team Stats */}
+                <div className="flex flex-col gap-2">
+                   <h3 className={`text-sm font-black uppercase tracking-widest px-2 border-l-4 ${homeTeam.primaryColor.replace('bg-','border-')} text-slate-800`}>{homeTeam.name}</h3>
+                   <MatchStatsTable players={homePlayers} stats={matchState.playerStats} club={homeTeam} />
+                </div>
+                
+                {/* Away Team Stats */}
+                <div className="flex flex-col gap-2">
+                   <h3 className={`text-sm font-black uppercase tracking-widest px-2 border-l-4 ${awayTeam.primaryColor.replace('bg-','border-')} text-slate-800`}>{awayTeam.name}</h3>
+                   <MatchStatsTable players={awayPlayers} stats={matchState.playerStats} club={awayTeam} />
+                </div>
+             </div>
           </div>
         )}
       </div>
     </div>
   );
-};
-
-const PitchRatingView = ({ team, players, stats, isAway }: { team: Club, players: Player[], stats: Record<string, PlayerMatchStats>, isAway?: boolean }) => {
-   // Identify starters and subs who played (subs have stats or were subbed in)
-   // For simulation simplicity, we rely on 'tacticalPosition' being present for starters.
-   // Subs that entered the game are usually swapped in the engine array, but here we passed initial arrays.
-   // Actually engine updates the arrays in place.
-   
-   const starters = players.filter(p => p.tacticalPosition !== undefined).sort((a,b) => (a.tacticalPosition||0) - (b.tacticalPosition||0));
-   const subs = players.filter(p => p.tacticalPosition === undefined && stats[p.id] && stats[p.id].participationPhrase); // Crude way to detect participation if stats exist
-
-   return (
-      <div className="p-4 bg-slate-200">
-         <div className={`p-2 mb-4 border-l-4 ${isAway ? 'border-red-500' : 'border-blue-500'} bg-slate-100 flex items-center justify-between`}>
-            <span className="font-black text-slate-900 uppercase tracking-widest">{team.name}</span>
-            <div className={`w-3 h-3 rounded-full ${team.primaryColor}`}></div>
-         </div>
-
-         <div className="flex flex-col items-center">
-            {/* Pitch Container */}
-            <div className="relative w-full max-w-[300px] aspect-[68/105] bg-[#1e3a29] border-4 border-white shadow-xl rounded-sm mb-4">
-               {/* SVG Pitch Lines */}
-               <svg width="100%" height="100%" viewBox="0 0 68 105" className="absolute inset-0 w-full h-full opacity-60">
-                  <rect width="100%" height="100%" fill="none" />
-                  <g fill="none" stroke="white" strokeWidth="1">
-                     <rect x="2" y="2" width="64" height="101" />
-                     <line x1="2" y1="52.5" x2="66" y2="52.5" />
-                     <circle cx="34" cy="52.5" r="9" />
-                     <rect x="19" y="2" width="30" height="16" />
-                     <rect x="19" y="87" width="30" height="16" />
-                  </g>
-               </svg>
-
-               {starters.map(p => {
-                  const s = stats[p.id];
-                  const coords = getPosStyle(p.tacticalPosition || 0, p.positions[0]);
-                  const rating = s ? s.rating.toFixed(1) : '-';
-                  const ratingColor = s && s.rating >= 7.5 ? 'bg-green-500' : s && s.rating < 6 ? 'bg-red-500' : 'bg-slate-800';
-                  
-                  return (
-                     <div 
-                        key={p.id}
-                        className="absolute flex flex-col items-center -translate-x-1/2 -translate-y-1/2 transition-all"
-                        style={{ top: coords.top, left: coords.left }}
-                     >
-                        <div className={`w-8 h-8 rounded-full border-2 border-white shadow-md flex items-center justify-center text-[9px] font-black text-white ${team.primaryColor}`}>
-                           {p.positions[0].substring(0, 2)}
-                        </div>
-                        <div className={`mt-0.5 px-1 rounded-sm text-[8px] font-black text-white ${ratingColor} shadow border border-white/20`}>
-                           {rating}
-                        </div>
-                        <span className="text-[7px] font-bold text-white uppercase drop-shadow-md truncate max-w-[60px] bg-black/40 px-1 rounded mt-0.5">{p.name.split(' ').pop()}</span>
-                     </div>
-                  );
-               })}
-            </div>
-
-            {/* Substitutes List */}
-            {subs.length > 0 && (
-               <div className="w-full max-w-[300px] bg-slate-100 p-2 rounded-sm border border-slate-300">
-                  <h4 className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2 border-b border-slate-300 pb-1">Suplentes Ingresados</h4>
-                  <div className="space-y-1">
-                     {subs.map(p => {
-                        const s = stats[p.id];
-                        const rating = s ? s.rating.toFixed(1) : '-';
-                        const ratingColor = s && s.rating >= 7.5 ? 'text-green-600' : s && s.rating < 6 ? 'text-red-600' : 'text-slate-600';
-                        return (
-                           <div key={p.id} className="flex justify-between items-center text-[10px]">
-                              <span className="font-bold text-slate-900 uppercase">{p.name}</span>
-                              <span className={`font-mono font-black ${ratingColor}`}>{rating}</span>
-                           </div>
-                        );
-                     })}
-                  </div>
-               </div>
-            )}
-         </div>
-      </div>
-   );
 };

@@ -11,6 +11,7 @@ export type SquadType = 'SENIOR' | 'RESERVE' | 'U20';
 export type MatchStage = 'REGULAR' | 'GROUP' | 'ROUND_OF_32' | 'ROUND_OF_16' | 'QUARTER_FINAL' | 'SEMI_FINAL' | 'FINAL';
 export type CompetitionType = 'LEAGUE' | 'CUP' | 'CONTINENTAL_ELITE' | 'CONTINENTAL_SMALL' | 'GLOBAL';
 export type StaffRole = 'HEAD_COACH' | 'ASSISTANT_MANAGER' | 'PHYSIO' | 'FITNESS_COACH' | 'RESERVE_MANAGER' | 'YOUTH_MANAGER';
+export type TacticalStyle = 'POSSESSION' | 'DIRECT' | 'COUNTER' | 'HIGH_PRESS' | 'BALANCED' | 'PARK_THE_BUS';
 export type MessageCategory = 'MARKET' | 'SQUAD' | 'STATEMENTS' | 'FINANCE' | 'COMPETITION';
 export type PitchZone = 'DEF' | 'MID' | 'ATT';
 export type Attribute = number;
@@ -175,14 +176,18 @@ export interface Staff {
   nationality: string;
   role: StaffRole;
   clubId: string;
+  preferredFormation?: string; // e.g. '4-4-2'
+  tacticalStyle?: TacticalStyle; // NEW: The philosophy
   attributes: {
     coaching: number;
     judgingAbility: number;
     judgingPotential: number;
+    tacticalKnowledge: number; // Influences engine performance
     medical: number;
     physiotherapy: number;
     motivation: number;
     manManagement: number;
+    adaptability: number; // Willingness to change tactic based on players
   };
   salary: number;
   contractExpiry: Date;
@@ -221,19 +226,46 @@ export interface PlayerMatchStats {
   rating: number;
   goals: number;
   assists: number;
-  shots: number;
+  
+  // General
+  condition: number; // 0-100%
+  
+  // Passing
   passesAttempted: number;
   passesCompleted: number;
-  dribblesAttempted: number;
-  dribblesCompleted: number;
-  tacklesAttempted: number;
-  tacklesCompleted: number;
-  foulsCommitted: number;
+  keyPasses: number; // 'Imp' in passes
+  
+  // Shooting
+  shots: number;
   shotsOnTarget: number;
+  
+  // Dribbling & Offense
+  dribblesAttempted: number;
+  dribblesCompleted: number; // 'Des' (Desbordes)
+  offsides: number; // 'Fdj'
+  
+  // Defending
+  tacklesAttempted: number; // 'Ent'
+  tacklesCompleted: number; // 'Gan'
+  keyTackles: number; // 'Imp' (Def)
+  interceptions: number; // 'Int'
+  shotsBlocked: number; // 'Tap' (Tapados)
+  
+  // Aerial
+  headersAttempted: number; // 'Cab'
+  headersWon: number; // 'Gan' (Aire)
+  keyHeaders: number; // 'Imp' (Aire) - Defensive clearances or shot headers
+  
+  // Goalkeeping
   saves: number;
+  
+  // Discipline
+  foulsCommitted: number; // 'F.C'
+  foulsReceived: number; // 'F.R'
+  card?: 'YELLOW' | 'RED';
+  
   participationPhrase?: string;
   sustainedInjury?: { type: string, days: number };
-  card?: 'YELLOW' | 'RED';
 }
 
 export interface TeamMatchStats {
@@ -332,6 +364,7 @@ export const ATTRIBUTE_LABELS: Record<string, string> = {
   coaching: "Entrenamiento",
   judgingAbility: "Juzgar Calidad",
   judgingPotential: "Juzgar Potencial",
+  tacticalKnowledge: "Conoc. Tácticos",
   medical: "Conoc. Médico",
   physiotherapy: "Fisioterapia",
   motivation: "Motivación",

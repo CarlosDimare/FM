@@ -184,32 +184,37 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({ player, onClose, userC
      </div>
   );
 
+  // Dynamic header styles based on club colors
+  const headerBgClass = club ? club.primaryColor : 'bg-slate-800';
+  const headerTextClass = club ? club.secondaryColor : 'text-white';
+  const headerBorderClass = club && club.primaryColor === 'bg-white' ? 'border-slate-300' : 'border-black/20';
+
   return (
     <>
       <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-[150] md:p-4 backdrop-blur-sm">
         <div className="bg-[#d4dcd4] w-full h-full md:h-auto md:max-w-5xl md:max-h-[95vh] md:rounded-sm shadow-2xl border border-[#a0b0a0] flex flex-col overflow-hidden">
           
-          {/* Header - Industrial Style */}
-          <div className="p-3 md:p-4 border-b border-[#a0b0a0] flex justify-between items-start bg-white shadow-sm shrink-0">
+          {/* Header - Industrial Style with Dynamic Club Colors */}
+          <div className={`p-3 md:p-4 border-b flex justify-between items-start shadow-sm shrink-0 transition-colors duration-300 ${headerBgClass} ${headerBorderClass}`}>
             <div className="flex-1 min-w-0 pr-4">
               <div className="flex flex-col gap-y-1">
                  <div className="flex flex-wrap items-baseline gap-2">
-                    <h2 className="text-2xl md:text-3xl font-black truncate tracking-tighter uppercase italic text-slate-900 flex items-center gap-2" style={{ fontFamily: 'Verdana, sans-serif' }}>
+                    <h2 className={`text-2xl md:text-3xl font-black truncate tracking-tighter uppercase italic flex items-center gap-2 ${headerTextClass}`} style={{ fontFamily: 'Verdana, sans-serif' }}>
                         <img 
                           src={getFlagUrl(player.nationality)} 
                           alt={player.nationality} 
-                          className="w-6 h-4 md:w-8 md:h-5 object-cover shadow-sm rounded-[1px] border border-slate-300" 
+                          className="w-6 h-4 md:w-8 md:h-5 object-cover shadow-sm rounded-[1px] border border-black/10" 
                         />
-                        <span className="text-red-700">{player.name}</span>
-                        <span className="text-slate-400 font-normal text-lg"> - </span>
-                        <span className="text-red-700 text-lg">{club?.name}</span>
+                        <span>{player.name}</span>
+                        <span className="opacity-70 font-normal text-lg"> - </span>
+                        <span className="text-lg opacity-90">{club?.name || 'Agente Libre'}</span>
                     </h2>
                  </div>
 
                  {/* Metadata Line */}
-                 <div className="flex flex-wrap items-center gap-3 font-bold uppercase text-[10px] tracking-tight text-slate-600 mt-1" style={{ fontFamily: 'Verdana, sans-serif' }}>
-                    <span className="bg-slate-200 border border-slate-400 px-1.5 rounded-[1px] text-slate-900">{player.positions[0]}</span>
-                    <span className="text-red-700">{player.nationality.toUpperCase()}</span>
+                 <div className={`flex flex-wrap items-center gap-3 font-bold uppercase text-[10px] tracking-tight mt-1 ${headerTextClass} opacity-80`} style={{ fontFamily: 'Verdana, sans-serif' }}>
+                    <span className="bg-black/20 px-1.5 rounded-[1px] text-current border border-black/10">{player.positions[0]}</span>
+                    <span>{player.nationality.toUpperCase()}</span>
                     <span>•</span>
                     <span>{player.age} AÑOS</span>
                     <span>•</span>
@@ -219,14 +224,14 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({ player, onClose, userC
                  </div>
 
                  {/* Quote Line */}
-                 <div className="text-xs font-black text-red-600 uppercase italic tracking-tight leading-tight mt-1" style={{ fontFamily: 'Verdana, sans-serif' }}>
+                 <div className={`text-xs font-black uppercase italic tracking-tight leading-tight mt-1 ${headerTextClass} opacity-90`} style={{ fontFamily: 'Verdana, sans-serif' }}>
                     "{headline}"
                  </div>
 
                  {/* Personality Badge */}
                  <div className="flex flex-wrap gap-2 mt-1">
-                    <div className="flex items-center gap-1 bg-[#e8ece8] border border-[#a0b0a0] px-2 py-0.5 rounded-[1px]" title="Personalidad">
-                        <span className="text-[9px] font-black uppercase text-slate-700">{personality}</span>
+                    <div className="flex items-center gap-1 bg-black/10 border border-black/10 px-2 py-0.5 rounded-[1px]" title="Personalidad">
+                        <span className={`text-[9px] font-black uppercase ${headerTextClass} opacity-90`}>{personality}</span>
                     </div>
                     {player.developmentTrend === 'RISING' && (
                        <div className="flex items-center gap-1 bg-green-50 border border-green-200 px-2 py-0.5 rounded-[1px]">
@@ -242,7 +247,7 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({ player, onClose, userC
               </div>
             </div>
             
-            <button onClick={onClose} className="text-slate-500 hover:text-red-600 transition-colors"><X size={24} /></button>
+            <button onClick={onClose} className={`${headerTextClass} opacity-70 hover:opacity-100 transition-colors`}><X size={24} /></button>
           </div>
 
           {/* Tabs */}

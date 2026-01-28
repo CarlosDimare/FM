@@ -8,21 +8,68 @@ interface ClubReportProps {
   club: Club;
 }
 
-const KitVisual: React.FC<{ c1: string, c2: string, label: string }> = ({ c1, c2, label }) => (
-  <div className="flex flex-col items-center">
-    <div className="relative w-16 h-20">
-      <div className={`w-full h-full ${c1} rounded-t-sm relative flex items-center justify-center overflow-hidden border border-[#a0b0a0]`}>
-          <div className={`absolute inset-x-0 top-0 h-4 ${c2} opacity-30`}></div>
-          <div className={`absolute inset-y-0 left-0 w-2 ${c2} opacity-20`}></div>
+const KitVisual: React.FC<{ primary: string, secondary: string, label: string }> = ({ primary, secondary, label }) => {
+  // Convertimos las clases bg- de Tailwind a colores de texto para que el SVG pueda usar fill="currentColor"
+  const fillPrimary = primary.replace('bg-', 'text-');
+  const fillSecondary = secondary.replace('text-', 'text-').replace('bg-', 'text-');
+
+  return (
+    <div className="flex flex-col items-center group cursor-help">
+      <div className="relative w-24 h-28 transition-transform duration-300 ease-out group-hover:scale-110 filter drop-shadow-lg">
+        <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-md">
+          {/* Capa 1: El Torso (Base) */}
+          <path 
+            d="M 30 10 L 15 10 L 0 30 L 15 45 L 25 35 L 25 90 L 75 90 L 75 35 L 85 45 L 100 30 L 85 10 L 70 10 L 50 22 Z" 
+            className={`${fillPrimary} fill-current`}
+          />
+          
+          {/* Capa 2: Cuello y Puños (Detalles) */}
+          <g className={`${fillSecondary} fill-current`}>
+            {/* Cuello en V */}
+            <path d="M 35 10 L 50 25 L 65 10 L 60 10 L 50 20 L 40 10 Z" />
+            {/* Puño Izquierdo */}
+            <path d="M 0 30 L 5 35 L 18 22 L 13 17 Z" opacity="0.8" />
+            {/* Puño Derecho */}
+            <path d="M 100 30 L 95 35 L 82 22 L 87 17 Z" opacity="0.8" />
+          </g>
+
+          {/* Capa 3: Sombreado y Textura (Relieve) */}
+          <path 
+            d="M 50 22 L 50 90" 
+            stroke="black" 
+            strokeWidth="15" 
+            opacity="0.1" 
+            fill="none"
+          />
+          <path 
+            d="M 25 35 L 75 35" 
+            stroke="white" 
+            strokeWidth="2" 
+            opacity="0.05" 
+            fill="none"
+          />
+          
+          {/* Brillo lateral para volumen */}
+          <path 
+            d="M 25 35 L 25 90" 
+            stroke="white" 
+            strokeWidth="4" 
+            opacity="0.1" 
+            fill="none"
+          />
+        </svg>
+        
+        {/* Etiqueta de equipo pequeña en el pecho (estilo logo) */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-20 pointer-events-none">
+           <Shield size={20} className="text-black" />
+        </div>
       </div>
-      <div className="flex justify-between -mt-px">
-          <div className={`w-6 h-6 ${c1} border border-[#a0b0a0]`}></div>
-          <div className={`w-6 h-6 ${c1} border border-[#a0b0a0]`}></div>
-      </div>
+      <span className="mt-3 text-[10px] font-black uppercase text-slate-600 tracking-[0.2em] bg-slate-100 px-3 py-0.5 border border-slate-300 rounded-sm shadow-inner group-hover:bg-slate-900 group-hover:text-white transition-colors">
+        {label}
+      </span>
     </div>
-    <span className="mt-2 text-[9px] font-black uppercase text-slate-500 tracking-widest">{label}</span>
-  </div>
-);
+  );
+};
 
 export const ClubReport: React.FC<ClubReportProps> = ({ club }) => {
   const getReputationLabel = (rep: number) => {
@@ -120,9 +167,9 @@ export const ClubReport: React.FC<ClubReportProps> = ({ club }) => {
 
         <div className="flex flex-col gap-4">
           <FMBox title="Equipación Oficial">
-            <div className="flex justify-around items-center h-full py-4 bg-white border-b border-[#a0b0a0]">
-              <KitVisual c1={club.primaryColor} c2={club.secondaryColor} label="Titular" />
-              <KitVisual c1={club.secondaryColor} c2={club.primaryColor} label="Alternativa" />
+            <div className="flex justify-around items-center h-full py-8 bg-white border-b border-[#a0b0a0]">
+              <KitVisual primary={club.primaryColor} secondary={club.secondaryColor} label="Titular" />
+              <KitVisual primary={club.secondaryColor} secondary={club.primaryColor} label="Alternativa" />
             </div>
           </FMBox>
 

@@ -1,8 +1,19 @@
 
-import { Player, Club, Competition, CompetitionType, Position, PlayerStats, Fixture, TableEntry, Tactic, Staff, StaffRole, SquadType, PlayerSeasonStats, ClubHonour, TransferOffer, InboxMessage, MessageCategory, MatchLog } from "../types";
+import { Player, Club, Competition, CompetitionType, Position, PlayerStats, Fixture, TableEntry, Tactic, Staff, StaffRole, SquadType, PlayerSeasonStats, ClubHonour, TransferOffer, InboxMessage, MessageCategory, MatchLog, TacticalStyle } from "../types";
 import { generateUUID, randomInt, weightedRandom } from "./utils";
 import { NATIONS } from "../constants";
 import { TACTIC_PRESETS, NAMES_DB, REGEN_DB, STAFF_NAMES, POS_DEFINITIONS, ARG_PRIMERA, ARG_NACIONAL, CONT_CLUBS, CONT_CLUBS_TIER2, WORLD_BOSSES, RealClubDef } from "../data/static";
+import { SLOT_CONFIG } from "./engine"; // Only import Data config, not the class to avoid cycle
+
+// Helper for Tactical Zones
+const ZONES = {
+    GK: [0],
+    DEF: [1, 2, 3, 4, 5],
+    DM: [6, 7, 8, 9, 10],
+    MID: [11, 12, 13, 14, 15],
+    AM: [16, 17, 18, 19, 20],
+    ATT: [26, 27, 28, 29, 30]
+};
 
 export class WorldManager {
   players: Player[] = [];
@@ -119,11 +130,32 @@ export class WorldManager {
   generateStaffForClub(clubId: string) {
     const roles: StaffRole[] = ['ASSISTANT_MANAGER', 'PHYSIO', 'FITNESS_COACH', 'RESERVE_MANAGER', 'YOUTH_MANAGER'];
     
+    // Always add a Head Coach
+    roles.unshift('HEAD_COACH');
+
     roles.forEach(role => {
       const coachingAbility = weightedRandom(8, 20);
       const contractYears = randomInt(1, 4);
       const startYear = 2008 - randomInt(0, 5);
       
+      let preferredFormation: string | undefined;
+      let tacticalStyle: TacticalStyle | undefined;
+
+      if (role === 'HEAD_COACH') {
+          preferredFormation = TACTIC_PRESETS[randomInt(0, TACTIC_PRESETS.length - 1)].id;
+          
+          // Determine style based on random roll + stats
+          const styles: TacticalStyle[] = ['POSSESSION', 'DIRECT', 'COUNTER', 'HIGH_PRESS', 'BALANCED', 'PARK_THE_BUS'];
+          const rand = Math.random();
+          // Heuristic for style preference
+          if (coachingAbility > 15) tacticalStyle = 'POSSESSION';
+          else if (rand < 0.2) tacticalStyle = 'DIRECT';
+          else if (rand < 0.4) tacticalStyle = 'COUNTER';
+          else if (rand < 0.6) tacticalStyle = 'HIGH_PRESS';
+          else if (rand < 0.8) tacticalStyle = 'BALANCED';
+          else tacticalStyle = 'PARK_THE_BUS';
+      }
+
       const s: Staff = {
         id: generateUUID(),
         name: `${STAFF_NAMES.names[randomInt(0, STAFF_NAMES.names.length-1)]} ${STAFF_NAMES.surnames[randomInt(0, STAFF_NAMES.surnames.length-1)]}`,
@@ -131,10 +163,14 @@ export class WorldManager {
         nationality: "Argentina",
         role: role,
         clubId: clubId,
+        preferredFormation,
+        tacticalStyle,
         attributes: {
           coaching: coachingAbility,
           judgingAbility: weightedRandom(8, 20),
           judgingPotential: weightedRandom(8, 20),
+          tacticalKnowledge: role === 'HEAD_COACH' ? weightedRandom(10, 20) : weightedRandom(5, 15),
+          adaptability: weightedRandom(5, 20),
           medical: role === 'PHYSIO' ? weightedRandom(15, 20) : weightedRandom(1, 10),
           physiotherapy: role === 'PHYSIO' ? weightedRandom(15, 20) : weightedRandom(1, 10),
           motivation: weightedRandom(8, 20),
@@ -159,10 +195,14 @@ export class WorldManager {
         nationality: "Argentina",
         role: 'HEAD_COACH',
         clubId: clubId,
+        preferredFormation: '4-4-2',
+        tacticalStyle: 'BALANCED',
         attributes: {
            coaching: 12,
            judgingAbility: 12,
            judgingPotential: 11,
+           tacticalKnowledge: 10,
+           adaptability: 10,
            medical: 2,
            physiotherapy: 2,
            motivation: 14,
@@ -172,6 +212,9 @@ export class WorldManager {
         contractExpiry: new Date(2009, 5, 30),
         history: []
      };
+     
+     // Remove existing AI coach if exists
+     this.staff = this.staff.filter(s => s.clubId !== clubId || s.role !== 'HEAD_COACH');
      this.staff.unshift(manager);
   }
 
@@ -514,39 +557,150 @@ export class WorldManager {
      });
   }
 
-  selectBestEleven(clubId: string, squadType: SquadType = 'SENIOR'): Player[] {
-     const defaultFormation = [0, 6, 7, 8, 10, 16, 17, 19, 20, 27, 29];
-     const allPlayers = this.getPlayersByClub(clubId).filter(p => p.squad === squadType && !p.injury && (!p.suspension || p.suspension.matchesLeft === 0));
-     this.getPlayersByClub(clubId).forEach(p => { if (p.squad === squadType) p.isStarter = false; });
-     const starters: Player[] = [];
-     const usedIds = new Set<string>();
-     const getBestForSlot = (tacticalIndex: number): Player | null => {
-        let role = 'MID';
-        if (tacticalIndex === 0) role = 'GK';
-        else if (tacticalIndex >= 1 && tacticalIndex <= 15) role = 'DEF';
-        else if (tacticalIndex >= 26) role = 'ATT';
-        const candidates = allPlayers.filter(p => !usedIds.has(p.id) && this.playerFitsRole(p, role));
-        return candidates.sort((a,b) => (b.currentAbility * (b.fitness/100)) - (a.currentAbility * (a.fitness/100)))[0];
-     };
-     defaultFormation.forEach(slot => {
-        let player = getBestForSlot(slot);
-        if (!player) player = allPlayers.find(p => !usedIds.has(p.id));
-        if (player) {
-           player.isStarter = true;
-           player.tacticalPosition = slot;
-           starters.push(player);
-           usedIds.add(player.id);
-        }
-     });
-     return starters;
+  // --- REWRITTEN AI TEAM SELECTION LOGIC ---
+  // Uses "Suitability Score" to prioritize position fit over raw ability
+  // NOTE: Logic duplicated from Engine.ts to prevent circular dependency
+  
+  private getPerceivedAbility(player: Player, coach?: Staff): number {
+     const realCA = player.currentAbility * (player.fitness / 100);
+     if (!coach) return realCA;
+
+     const judging = coach.attributes.judgingAbility;
+     const errorMargin = (20 - judging) * 3; 
+     
+     // Deterministic noise
+     const noiseSeed = player.id.charCodeAt(0) + player.id.charCodeAt(player.id.length - 1);
+     const consistentNoise = Math.sin(noiseSeed) * errorMargin;
+     
+     return Math.max(10, realCA + consistentNoise);
   }
 
-  private playerFitsRole(p: Player, role: string): boolean {
-     if (role === 'GK') return p.positions.includes(Position.GK);
-     if (role === 'DEF') return p.positions.some(pos => pos.includes('DF') || pos === Position.SW);
-     if (role === 'MID') return p.positions.some(pos => pos.includes('M') || pos.includes('DM'));
-     if (role === 'ATT') return p.positions.some(pos => pos.includes('ST') || pos.includes('DL') || pos.includes('AM'));
-     return false;
+  // Duplicate of Engine logic to avoid import cycle
+  private calculateRoleSuitability(player: Player, slotIndex: number): number {
+      const slotData = SLOT_CONFIG[slotIndex];
+      if (!slotData) return 0.5;
+
+      let maxEfficiency = 0;
+
+      for (const posStr of player.positions) {
+          // Parse logic duplicated
+          let line = 'MID';
+          if (posStr.includes('GK')) { line = 'GK'; }
+          else if (posStr === 'SW' || posStr.includes('DF') || posStr.includes('DR') || posStr.includes('DL')) { line = 'DEF'; }
+          else if (posStr.includes('DM')) { line = 'DM'; }
+          else if (posStr.includes('AM')) { line = 'AM'; }
+          else if (posStr.includes('ST') || posStr.includes('FW')) { line = 'ATT'; }
+          else if (posStr.includes('M')) { line = 'MID'; }
+
+          let lanes = [3];
+          if (posStr.endsWith('LC') || posStr.endsWith('CL')) lanes = [1, 2, 3];
+          else if (posStr.endsWith('RC') || posStr.endsWith('CR')) lanes = [3, 4, 5];
+          else if (posStr.endsWith('L') && !posStr.includes('GK')) lanes = [1, 2];
+          else if (posStr.endsWith('R') && !posStr.includes('GK')) lanes = [4, 5];
+          else lanes = [2, 3, 4]; // Center
+
+          // Line Check
+          let lineScore = 0;
+          if (line === slotData.line) lineScore = 1.0;
+          else {
+              const lines = ['GK', 'DEF', 'DM', 'MID', 'AM', 'ATT'];
+              const pIdx = lines.indexOf(line);
+              const sIdx = lines.indexOf(slotData.line);
+              const dist = Math.abs(pIdx - sIdx);
+              if (dist === 1) lineScore = 0.85;
+              else if (dist === 2) lineScore = 0.6;
+              else lineScore = 0.2;
+          }
+
+          if (slotData.line === 'GK' && line !== 'GK') return 0.01;
+          if (line === 'GK' && slotData.line !== 'GK') return 0.01;
+
+          // Lane Check
+          let laneScore = 0;
+          if (lanes.includes(slotData.lane)) {
+              laneScore = 1.0;
+          } else {
+              let minDst = 5;
+              lanes.forEach(l => {
+                  const d = Math.abs(l - slotData.lane);
+                  if (d < minDst) minDst = d;
+              });
+              if (minDst === 1) laneScore = 0.85;
+              else if (minDst === 2) laneScore = 0.60;
+              else laneScore = 0.30;
+          }
+
+          const eff = lineScore * laneScore;
+          if (eff > maxEfficiency) maxEfficiency = eff;
+      }
+      return maxEfficiency;
+  }
+
+  selectBestEleven(clubId: string, squadType: SquadType = 'SENIOR'): Player[] {
+     // 1. Reset current starters for this squad
+     this.getPlayersByClub(clubId).forEach(p => { 
+         if (p.squad === squadType) {
+             p.isStarter = false; 
+             p.tacticalPosition = undefined;
+         }
+     });
+
+     const allPlayers = this.getPlayersByClub(clubId).filter(p => p.squad === squadType && !p.injury && (!p.suspension || p.suspension.matchesLeft === 0));
+     
+     // 2. Get Head Coach to determine tactics
+     const coach = this.staff.find(s => s.clubId === clubId && s.role === 'HEAD_COACH');
+     
+     // 3. Select Tactic
+     let selectedTactic = this.tactics[0]; // Default 4-4-2
+     if (coach && coach.preferredFormation) {
+        const preferred = this.tactics.find(t => t.id === coach.preferredFormation);
+        if (preferred) selectedTactic = preferred;
+     }
+
+     // 4. Fill Slots using "Efficiency Score" (Simulating Engine Logic)
+     const starters: Player[] = [];
+     const usedIds = new Set<string>();
+
+     // Sort slots: GK first, then Center (3), then others
+     const slotsToFill = [...selectedTactic.positions].sort((a,b) => {
+         if (SLOT_CONFIG[a].line === 'GK') return -1;
+         if (SLOT_CONFIG[b].line === 'GK') return 1;
+         return 0; 
+     });
+
+     slotsToFill.forEach(slot => {
+         let bestCandidate: Player | null = null;
+         let highestScore = -1;
+
+         allPlayers.forEach(p => {
+             if (usedIds.has(p.id)) return;
+             
+             const perceivedCA = this.getPerceivedAbility(p, coach);
+             // Use our duplicated logic which matches Engine logic
+             const suitability = this.calculateRoleSuitability(p, slot);
+             
+             // Heavy penalty if suitability is low (< 0.6 means strictly wrong position)
+             let penalty = 1.0;
+             if (suitability < 0.6) penalty = 0.1; 
+
+             const score = perceivedCA * suitability * penalty;
+
+             if (score > highestScore) {
+                 highestScore = score;
+                 bestCandidate = p;
+             }
+         });
+
+         if (bestCandidate) {
+             const p = bestCandidate as Player;
+             p.isStarter = true;
+             p.tacticalPosition = slot;
+             starters.push(p);
+             usedIds.add(p.id);
+         }
+     });
+
+     return starters;
   }
 
   private processAIRenewals(currentDate: Date) {
