@@ -561,7 +561,7 @@ const App: React.FC = () => {
                 </div>
             </div>
         ),
-        'INBOX': <InboxView onUpdate={() => setForceUpdate(v => v + 1)} />,
+        'INBOX': <InboxView setView={setView} onUpdate={() => setForceUpdate(v => v + 1)} />,
         'TABLE': <div className="p-2 h-full flex flex-col"><LeagueTable entries={world.getLeagueTable(viewLeagueId || userClub.leagueId, fixtures, viewSquadType)} userClubId={userClub.id} allLeagues={world.getLeagues()} currentLeagueId={viewLeagueId || userClub.leagueId} onLeagueChange={setViewLeagueId} currentSquadType={viewSquadType} onSquadTypeChange={setViewSquadType} /></div>,
         'MARKET': <MarketView userClubId={userClub.id} onSelectPlayer={setSelectedPlayer} currentDate={currentDate} />,
         'SEARCH': <SearchView onSelectPlayer={setSelectedPlayer} />,

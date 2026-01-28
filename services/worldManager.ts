@@ -3,9 +3,8 @@ import { Player, Club, Competition, CompetitionType, Position, PlayerStats, Fixt
 import { generateUUID, randomInt, weightedRandom } from "./utils";
 import { NATIONS } from "../constants";
 import { TACTIC_PRESETS, NAMES_DB, REGEN_DB, STAFF_NAMES, POS_DEFINITIONS, ARG_PRIMERA, ARG_NACIONAL, CONT_CLUBS, CONT_CLUBS_TIER2, WORLD_BOSSES, RealClubDef } from "../data/static";
-import { SLOT_CONFIG } from "./engine"; // Only import Data config, not the class to avoid cycle
+import { SLOT_CONFIG } from "./engine";
 
-// Helper for Tactical Zones
 const ZONES = {
     GK: [0],
     DEF: [1, 2, 3, 4, 5],
@@ -129,8 +128,6 @@ export class WorldManager {
 
   generateStaffForClub(clubId: string) {
     const roles: StaffRole[] = ['ASSISTANT_MANAGER', 'PHYSIO', 'FITNESS_COACH', 'RESERVE_MANAGER', 'YOUTH_MANAGER'];
-    
-    // Always add a Head Coach
     roles.unshift('HEAD_COACH');
 
     roles.forEach(role => {
@@ -143,11 +140,8 @@ export class WorldManager {
 
       if (role === 'HEAD_COACH') {
           preferredFormation = TACTIC_PRESETS[randomInt(0, TACTIC_PRESETS.length - 1)].id;
-          
-          // Determine style based on random roll + stats
           const styles: TacticalStyle[] = ['POSSESSION', 'DIRECT', 'COUNTER', 'HIGH_PRESS', 'BALANCED', 'PARK_THE_BUS'];
           const rand = Math.random();
-          // Heuristic for style preference
           if (coachingAbility > 15) tacticalStyle = 'POSSESSION';
           else if (rand < 0.2) tacticalStyle = 'DIRECT';
           else if (rand < 0.4) tacticalStyle = 'COUNTER';
@@ -212,8 +206,6 @@ export class WorldManager {
         contractExpiry: new Date(2009, 5, 30),
         history: []
      };
-     
-     // Remove existing AI coach if exists
      this.staff = this.staff.filter(s => s.clubId !== clubId || s.role !== 'HEAD_COACH');
      this.staff.unshift(manager);
   }
@@ -284,8 +276,6 @@ export class WorldManager {
     const birthYear = baseYear - age;
     const birthDate = new Date(birthYear, randomInt(0, 11), randomInt(1, 28));
 
-    // Refined hidden mental attributes to create personality variety
-    // We use lower skew or plain random for some to hit extremes (18-20 or 1-5)
     const stats: PlayerStats = {
       mental: { 
         aggression: weightedRandom(1, 20), 
@@ -294,15 +284,14 @@ export class WorldManager {
         composure: weightedRandom(tier - 3, Math.min(20, tier + 4)), 
         concentration: weightedRandom(1, 20), 
         decisions: weightedRandom(tier - 2, Math.min(20, tier + 4)), 
-        determination: randomInt(1, 20), // More spread for "Determinación férrea"
+        determination: randomInt(1, 20), 
         flair: weightedRandom(1, 20), 
-        leadership: randomInt(1, 20), // More spread for "Líder natural"
+        leadership: randomInt(1, 20), 
         offTheBall: weightedRandom(1, 20), 
         positioning: weightedRandom(tier - 3, Math.min(20, tier + 4)), 
         teamwork: weightedRandom(1, 20), 
         vision: weightedRandom(tier - 4, Math.min(20, tier + 5)), 
         workRate: randomInt(1, 20),
-        // Hidden personality attributes - increased spread
         professionalism: randomInt(1, 20),
         ambition: randomInt(1, 20),
         pressure: randomInt(1, 20),
@@ -440,7 +429,7 @@ export class WorldManager {
      else if (isLoanListed && target.age < 23 && buyer.reputation < sellerClub.reputation) {
         const exists = this.offers.some(o => o.playerId === target.id && o.fromClubId === buyer.id && o.status === 'PENDING');
         if (!exists) {
-           this.makeTransferOffer(target.id, buyer.id, 0, 'LOAN', currentDate);
+           this.makeTransferOffer(target.id, buyer.id, 0, 'LOAN', currentDate, 100);
         }
      }
   }
@@ -557,25 +546,17 @@ export class WorldManager {
      });
   }
 
-  // --- REWRITTEN AI TEAM SELECTION LOGIC ---
-  // Uses "Suitability Score" to prioritize position fit over raw ability
-  // NOTE: Logic duplicated from Engine.ts to prevent circular dependency
-  
   private getPerceivedAbility(player: Player, coach?: Staff): number {
      const realCA = player.currentAbility * (player.fitness / 100);
      if (!coach) return realCA;
 
      const judging = coach.attributes.judgingAbility;
      const errorMargin = (20 - judging) * 3; 
-     
-     // Deterministic noise
      const noiseSeed = player.id.charCodeAt(0) + player.id.charCodeAt(player.id.length - 1);
      const consistentNoise = Math.sin(noiseSeed) * errorMargin;
-     
      return Math.max(10, realCA + consistentNoise);
   }
 
-  // Duplicate of Engine logic to avoid import cycle
   private calculateRoleSuitability(player: Player, slotIndex: number): number {
       const slotData = SLOT_CONFIG[slotIndex];
       if (!slotData) return 0.5;
@@ -583,7 +564,6 @@ export class WorldManager {
       let maxEfficiency = 0;
 
       for (const posStr of player.positions) {
-          // Parse logic duplicated
           let line = 'MID';
           if (posStr.includes('GK')) { line = 'GK'; }
           else if (posStr === 'SW' || posStr.includes('DF') || posStr.includes('DR') || posStr.includes('DL')) { line = 'DEF'; }
@@ -597,9 +577,8 @@ export class WorldManager {
           else if (posStr.endsWith('RC') || posStr.endsWith('CR')) lanes = [3, 4, 5];
           else if (posStr.endsWith('L') && !posStr.includes('GK')) lanes = [1, 2];
           else if (posStr.endsWith('R') && !posStr.includes('GK')) lanes = [4, 5];
-          else lanes = [2, 3, 4]; // Center
+          else lanes = [2, 3, 4]; 
 
-          // Line Check
           let lineScore = 0;
           if (line === slotData.line) lineScore = 1.0;
           else {
@@ -615,7 +594,6 @@ export class WorldManager {
           if (slotData.line === 'GK' && line !== 'GK') return 0.01;
           if (line === 'GK' && slotData.line !== 'GK') return 0.01;
 
-          // Lane Check
           let laneScore = 0;
           if (lanes.includes(slotData.lane)) {
               laneScore = 1.0;
@@ -637,7 +615,6 @@ export class WorldManager {
   }
 
   selectBestEleven(clubId: string, squadType: SquadType = 'SENIOR'): Player[] {
-     // 1. Reset current starters for this squad
      this.getPlayersByClub(clubId).forEach(p => { 
          if (p.squad === squadType) {
              p.isStarter = false; 
@@ -646,22 +623,15 @@ export class WorldManager {
      });
 
      const allPlayers = this.getPlayersByClub(clubId).filter(p => p.squad === squadType && !p.injury && (!p.suspension || p.suspension.matchesLeft === 0));
-     
-     // 2. Get Head Coach to determine tactics
      const coach = this.staff.find(s => s.clubId === clubId && s.role === 'HEAD_COACH');
-     
-     // 3. Select Tactic
-     let selectedTactic = this.tactics[0]; // Default 4-4-2
+     let selectedTactic = this.tactics[0]; 
      if (coach && coach.preferredFormation) {
         const preferred = this.tactics.find(t => t.id === coach.preferredFormation);
         if (preferred) selectedTactic = preferred;
      }
 
-     // 4. Fill Slots using "Efficiency Score" (Simulating Engine Logic)
      const starters: Player[] = [];
      const usedIds = new Set<string>();
-
-     // Sort slots: GK first, then Center (3), then others
      const slotsToFill = [...selectedTactic.positions].sort((a,b) => {
          if (SLOT_CONFIG[a].line === 'GK') return -1;
          if (SLOT_CONFIG[b].line === 'GK') return 1;
@@ -674,21 +644,12 @@ export class WorldManager {
 
          allPlayers.forEach(p => {
              if (usedIds.has(p.id)) return;
-             
              const perceivedCA = this.getPerceivedAbility(p, coach);
-             // Use our duplicated logic which matches Engine logic
              const suitability = this.calculateRoleSuitability(p, slot);
-             
-             // Heavy penalty if suitability is low (< 0.6 means strictly wrong position)
              let penalty = 1.0;
              if (suitability < 0.6) penalty = 0.1; 
-
              const score = perceivedCA * suitability * penalty;
-
-             if (score > highestScore) {
-                 highestScore = score;
-                 bestCandidate = p;
-             }
+             if (score > highestScore) { highestScore = score; bestCandidate = p; }
          });
 
          if (bestCandidate) {
@@ -768,12 +729,12 @@ export class WorldManager {
     return 'REJECTED';
   }
 
-  makeTransferOffer(playerId: string, fromClubId: string, amount: number, type: 'PURCHASE' | 'LOAN', currentDate: Date): TransferOffer {
+  makeTransferOffer(playerId: string, fromClubId: string, amount: number, type: 'PURCHASE' | 'LOAN', currentDate: Date, wageShare: number = 0): TransferOffer {
     const player = this.players.find(p => p.id === playerId);
     if (!player) throw new Error("Player not found");
     const responseDate = new Date(currentDate);
     responseDate.setDate(responseDate.getDate() + randomInt(2, 4));
-    const offer: TransferOffer = { id: generateUUID(), playerId, fromClubId, toClubId: player.clubId, amount, type, status: 'PENDING', date: new Date(currentDate), responseDate, isViewed: false };
+    const offer: TransferOffer = { id: generateUUID(), playerId, fromClubId, toClubId: player.clubId, amount, wageShare, type, status: 'PENDING', date: new Date(currentDate), responseDate, isViewed: false };
     this.offers.push(offer);
     return offer;
   }
@@ -787,6 +748,7 @@ export class WorldManager {
       const fromClub = this.getClub(offer.fromClubId);
       if (!player || !toClub || !fromClub) return;
       const targetValue = player.value;
+      
       if (offer.type === 'PURCHASE') {
         const isListed = player.transferStatus === 'TRANSFERABLE';
         if (!isListed && offer.amount < targetValue * 3) {
@@ -798,12 +760,14 @@ export class WorldManager {
           this.addInboxMessage('MARKET', msg, `Respuesta del ${toClub.name}.`, currentDate, player.id);
         }
       } else if (offer.type === 'LOAN') {
-         if (player.transferStatus === 'LOANABLE' || offer.amount > 0) {
+         // Probabilidad de cesión basada en el porcentaje de ficha ofrecido
+         const chance = (player.transferStatus === 'LOANABLE' ? 0.7 : 0.2) + (offer.wageShare / 200);
+         if (Math.random() < chance) {
             offer.status = 'ACCEPTED';
-            this.addInboxMessage('MARKET', `Cesión Aceptada: ${player.name}`, `El ${toClub.name} acepta la cesión.`, currentDate, player.id);
+            this.addInboxMessage('MARKET', `Cesión Aceptada: ${player.name}`, `El ${toClub.name} acepta la cesión. Pagarás el ${offer.wageShare}% de su ficha.`, currentDate, player.id);
          } else {
             offer.status = 'REJECTED';
-            this.addInboxMessage('MARKET', `Cesión Rechazada: ${player.name}`, `El club no quiere ceder al jugador.`, currentDate, player.id);
+            this.addInboxMessage('MARKET', `Cesión Rechazada: ${player.name}`, `El club no está convencido con los términos de la cesión.`, currentDate, player.id);
          }
       }
     });
@@ -814,16 +778,21 @@ export class WorldManager {
     const fromClub = this.getClub(offer.fromClubId);
     const toClub = this.getClub(offer.toClubId);
     if (player && fromClub && toClub) {
-      if (offer.type === 'PURCHASE') { fromClub.finances.balance -= offer.amount; toClub.finances.balance += offer.amount; }
-      if (offer.type === 'PURCHASE') {
-         player.clubId = offer.fromClubId; 
-         player.transferStatus = 'NONE';
+      if (offer.type === 'PURCHASE') { 
+          fromClub.finances.balance -= offer.amount; 
+          toClub.finances.balance += offer.amount; 
+          player.clubId = offer.fromClubId; 
+          player.transferStatus = 'NONE';
       } else {
-         player.clubId = offer.fromClubId; 
+          // Si es préstamo, el sueldo se ajusta al porcentaje
+          player.loanDetails = { originalClubId: offer.toClubId, wageShare: offer.wageShare };
+          player.clubId = offer.fromClubId;
       }
       player.squad = 'SENIOR'; 
       player.isStarter = false; 
-      this.updateClubMonthlyExpenses(fromClub.id); this.updateClubMonthlyExpenses(toClub.id);
+      player.tacticalPosition = undefined;
+      this.updateClubMonthlyExpenses(fromClub.id); 
+      this.updateClubMonthlyExpenses(toClub.id);
       offer.status = 'COMPLETED';
     }
   }
@@ -833,7 +802,7 @@ export class WorldManager {
     if (offer && offer.counterAmount) {
       offer.amount = offer.counterAmount; offer.status = 'ACCEPTED';
       const player = this.players.find(p => p.id === offer.playerId);
-      if (player) this.addInboxMessage('MARKET', `Fichaje Confirmado: ${player.name}`, `Has aceptado la contraoferta.`, currentDate, player.id);
+      if (player) this.addInboxMessage('MARKET', `Fichaje Confirmado: ${player.name}`, `Has aceptado la contraoferta. Debes finalizar el trato para que se una al club.`, currentDate, player.id);
     }
   }
 }

@@ -1,13 +1,15 @@
+
 import React, { useState, useMemo } from 'react';
 import { world } from '../services/worldManager';
 import { InboxMessage, MessageCategory } from '../types';
-import { Mail, ShoppingBag, Users, MessageSquare, Wallet, Trash2, Clock, CheckCircle, ChevronRight, Inbox, Trophy } from 'lucide-react';
+import { Mail, ShoppingBag, Users, MessageSquare, Wallet, Trash2, Clock, ChevronRight, Inbox, Trophy } from 'lucide-react';
 
 interface InboxViewProps {
   onUpdate: () => void;
+  setView: (view: string) => void;
 }
 
-export const InboxView: React.FC<InboxViewProps> = ({ onUpdate }) => {
+export const InboxView: React.FC<InboxViewProps> = ({ onUpdate, setView }) => {
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
   const [filter, setFilter] = useState<'ALL' | MessageCategory>('ALL');
 
@@ -45,6 +47,19 @@ export const InboxView: React.FC<InboxViewProps> = ({ onUpdate }) => {
      onUpdate();
   };
 
+  const handleActionRequired = () => {
+    if (!selectedMessage) return;
+    
+    // Navegación basada en la categoría del mensaje
+    if (selectedMessage.category === 'MARKET') {
+      setView('NEGOTIATIONS');
+    } else if (selectedMessage.category === 'SQUAD') {
+      setView('SENIOR_SQUAD');
+    } else if (selectedMessage.category === 'COMPETITION') {
+      setView('TABLE');
+    }
+  };
+
   return (
     <div className="flex flex-col lg:flex-row h-full bg-slate-400 overflow-hidden">
       {/* Sidebar List */}
@@ -55,16 +70,16 @@ export const InboxView: React.FC<InboxViewProps> = ({ onUpdate }) => {
           </h2>
           <div className="flex mt-3 gap-1 overflow-x-auto scrollbar-hide">
             {[
-              { id: 'ALL', label: 'Todos' },
-              { id: 'MARKET', label: 'Mercado' },
-              { id: 'SQUAD', label: 'Plantel' },
-              { id: 'STATEMENTS', label: 'Prensa' },
-              { id: 'COMPETITION', label: 'Torneo' }
+              { id: 'ALL', label: 'TODOS' },
+              { id: 'MARKET', label: 'MERCADO' },
+              { id: 'SQUAD', label: 'PLANTEL' },
+              { id: 'STATEMENTS', label: 'PRENSA' },
+              { id: 'COMPETITION', label: 'TORNEO' }
             ].map((f) => (
               <button
                 key={f.id}
                 onClick={() => setFilter(f.id as any)}
-                className={`px-3 py-1 text-[9px] font-black uppercase rounded-sm border transition-all whitespace-nowrap ${filter === f.id ? 'bg-slate-800 border-slate-950 text-white shadow-md' : 'bg-slate-100 border-slate-400 text-slate-600 hover:border-slate-500'}`}
+                className={`px-3 py-1 text-[9px] font-black uppercase rounded-sm border transition-all whitespace-nowrap ${filter === f.id ? 'bg-[#3a4a3a] border-slate-950 text-white shadow-md' : 'bg-slate-100 border-slate-400 text-slate-600 hover:border-slate-500'}`}
               >
                 {f.label}
               </button>
@@ -115,7 +130,10 @@ export const InboxView: React.FC<InboxViewProps> = ({ onUpdate }) => {
                <div>
                   <div className="flex items-center gap-3 mb-2">
                      <span className={`px-3 py-1 rounded-sm text-[9px] font-black uppercase tracking-widest border border-slate-400 bg-slate-200 text-slate-800`}>
-                        {selectedMessage.category}
+                        {selectedMessage.category === 'MARKET' ? 'MERCADO' : 
+                         selectedMessage.category === 'SQUAD' ? 'PLANTEL' : 
+                         selectedMessage.category === 'COMPETITION' ? 'TORNEO' : 
+                         selectedMessage.category === 'STATEMENTS' ? 'PRENSA' : 'FINANZAS'}
                      </span>
                      <span className="text-[11px] text-slate-600 font-mono font-bold">{selectedMessage.date.toLocaleDateString()} • {selectedMessage.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
@@ -129,17 +147,24 @@ export const InboxView: React.FC<InboxViewProps> = ({ onUpdate }) => {
                   {selectedMessage.body}
                </p>
                
-               {selectedMessage.category === 'MARKET' && (
-                  <div className="mt-10 p-6 bg-slate-200 border border-slate-500 rounded-sm flex items-center justify-between shadow-inner">
+               {(selectedMessage.category === 'MARKET' || selectedMessage.category === 'SQUAD') && (
+                  <button 
+                    onClick={handleActionRequired}
+                    className="mt-10 w-full p-6 bg-slate-200 border border-slate-500 rounded-sm flex items-center justify-between shadow-inner hover:bg-slate-300 transition-all group"
+                  >
                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-slate-900 rounded-sm flex items-center justify-center text-white"><ShoppingBag size={24}/></div>
-                        <div>
+                        <div className="w-12 h-12 bg-slate-900 rounded-sm flex items-center justify-center text-white">
+                           {selectedMessage.category === 'MARKET' ? <ShoppingBag size={24}/> : <Users size={24}/>}
+                        </div>
+                        <div className="text-left">
                            <p className="text-xs font-black text-slate-950 uppercase tracking-[0.2em]">Acción Requerida</p>
-                           <p className="text-slate-700 font-black italic">Ir al centro de negociaciones</p>
+                           <p className="text-slate-700 font-black italic">
+                              {selectedMessage.category === 'MARKET' ? 'Ir al centro de negociaciones' : 'Ir al plantel'}
+                           </p>
                         </div>
                      </div>
-                     <ChevronRight className="text-slate-950" />
-                  </div>
+                     <ChevronRight className="text-slate-950 group-hover:translate-x-1 transition-transform" />
+                  </button>
                )}
             </div>
           </div>

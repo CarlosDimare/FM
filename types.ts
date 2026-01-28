@@ -34,7 +34,6 @@ export interface PlayerStats {
     teamwork: number;
     vision: number;
     workRate: number;
-    // Hidden Personality attributes
     professionalism: number;
     ambition: number;
     pressure: number;
@@ -80,7 +79,7 @@ export interface Player {
   isStarter: boolean;
   squad: SquadType;
   tacticalPosition?: number;
-  tacticalArrow?: number; // Target slot for offensive movement
+  tacticalArrow?: number;
   value: number;
   salary: number;
   transferStatus: 'NONE' | 'TRANSFERABLE' | 'LOANABLE';
@@ -94,6 +93,7 @@ export interface Player {
   suspension?: { type: string, matchesLeft: number };
   requestedSalary?: number;
   lastNegotiationDate?: Date;
+  loanDetails?: { originalClubId: string, wageShare: number }; // Datos si el jugador está cedido
 }
 
 export interface ClubHonour {
@@ -120,7 +120,6 @@ export interface Club {
   stadium: string;
   honours: ClubHonour[];
   qualifiedFor?: string | null;
-  // Facilities info
   trainingFacilities: number;
   youthFacilities: number;
 }
@@ -176,18 +175,18 @@ export interface Staff {
   nationality: string;
   role: StaffRole;
   clubId: string;
-  preferredFormation?: string; // e.g. '4-4-2'
-  tacticalStyle?: TacticalStyle; // NEW: The philosophy
+  preferredFormation?: string;
+  tacticalStyle?: TacticalStyle;
   attributes: {
     coaching: number;
     judgingAbility: number;
     judgingPotential: number;
-    tacticalKnowledge: number; // Influences engine performance
+    tacticalKnowledge: number;
     medical: number;
     physiotherapy: number;
     motivation: number;
     manManagement: number;
-    adaptability: number; // Willingness to change tactic based on players
+    adaptability: number;
   };
   salary: number;
   contractExpiry: Date;
@@ -200,6 +199,7 @@ export interface TransferOffer {
   fromClubId: string;
   toClubId: string;
   amount: number;
+  wageShare: number; // Porcentaje del sueldo que paga el comprador (0-100)
   type: 'PURCHASE' | 'LOAN';
   status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'COUNTER_OFFER' | 'COMPLETED';
   date: Date;
@@ -218,52 +218,31 @@ export interface InboxMessage {
   relatedId?: string;
 }
 
-export interface MatchLog {
-    // Placeholder if needed
-}
-
 export interface PlayerMatchStats {
   rating: number;
   goals: number;
   assists: number;
-  
-  // General
-  condition: number; // 0-100%
-  
-  // Passing
+  condition: number;
   passesAttempted: number;
   passesCompleted: number;
-  keyPasses: number; // 'Imp' in passes
-  
-  // Shooting
+  keyPasses: number;
   shots: number;
   shotsOnTarget: number;
-  
-  // Dribbling & Offense
   dribblesAttempted: number;
-  dribblesCompleted: number; // 'Des' (Desbordes)
-  offsides: number; // 'Fdj'
-  
-  // Defending
-  tacklesAttempted: number; // 'Ent'
-  tacklesCompleted: number; // 'Gan'
-  keyTackles: number; // 'Imp' (Def)
-  interceptions: number; // 'Int'
-  shotsBlocked: number; // 'Tap' (Tapados)
-  
-  // Aerial
-  headersAttempted: number; // 'Cab'
-  headersWon: number; // 'Gan' (Aire)
-  keyHeaders: number; // 'Imp' (Aire) - Defensive clearances or shot headers
-  
-  // Goalkeeping
+  dribblesCompleted: number;
+  offsides: number;
+  tacklesAttempted: number;
+  tacklesCompleted: number;
+  keyTackles: number;
+  interceptions: number;
+  shotsBlocked: number;
+  headersAttempted: number;
+  headersWon: number;
+  keyHeaders: number;
   saves: number;
-  
-  // Discipline
-  foulsCommitted: number; // 'F.C'
-  foulsReceived: number; // 'F.R'
+  foulsCommitted: number;
+  foulsReceived: number;
   card?: 'YELLOW' | 'RED';
-  
   participationPhrase?: string;
   sustainedInjury?: { type: string, days: number };
 }
@@ -304,6 +283,22 @@ export interface DialogueResult {
   moraleChange: number;
   reactionType: 'POSITIVE' | 'NEUTRAL' | 'NEGATIVE';
   canReplica?: boolean;
+}
+
+/**
+ * Interface representing a summary of a completed match, 
+ * used for tracking history in the WorldManager.
+ */
+export interface MatchLog {
+  id: string;
+  date: Date;
+  competitionId: string;
+  homeTeamId: string;
+  awayTeamId: string;
+  homeScore: number;
+  awayScore: number;
+  squadType: SquadType;
+  stage: MatchStage;
 }
 
 export const ATTRIBUTE_LABELS: Record<string, string> = {
