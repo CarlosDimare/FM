@@ -79,6 +79,7 @@ export interface Player {
   isStarter: boolean;
   squad: SquadType;
   tacticalPosition?: number;
+  tacticalArrow?: number; // Target slot for offensive movement
   value: number;
   salary: number;
   transferStatus: 'NONE' | 'TRANSFERABLE' | 'LOANABLE';

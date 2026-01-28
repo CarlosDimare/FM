@@ -3,7 +3,7 @@ import React from 'react';
 import { useState } from 'react';
 import { Player, POSITION_ORDER } from '../types';
 import { FMBox, FMTable, FMTableCell } from './FMUI';
-import { TrendingUp, TrendingDown, Minus, Plus, Square, AlertCircle } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Plus, Square, AlertCircle, X, MessageSquare } from 'lucide-react';
 import { getFlagUrl } from '../data/static';
 import { DialogueSystem } from '../services/dialogueSystem';
 
@@ -63,29 +63,34 @@ export const SquadView: React.FC<SquadViewProps> = ({ players, onSelectPlayer, o
      
      if (player.transferStatus !== 'NONE') {
         icons.push(
-           <span key="trn" className="text-[9px] text-orange-700 font-bold bg-orange-100 border border-orange-300 px-1 rounded-[1px]">TRN</span>
+           <span key="trn" className="text-[8px] text-orange-700 font-black bg-orange-100 border border-orange-300 px-1 rounded-[1px] h-4 flex items-center">TRN</span>
         );
      }
 
      if (player.injury) {
         icons.push(
-           <span key="inj" className="text-[9px] text-white font-bold bg-red-600 px-1 rounded-[1px]">LES</span>
+           <div key="inj" className="w-4 h-4 bg-white border border-red-600 flex items-center justify-center rounded-[1px] shadow-sm" title="Lesionado">
+              <X size={10} className="text-red-600 stroke-[4]" />
+           </div>
         );
      }
      
      if (player.suspension && player.suspension.matchesLeft > 0) {
         icons.push(
-           <span key="sus" className="text-[9px] text-white font-bold bg-red-600 px-1 rounded-[1px]">SUS</span>
+           <div key="sus" className="w-3 h-4 bg-red-600 border border-red-800 rounded-[1px] shadow-sm" title="Sancionado"></div>
         );
      }
 
      if (DialogueSystem.checkPlayerMotives(player, currentDate)) {
         icons.push(
-           <span key="unh" className="text-[9px] text-white font-bold bg-amber-600 px-1 rounded-[1px]">DFT</span>
+           <div key="unh" className="relative flex items-center justify-center" title="Molesto">
+              <MessageSquare size={16} className="text-slate-700 fill-amber-400" />
+              <span className="absolute inset-0 flex items-center justify-center text-[7px] font-black text-slate-900 mt-[-1px]">!!</span>
+           </div>
         );
      }
 
-     return icons.length > 0 ? <div className="flex gap-1 items-center ml-2">{icons}</div> : null;
+     return icons.length > 0 ? <div className="flex gap-1.5 items-center ml-2 shrink-0">{icons}</div> : null;
   };
 
   return (
@@ -108,14 +113,14 @@ export const SquadView: React.FC<SquadViewProps> = ({ players, onSelectPlayer, o
                     ${player.isStarter ? 'font-bold' : ''}
                   `}
                 >
-                   <FMTableCell className="text-center text-slate-700">{player.positions[0]}</FMTableCell>
+                   <FMTableCell className="text-center text-slate-700 font-bold">{player.positions[0]}</FMTableCell>
 
                    <FMTableCell className="text-slate-900">
                       <div className="flex items-center">
                         <img 
                           src={getFlagUrl(player.nationality)} 
                           alt={player.nationality} 
-                          className="w-4 h-3 object-cover shadow-sm rounded-[1px] mr-2 shrink-0" 
+                          className="w-4 h-3 object-cover shadow-sm rounded-[1px] mr-2 shrink-0 border border-slate-300" 
                           title={player.nationality} 
                         />
                         <span className="truncate max-w-[80px] sm:max-w-none">{player.name}</span>
@@ -123,23 +128,23 @@ export const SquadView: React.FC<SquadViewProps> = ({ players, onSelectPlayer, o
                       </div>
                    </FMTableCell>
 
-                   <FMTableCell className="text-center" isNumber>{player.age}</FMTableCell>
+                   <FMTableCell className="text-center font-bold" isNumber>{player.age}</FMTableCell>
 
                    <FMTableCell className="text-center hidden sm:table-cell" title={player.developmentTrend || 'Estable'}>
                       {renderTrend(player.developmentTrend)}
                    </FMTableCell>
 
-                   <FMTableCell className="text-right hidden lg:table-cell" isNumber>£{(player.salary / 1000).toFixed(0)}k</FMTableCell>
+                   <FMTableCell className="text-right hidden lg:table-cell font-bold" isNumber>£{(player.salary / 1000).toFixed(0)}k</FMTableCell>
 
-                   <FMTableCell className="text-center" isNumber>
-                      {Math.round(player.fitness)}%
+                   <FMTableCell className="text-center font-bold" isNumber>
+                      <span className={player.fitness < 70 ? 'text-red-600' : ''}>{Math.round(player.fitness)}%</span>
                    </FMTableCell>
 
-                   <FMTableCell className="text-center hidden md:table-cell" isNumber>
-                      {Math.round(player.morale)}%
+                   <FMTableCell className="text-center hidden md:table-cell font-bold" isNumber>
+                      <span className={player.morale < 40 ? 'text-red-600' : ''}>{Math.round(player.morale)}%</span>
                    </FMTableCell>
 
-                   <FMTableCell className="text-right" isNumber>£{(player.value / 1000000).toFixed(1)}M</FMTableCell>
+                   <FMTableCell className="text-right font-black" isNumber>£{(player.value / 1000000).toFixed(1)}M</FMTableCell>
                 </tr>
             ))}
         </FMTable>
