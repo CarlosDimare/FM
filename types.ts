@@ -419,6 +419,33 @@ export const ATTRIBUTE_LABELS: Record<string, string> = {
   manManagement: "Gestión Personal"
 };
 
+export const POSITION_FULL_NAMES: Record<string, string> = {
+  'GK': 'PORTERO',
+  'SW': 'LÍBERO',
+  'DC': 'DEFENSOR CENTRAL',
+  'DLC': 'DEFENSOR CENTRAL IZQ.',
+  'DRC': 'DEFENSOR CENTRAL DER.',
+  'DR': 'LATERAL DERECHO',
+  'DL': 'LATERAL IZQUIERDO',
+  'DM': 'MEDIOCENTRO DEFENSIVO',
+  'DMC': 'MEDIOCENTRO DEFENSIVO',
+  'DMR': 'MEDIOCENTRO DERECHO',
+  'DML': 'MEDIOCENTRO IZQUIERDO',
+  'MC': 'CENTROCAMPISTA',
+  'MCR': 'CENTROCAMPISTA DERECHO',
+  'MCL': 'CENTROCAMPISTA IZQUIERDO',
+  'MR': 'INTERIOR DERECHO',
+  'ML': 'INTERIOR IZQUIERDO',
+  'AM': 'MEDIAPUNTA',
+  'AMC': 'MEDIAPUNTA CENTRAL',
+  'AMR': 'MEDIAPUNTA DERECHO',
+  'AML': 'MEDIAPUNTA IZQUIERDO',
+  'ST': 'DELANTERO CENTRO',
+  'STC': 'DELANTERO CENTRO',
+  'STR': 'DELANTERO DERECHO',
+  'STL': 'DELANTERO IZQUIERDO'
+};
+
 export const POSITION_ORDER: Record<string, number> = {
    'GK': 1, 'SW': 2, 'DR': 3, 'DL': 4, 'DC': 5, 'WBR': 6, 'WBL': 7, 'DM': 8, 'MR': 9, 'ML': 10, 'MC': 11, 'AMR': 12, 'AML': 13, 'AMC': 14, 'ST': 15
 };

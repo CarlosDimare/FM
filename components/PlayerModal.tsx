@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Player, Attribute, DialogueType, DialogueResult, ATTRIBUTE_LABELS, Position, SquadType, DialogueTone } from '../types';
+import { Player, Attribute, DialogueType, DialogueResult, ATTRIBUTE_LABELS, Position, SquadType, DialogueTone, POSITION_FULL_NAMES } from '../types';
 import { world } from '../services/worldManager';
 import { ProfileNarrativeEngine } from '../services/engine';
 import { DialogueSystem } from '../services/dialogueSystem';
@@ -213,7 +213,9 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({ player, onClose, userC
 
                  {/* Metadata Line */}
                  <div className={`flex flex-wrap items-center gap-3 font-bold uppercase text-[10px] tracking-tight mt-1 ${headerTextClass} opacity-80`} style={{ fontFamily: 'Verdana, sans-serif' }}>
-                    <span className="bg-black/20 px-1.5 rounded-[1px] text-current border border-black/10">{player.positions[0]}</span>
+                    <span className="bg-black/20 px-1.5 rounded-[1px] text-current border border-black/10">
+                        {POSITION_FULL_NAMES[player.positions[0]] || player.positions[0]}
+                    </span>
                     <span>{player.nationality.toUpperCase()}</span>
                     <span>•</span>
                     <span>{player.age} AÑOS</span>
