@@ -7,6 +7,7 @@ import { TacticsView } from './components/TacticsView';
 import { LeagueTable } from './components/LeagueTable';
 import { SquadView } from './components/SquadView';
 import { StaffView } from './components/StaffView';
+import { TrainingView } from './components/TrainingView';
 import { ClubReport } from './components/ClubReport';
 import { PreMatchView } from './components/PreMatchView';
 import { MarketView } from './components/MarketView';
@@ -193,10 +194,6 @@ const App: React.FC = () => {
      setNextFixture(next || null);
   };
 
-  const handleStartMatch = () => {
-    if (nextFixture) setView('MATCH');
-  };
-
   const advanceTime = () => {
      if (currentView === 'PRE_MATCH') {
         handleStartMatch();
@@ -355,8 +352,6 @@ const App: React.FC = () => {
      setView('HOME');
   };
 
-  // --- SAVE & LOAD HANDLERS ---
-
   const handleOpenSaveModal = () => {
      setSaveNameInput(`${userClub?.shortName} - ${currentDate.toLocaleDateString()}`);
      setIsSaveModalOpen(true);
@@ -456,15 +451,15 @@ const App: React.FC = () => {
      }
   }
 
-  // --- RENDER ---
+  const handleStartMatch = () => {
+    if (nextFixture) setView('MATCH');
+  };
 
   const getMatchSquad = (clubId: string) => {
-    // 1. Asegurar que el equipo tenga titulares definidos (especialmente si es IA)
     const clubPlayers = world.getPlayersByClub(clubId);
     let starters = clubPlayers.filter(p => p.isStarter && p.tacticalPosition !== undefined)
                        .sort((a,b) => (a.tacticalPosition || 0) - (b.tacticalPosition || 0));
     
-    // Si no hay titulares (bug de IA o carga), autoseleccionar
     if (starters.length < 11) {
        world.selectBestEleven(clubId, 'SENIOR');
        starters = world.getPlayersByClub(clubId)
@@ -472,13 +467,11 @@ const App: React.FC = () => {
           .sort((a,b) => (a.tacticalPosition || 0) - (b.tacticalPosition || 0));
     }
 
-    // 2. Seleccionar solo a los mejores suplentes disponibles (máximo 9 para FM08 style)
     const bench = clubPlayers
                     .filter(p => !p.isStarter && !p.injury && (!p.suspension || p.suspension.matchesLeft === 0))
                     .sort((a,b) => b.currentAbility - a.currentAbility)
                     .slice(0, 9); 
 
-    // DEVOLVER SOLO LA CONVOCATORIA (Máximo 20 jugadores)
     return [...starters, ...bench];
   };
 
@@ -489,7 +482,6 @@ const App: React.FC = () => {
         'HOME': (
             <div className="p-4 space-y-4 overflow-y-auto">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                    {/* NEXT MATCH CARD */}
                     <div className="lg:col-span-2 bg-slate-200 p-6 rounded-sm border border-slate-500 shadow-sm relative overflow-hidden">
                         <div className="absolute top-0 right-0 p-4 opacity-10 text-slate-900"><Globe size={120} /></div>
                         <h3 className="text-slate-950 font-black uppercase text-[11px] tracking-wider mb-4 border-b border-slate-400 pb-1">Próximo Encuentro</h3>
@@ -503,17 +495,14 @@ const App: React.FC = () => {
                         <div className="mt-4 text-center text-slate-600 font-mono text-[10px] uppercase tracking-widest">{nextFixture?.date.toLocaleDateString()}</div>
                     </div>
 
-                    {/* COMPETITIONS STATUS CARD */}
                     <div className="bg-slate-200 p-4 rounded-sm border border-slate-500 shadow-sm flex flex-col">
                         <h3 className="text-slate-950 font-black uppercase text-[11px] tracking-wider mb-2 border-b border-slate-400 pb-1 flex items-center gap-2">
                            <Trophy size={14} /> Competiciones
                         </h3>
                         <div className="flex-1 space-y-2 overflow-y-auto">
                            {world.competitions.filter(c => {
-                              // Filter relevant competitions
                               if (c.id === userClub.leagueId) return true;
                               if (c.type !== 'LEAGUE') {
-                                 // Check if active in this cup
                                  const compFixtures = fixtures.filter(f => f.competitionId === c.id);
                                  return compFixtures.some(f => f.homeTeamId === userClub.id || f.awayTeamId === userClub.id);
                               }
@@ -525,7 +514,6 @@ const App: React.FC = () => {
                                  const rank = table.findIndex(e => e.clubId === userClub.id) + 1;
                                  statusText = rank > 0 ? `${rank}º Clasificado` : '-';
                               } else {
-                                 // Basic logic to find latest stage reached
                                  statusText = "En curso"; 
                               }
                               return (
@@ -539,7 +527,6 @@ const App: React.FC = () => {
                     </div>
                 </div>
 
-                {/* LATEST NEWS */}
                 <div className="bg-slate-100 p-4 rounded-sm border border-slate-300 shadow-sm">
                    <h3 className="text-slate-950 font-black uppercase text-[11px] tracking-wider mb-4 border-b border-slate-300 pb-1 flex items-center justify-between">
                       <div className="flex items-center gap-2"><Mail size={14} /> Últimas Noticias</div>
@@ -568,12 +555,12 @@ const App: React.FC = () => {
         'NEGOTIATIONS': <NegotiationsView userClubId={userClub.id} onUpdate={() => setForceUpdate(v => v + 1)} currentDate={currentDate} />,
         'ECONOMY': <EconomyView club={userClub} />,
         'STAFF': <StaffView staff={world.getStaffByClub(userClub.id)} />,
+        'TRAINING': <TrainingView club={userClub} players={world.getPlayersByClub(userClub.id)} staff={world.getStaffByClub(userClub.id)} onUpdate={() => setForceUpdate(v => v + 1)} />,
         'CLUB_REPORT': <ClubReport club={userClub} />
     };
 
     if (staticViews[currentView]) return staticViews[currentView];
 
-    // Safely resolve match clubs
     let homeClub: Club | undefined;
     let awayClub: Club | undefined;
     if (nextFixture) {
@@ -671,7 +658,6 @@ const App: React.FC = () => {
     <div className="h-screen w-screen bg-slate-400 flex items-center justify-center p-4 relative overflow-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-slate-200 via-slate-400 to-slate-500 opacity-50 pointer-events-none"></div>
       
-      {/* LOAD GAME MODAL */}
       {isLoadModalOpen && (
          <div className="fixed inset-0 z-[200] bg-slate-900/80 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
             <div className="bg-slate-200 w-full max-w-lg rounded-sm border-2 border-slate-500 shadow-2xl p-6 flex flex-col max-h-[80vh]">
@@ -737,7 +723,6 @@ const App: React.FC = () => {
     <div className="flex flex-col h-screen w-screen bg-slate-400 text-slate-950 overflow-hidden font-sans relative text-sm">
       <div className={`h-1 w-full ${userClub ? userClub.secondaryColor.replace('text-','bg-') : 'bg-slate-800'}`}></div>
       
-      {/* SAVE GAME MODAL */}
       {isSaveModalOpen && (
          <div className="fixed inset-0 z-[500] bg-slate-900/80 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
             <div className="bg-slate-200 w-full max-w-sm rounded-sm border-2 border-slate-500 shadow-2xl p-6">
@@ -776,7 +761,6 @@ const App: React.FC = () => {
            )}
            <div className="flex items-center gap-3">
               <div className={`w-1.5 h-8 ${userClub ? userClub.secondaryColor.replace('text-', 'bg-') : 'bg-slate-800'} border-x border-black/10 opacity-80`}></div>
-              
               <h1 className={`text-sm font-black uppercase tracking-tight italic drop-shadow-sm truncate max-w-[100px] sm:max-w-none ${userClub ? '' : 'text-slate-950'}`}>
                 {userClub?.name || "FM"}
               </h1>

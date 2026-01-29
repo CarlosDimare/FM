@@ -18,6 +18,19 @@ export type Attribute = number;
 export type DialogueType = 'PRAISE_FORM' | 'CRITICIZE_FORM' | 'PRAISE_TRAINING' | 'WARN_CONDUCT' | 'DEMAND_MORE';
 export type DialogueTone = 'MILD' | 'MODERATE' | 'AGGRESSIVE';
 
+export type TrainingCategory = 'STRENGTH' | 'AEROBIC' | 'TACTICAL' | 'BALL_CONTROL' | 'DEFENDING' | 'ATTACKING' | 'SHOOTING' | 'SET_PIECES';
+
+export interface TrainingSchedule {
+  STRENGTH: number;
+  AEROBIC: number;
+  TACTICAL: number;
+  BALL_CONTROL: number;
+  DEFENDING: number;
+  ATTACKING: number;
+  SHOOTING: number;
+  SET_PIECES: number;
+}
+
 export interface PlayerTacticSettings {
   mentality: number;
   creativeFreedom: number;
@@ -147,6 +160,7 @@ export interface Player {
   requestedSalary?: number;
   lastNegotiationDate?: Date;
   loanDetails?: { originalClubId: string, wageShare: number };
+  trainingSchedule?: TrainingSchedule;
 }
 
 export interface Club {
@@ -170,6 +184,7 @@ export interface Club {
   qualifiedFor?: string | null;
   trainingFacilities: number;
   youthFacilities: number;
+  trainingDelegatedTo?: string; // ID of staff member
 }
 
 export interface Competition {

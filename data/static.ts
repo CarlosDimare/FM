@@ -1,5 +1,5 @@
 
-import { Tactic, Position, TacticSettings, PlayerTacticSettings } from "../types";
+import { Tactic, Position, TacticSettings, PlayerTacticSettings, TrainingSchedule } from "../types";
 
 export interface RealClubDef {
    name: string;
@@ -280,6 +280,34 @@ export const TACTIC_PRESETS: Tactic[] = [
    { id: '4-2-3-1', name: '4-2-3-1 Doble Pivote', positions: [0, 1, 2, 4, 5, 8, 10, 17, 19, 20, 26], arrows: {}, settings: DEFAULT_TACTIC_SETTINGS, individualSettings: generateIndividualDefaults([0, 1, 2, 4, 5, 8, 10, 17, 19, 20, 26]) },
    { id: '3-5-2', name: '3-5-2 Carrileros', positions: [0, 2, 3, 4, 11, 15, 8, 12, 14, 27, 29], arrows: {}, settings: DEFAULT_TACTIC_SETTINGS, individualSettings: generateIndividualDefaults([0, 2, 3, 4, 11, 15, 8, 12, 14, 27, 29]) },
    { id: '5-4-1', name: '5-4-1 Muro Defensivo', positions: [0, 1, 2, 3, 4, 5, 12, 14, 11, 15, 26], arrows: {}, settings: DEFAULT_TACTIC_SETTINGS, individualSettings: generateIndividualDefaults([0, 1, 2, 3, 4, 5, 12, 14, 11, 15, 26]) }
+];
+
+export const TRAINING_PRESETS: { id: string; name: string; schedule: TrainingSchedule }[] = [
+  { 
+    id: 'GENERAL', 
+    name: 'General', 
+    schedule: { STRENGTH: 8, AEROBIC: 8, TACTICAL: 8, BALL_CONTROL: 8, DEFENDING: 8, ATTACKING: 8, SHOOTING: 8, SET_PIECES: 4 } 
+  },
+  { 
+    id: 'PHYSICAL', 
+    name: 'Físico Pesado', 
+    schedule: { STRENGTH: 16, AEROBIC: 16, TACTICAL: 4, BALL_CONTROL: 4, DEFENDING: 4, ATTACKING: 4, SHOOTING: 4, SET_PIECES: 2 } 
+  },
+  { 
+    id: 'TECHNICAL', 
+    name: 'Técnico / Control', 
+    schedule: { STRENGTH: 4, AEROBIC: 4, TACTICAL: 8, BALL_CONTROL: 16, DEFENDING: 6, ATTACKING: 10, SHOOTING: 8, SET_PIECES: 4 } 
+  },
+  { 
+    id: 'DEFENSIVE', 
+    name: 'Defensivo', 
+    schedule: { STRENGTH: 10, AEROBIC: 6, TACTICAL: 12, BALL_CONTROL: 4, DEFENDING: 18, ATTACKING: 2, SHOOTING: 2, SET_PIECES: 6 } 
+  },
+  { 
+    id: 'OFFENSIVE', 
+    name: 'Ofensivo / Remate', 
+    schedule: { STRENGTH: 6, AEROBIC: 8, TACTICAL: 8, BALL_CONTROL: 10, DEFENDING: 2, ATTACKING: 14, SHOOTING: 16, SET_PIECES: 4 } 
+  },
 ];
 
 export const NAMES_DB = {
