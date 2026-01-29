@@ -235,8 +235,9 @@ export const MatchView: React.FC<MatchViewProps> = ({ homeTeam, awayTeam, homePl
             {/* Background Shield for style */}
             <Shield className="absolute -left-6 top-1/2 -translate-y-1/2 w-32 h-32 text-black/10 rotate-12" strokeWidth={2} />
             
-            <span className="relative z-10 font-black text-white text-lg md:text-3xl uppercase tracking-tight drop-shadow-md mr-2">
-                {homeTeam.name}
+            <span className="relative z-10 font-black text-white text-lg md:text-3xl uppercase tracking-tight drop-shadow-md mr-2 text-right">
+                <span className="md:hidden">{homeTeam.shortName}</span>
+                <span className="hidden md:block truncate">{homeTeam.name}</span>
             </span>
             <Shield className="relative z-10 w-10 h-10 md:w-14 md:h-14 text-white opacity-80 fill-white/10 hidden sm:block" strokeWidth={1.5} />
         </div>
@@ -276,8 +277,9 @@ export const MatchView: React.FC<MatchViewProps> = ({ homeTeam, awayTeam, homePl
             <Shield className="absolute -right-6 top-1/2 -translate-y-1/2 w-32 h-32 text-black/10 -rotate-12" strokeWidth={2} />
 
             <Shield className="relative z-10 w-10 h-10 md:w-14 md:h-14 text-white opacity-80 fill-white/10 hidden sm:block" strokeWidth={1.5} />
-            <span className="relative z-10 font-black text-white text-lg md:text-3xl uppercase tracking-tight drop-shadow-md ml-2">
-                {awayTeam.name}
+            <span className="relative z-10 font-black text-white text-lg md:text-3xl uppercase tracking-tight drop-shadow-md ml-2 text-left">
+                <span className="md:hidden">{awayTeam.shortName}</span>
+                <span className="hidden md:block truncate">{awayTeam.name}</span>
             </span>
         </div>
       </div>

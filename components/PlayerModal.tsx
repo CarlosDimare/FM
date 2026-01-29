@@ -6,7 +6,7 @@ import { ProfileNarrativeEngine } from '../services/engine';
 import { DialogueSystem } from '../services/dialogueSystem';
 import { TransferOfferModal } from './TransferOfferModal';
 import { ContractNegotiationModal } from './ContractNegotiationModal';
-import { X, MessageSquare, Activity, Map, FileText, History, TrendingUp, ShieldAlert, ArrowRightLeft, UserX, UserPlus, Users, MessageCircle, AlertCircle, Info, Award, ShieldAlert as DisciplineIcon } from 'lucide-react';
+import { X, MessageSquare, Activity, Map, FileText, History, TrendingUp, ShieldAlert, ArrowRightLeft, UserX, UserPlus, Users, MessageCircle, AlertCircle, Info, Award, ShieldAlert as DisciplineIcon, Shield } from 'lucide-react';
 import { FMTable, FMTableCell, FMButton, FMBox } from './FMUI';
 import { getFlagUrl } from '../data/static';
 
@@ -168,10 +168,6 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({ player, onClose, userC
     ? (player.seasonStats.totalRating / player.seasonStats.appearances).toFixed(2)
     : "0.00";
 
-  // Use standard FM Header style instead of club colors for cleaner look in the modal, 
-  // or use the club colors but in a contained way.
-  // The screenshot request implied keeping the "shape" but applying the style.
-  // We'll use a clean white/sage header to match the industrial look.
   
   const InfoRow = ({ label, value }: { label: string, value: string }) => (
      <div className="flex border-b border-[#a0b0a0] last:border-0 hover:bg-[#ccd9cc] transition-colors">
@@ -195,8 +191,13 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({ player, onClose, userC
         <div className="bg-[#d4dcd4] w-full h-full md:h-auto md:max-w-5xl md:max-h-[95vh] md:rounded-sm shadow-2xl border border-[#a0b0a0] flex flex-col overflow-hidden">
           
           {/* Header - Industrial Style with Dynamic Club Colors */}
-          <div className={`p-3 md:p-4 border-b flex justify-between items-start shadow-sm shrink-0 transition-colors duration-300 ${headerBgClass} ${headerBorderClass}`}>
-            <div className="flex-1 min-w-0 pr-4">
+          <div className={`p-3 md:p-4 border-b flex justify-between items-start shadow-sm shrink-0 transition-colors duration-300 relative overflow-hidden ${headerBgClass} ${headerBorderClass}`}>
+            
+            {/* Background Effects */}
+            <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-black/10 pointer-events-none"></div>
+            <Shield className="absolute -left-6 top-1/2 -translate-y-1/2 w-32 h-32 text-black/10 rotate-12 pointer-events-none" strokeWidth={2} />
+
+            <div className="flex-1 min-w-0 pr-4 relative z-10">
               <div className="flex flex-col gap-y-1">
                  <div className="flex flex-wrap items-baseline gap-2">
                     <h2 className={`text-2xl md:text-3xl font-black truncate tracking-tighter uppercase italic flex items-center gap-2 ${headerTextClass}`} style={{ fontFamily: 'Verdana, sans-serif' }}>
@@ -249,7 +250,7 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({ player, onClose, userC
               </div>
             </div>
             
-            <button onClick={onClose} className={`${headerTextClass} opacity-70 hover:opacity-100 transition-colors`}><X size={24} /></button>
+            <button onClick={onClose} className={`${headerTextClass} opacity-70 hover:opacity-100 transition-colors relative z-10`}><X size={24} /></button>
           </div>
 
           {/* Tabs */}
@@ -351,6 +352,7 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({ player, onClose, userC
                </FMBox>
             )}
 
+            {/* Other tabs remain similar ... */}
             {activeTab === 'POSITIONS' && (
                <div className="flex flex-col items-center justify-center h-full min-h-[400px]">
                   <div className="relative w-full max-w-[320px] aspect-[68/105] shadow-xl bg-[#1e3a29] border-4 border-[#a0b0a0] rounded-sm overflow-hidden ring-4 ring-[#d4dcd4]">
