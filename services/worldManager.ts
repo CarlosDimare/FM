@@ -1,7 +1,9 @@
+
 import { Player, Club, Competition, CompetitionType, Position, PlayerStats, Fixture, TableEntry, Tactic, Staff, StaffRole, SquadType, PlayerSeasonStats, TransferOffer, InboxMessage, MessageCategory, MatchLog, TacticalStyle, TacticSettings } from "../types";
 import { generateUUID, randomInt, weightedRandom } from "./utils";
 import { NATIONS } from "../constants";
 import { TACTIC_PRESETS, NAMES_DB, REGEN_DB, STAFF_NAMES, POS_DEFINITIONS, ARG_PRIMERA, ARG_NACIONAL, CONT_CLUBS, CONT_CLUBS_TIER2, WORLD_BOSSES, RealClubDef } from "../data/static";
+import { REAL_PLAYERS_DB, RealPlayerDef } from "../data/realPlayers";
 import { SLOT_CONFIG } from "./engine";
 
 export class WorldManager {
@@ -64,6 +66,7 @@ export class WorldManager {
            youthFacilities: Math.min(20, Math.floor(def.rep / 550) + randomInt(-3, 3))
         };
         this.clubs.push(club);
+        this.injectRealPlayers(club);
         this.generateSquadsForClub(club.id);
         this.generateStaffForClub(club.id);
         this.updateClubMonthlyExpenses(club.id);
@@ -93,11 +96,161 @@ export class WorldManager {
     return honours.sort((a,b) => b.year - a.year);
   }
 
+  injectRealPlayers(club: Club) {
+     const dbPlayers = REAL_PLAYERS_DB.filter(p => p.clubShort === club.shortName);
+     
+     dbPlayers.forEach(def => {
+        const player = this.createRealPlayer(club.id, def);
+        if (this.players.length < 11) { // Basic starter logic for reals
+           player.isStarter = true;
+        }
+        this.players.push(player);
+     });
+  }
+
+  createRealPlayer(clubId: string, def: RealPlayerDef): Player {
+     const posMap: Record<string, Position> = {
+        'GK': Position.GK, 'DC': Position.DC, 'DL': Position.DL, 'DR': Position.DR,
+        'DM': Position.DM, 'MC': Position.MC, 'ML': Position.ML, 'MR': Position.MR,
+        'AMC': Position.AMC, 'AML': Position.AML, 'AMR': Position.AMR, 'ST': Position.ST,
+        'WR': Position.AMR, 'WP': Position.AML // Mapping user custom types to allowed Enums
+     };
+     
+     const primaryPos = posMap[def.position] || Position.MC;
+     const age = def.age;
+     const birthYear = 2008 - age;
+     const birthDate = new Date(birthYear, randomInt(0, 11), randomInt(1, 28));
+     
+     // Generate stats based on CA
+     const caBase = def.ca / 10; // CA 140 -> 14 average
+     const stats: PlayerStats = {
+        mental: { 
+           aggression: weightedRandom(caBase - 4, caBase + 4), 
+           anticipation: weightedRandom(caBase - 3, caBase + 4),
+           bravery: weightedRandom(caBase - 4, caBase + 4),
+           composure: weightedRandom(caBase - 3, caBase + 4),
+           concentration: weightedRandom(caBase - 4, caBase + 4),
+           decisions: weightedRandom(caBase - 3, caBase + 4),
+           determination: randomInt(10, 20),
+           flair: weightedRandom(caBase - 5, caBase + 5),
+           leadership: weightedRandom(caBase - 5, caBase + 5),
+           offTheBall: weightedRandom(caBase - 4, caBase + 4),
+           positioning: weightedRandom(caBase - 4, caBase + 4),
+           teamwork: weightedRandom(caBase - 4, caBase + 4),
+           vision: weightedRandom(caBase - 4, caBase + 4),
+           workRate: weightedRandom(caBase - 4, caBase + 4),
+           professionalism: randomInt(10, 20),
+           ambition: randomInt(10, 20),
+           pressure: randomInt(10, 20),
+           temperament: randomInt(5, 20),
+           loyalty: randomInt(10, 20),
+           adaptability: weightedRandom(10, 20),
+           sportsmanship: weightedRandom(5, 20)
+        },
+        technical: {
+           corners: weightedRandom(caBase - 5, caBase + 5),
+           crossing: weightedRandom(caBase - 5, caBase + 5),
+           dribbling: weightedRandom(caBase - 5, caBase + 5),
+           finishing: weightedRandom(caBase - 5, caBase + 5),
+           firstTouch: weightedRandom(caBase - 3, caBase + 4),
+           freeKickTaking: weightedRandom(caBase - 5, caBase + 5),
+           heading: weightedRandom(caBase - 5, caBase + 5),
+           longShots: weightedRandom(caBase - 5, caBase + 5),
+           longThrows: weightedRandom(caBase - 5, caBase + 5),
+           marking: weightedRandom(caBase - 5, caBase + 5),
+           passing: weightedRandom(caBase - 4, caBase + 4),
+           penaltyTaking: weightedRandom(caBase - 5, caBase + 5),
+           tackling: weightedRandom(caBase - 5, caBase + 5),
+           technique: weightedRandom(caBase - 3, caBase + 4)
+        },
+        physical: {
+           acceleration: weightedRandom(caBase - 4, caBase + 4),
+           agility: weightedRandom(caBase - 4, caBase + 4),
+           balance: weightedRandom(caBase - 4, caBase + 4),
+           jumpingReach: weightedRandom(caBase - 4, caBase + 4),
+           naturalFitness: weightedRandom(caBase - 2, caBase + 4),
+           pace: weightedRandom(caBase - 4, caBase + 4),
+           stamina: weightedRandom(caBase - 4, caBase + 4),
+           strength: weightedRandom(caBase - 4, caBase + 4)
+        }
+     };
+
+     if (primaryPos === Position.GK) {
+        stats.goalkeeping = {
+           aerialReach: weightedRandom(caBase - 3, caBase + 4),
+           commandOfArea: weightedRandom(caBase - 3, caBase + 4),
+           communication: weightedRandom(caBase - 3, caBase + 4),
+           eccentricity: weightedRandom(1, 15),
+           handling: weightedRandom(caBase - 3, caBase + 4),
+           kicking: weightedRandom(caBase - 3, caBase + 4),
+           oneOnOnes: weightedRandom(caBase - 3, caBase + 4),
+           reflexes: weightedRandom(caBase - 3, caBase + 4),
+           rushingOut: weightedRandom(caBase - 3, caBase + 4),
+           punching: weightedRandom(caBase - 3, caBase + 4),
+           throwing: weightedRandom(caBase - 3, caBase + 4)
+        };
+     }
+
+     // Boost key stats based on position
+     if (primaryPos.includes('ST')) { stats.technical.finishing += 2; stats.mental.offTheBall += 2; }
+     if (primaryPos.includes('DEF') || primaryPos === Position.DC) { stats.technical.tackling += 2; stats.mental.positioning += 2; }
+     if (primaryPos.includes('AM')) { stats.technical.dribbling += 2; stats.mental.flair += 2; }
+
+     const value = Math.round(def.ca * def.ca * 2500);
+     const salary = Math.round(def.ca * 2500 / 10) * 10;
+
+     return {
+        id: generateUUID(),
+        name: def.name,
+        age: age,
+        birthDate,
+        height: 180, // Default average
+        weight: 75,
+        nationality: def.nationality,
+        positions: [primaryPos],
+        secondaryPositions: [],
+        stats,
+        seasonStats: { appearances: 0, goals: 0, assists: 0, cleanSheets: 0, conceded: 0, totalRating: 0 },
+        statsByCompetition: {},
+        history: [],
+        currentAbility: def.ca,
+        potentialAbility: def.pa,
+        reputation: def.ca * 45,
+        fitness: 100,
+        morale: 100,
+        clubId,
+        isStarter: false,
+        squad: 'SENIOR',
+        value,
+        salary,
+        transferStatus: 'NONE',
+        contractExpiry: new Date(2010, 5, 30),
+        loyalty: stats.mental.loyalty,
+        negotiationAttempts: 0,
+        isUnhappyWithContract: false,
+        developmentTrend: 'STABLE',
+        yellowCardsAccumulated: 0
+     };
+  }
+
   generateSquadsForClub(clubId: string) {
     const squads: SquadType[] = ['SENIOR', 'RESERVE', 'U20'];
     squads.forEach(squadType => {
       const size = squadType === 'SENIOR' ? 24 : squadType === 'RESERVE' ? 20 : 18;
-      const squadStructure = [...Array(Math.floor(size*0.1)).fill('GK'), ...Array(Math.floor(size*0.3)).fill('DEF'), ...Array(Math.floor(size*0.2)).fill('DM'), ...Array(Math.floor(size*0.2)).fill('MID'), ...Array(Math.floor(size*0.2)).fill('ATT')];
+      
+      // Count existing real players in this squad
+      const existing = this.getPlayersByClub(clubId).filter(p => p.squad === squadType);
+      const needed = Math.max(0, size - existing.length);
+
+      if (needed === 0) return;
+
+      const squadStructure = [
+          ...Array(Math.floor(needed*0.1)).fill('GK'), 
+          ...Array(Math.floor(needed*0.3)).fill('DEF'), 
+          ...Array(Math.floor(needed*0.2)).fill('DM'), 
+          ...Array(Math.floor(needed*0.2)).fill('MID'), 
+          ...Array(Math.floor(needed*0.2)).fill('ATT')
+      ];
       
       squadStructure.forEach((roleType, index) => {
         let posPool: Position[] = roleType === 'GK' ? POS_DEFINITIONS.GK : roleType === 'DEF' ? POS_DEFINITIONS.DEF : roleType === 'DM' ? POS_DEFINITIONS.DM : roleType === 'MID' ? POS_DEFINITIONS.MID : POS_DEFINITIONS.ATT;
@@ -107,10 +260,13 @@ export class WorldManager {
         const player = this.createRandomPlayer(clubId, primaryPos, ageRange[0], ageRange[1]);
         player.squad = squadType;
         
-        if (squadType === 'SENIOR' && index < 11) {
-          player.isStarter = true;
-          const p442 = TACTIC_PRESETS[0].positions;
-          player.tacticalPosition = p442[index];
+        // Auto-assign starter for generated players if slot is empty (less priority than real players)
+        if (squadType === 'SENIOR' && index + existing.length < 11) {
+          player.isStarter = !existing.some(p => p.isStarter && p.positions[0] === player.positions[0]);
+          if (player.isStarter) {
+             const p442 = TACTIC_PRESETS[0].positions;
+             player.tacticalPosition = p442[index + existing.length];
+          }
         }
         this.players.push(player);
       });
