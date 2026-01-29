@@ -1,5 +1,5 @@
 
-import { Tactic, Position } from "../types";
+import { Tactic, Position, TacticSettings, PlayerTacticSettings } from "../types";
 
 export interface RealClubDef {
    name: string;
@@ -223,20 +223,63 @@ export const WORLD_BOSSES: RealClubDef[] = [
    { name: "Bayern Munchen", short: "BAY", pCol: "bg-red-700", sCol: "text-white", stadium: "Allianz Arena", rep: 9600, country: "Alemania" }
 ];
 
-// Grid Logic Recap: 
-// 0=GK
-// Row 1 (Def): 1=DL, 2=DCL, 3=DC, 4=DCR, 5=DR
-// Row 2 (DM): 6-10
-// Row 3 (Mid): 11-15 (11=ML, 15=MR)
-// Row 4 (AM): 16-20
-// Row 5 (Att): 21-25
-// Row 6 (ST): 26-30
+const DEFAULT_TACTIC_SETTINGS: TacticSettings = {
+  mentality: 10,
+  creativeFreedom: 10,
+  passingStyle: 10,
+  tempo: 10,
+  width: 10,
+  closingDown: 10,
+  timeWasting: 10,
+  defensiveLine: 10,
+  tackling: 10,
+  focusPassing: 'MIXED',
+  marking: 'ZONAL',
+  targetManSupply: 'MIXED',
+  tightMarking: false,
+  useTargetMan: false,
+  usePlaymaker: false,
+  playOffside: false,
+  counterAttack: false,
+  setPieces: {
+    cornersLeft: 'Punto de Penalti',
+    cornersRight: 'Punto de Penalti',
+    freeKicksLeft: 'Combinado',
+    freeKicksRight: 'Combinado',
+    throwInsLeft: 'Largo',
+    throwInsRight: 'Largo'
+  }
+};
+
+const DEFAULT_INDIVIDUAL_SETTINGS: PlayerTacticSettings = {
+  mentality: 10,
+  creativeFreedom: 10,
+  passingStyle: 10,
+  closingDown: 10,
+  tackling: 10,
+  forwardRuns: 'MIXED',
+  runWithBall: 'MIXED',
+  longShots: 'MIXED',
+  throughBalls: 'MIXED',
+  crossBall: 'MIXED',
+  marking: 'ZONAL',
+  tightMarking: false,
+  holdUpBall: false
+};
+
+const generateIndividualDefaults = (positions: number[]) => {
+  const settings: Record<number, PlayerTacticSettings> = {};
+  positions.forEach(p => { settings[p] = { ...DEFAULT_INDIVIDUAL_SETTINGS }; });
+  return settings;
+};
+
+// Fix missing settings errors
 export const TACTIC_PRESETS: Tactic[] = [
-   { id: '4-4-2', name: '4-4-2 Clásica', positions: [0, 1, 2, 4, 5, 11, 12, 14, 15, 27, 29] },
-   { id: '4-3-3', name: '4-3-3 Ofensiva', positions: [0, 1, 2, 4, 5, 8, 12, 14, 19, 20, 26] },
-   { id: '4-2-3-1', name: '4-2-3-1 Doble Pivote', positions: [0, 1, 2, 4, 5, 8, 10, 17, 19, 20, 26] },
-   { id: '3-5-2', name: '3-5-2 Carrileros', positions: [0, 2, 3, 4, 11, 15, 8, 12, 14, 27, 29] },
-   { id: '5-4-1', name: '5-4-1 Muro Defensivo', positions: [0, 1, 2, 3, 4, 5, 12, 14, 11, 15, 26] }
+   { id: '4-4-2', name: '4-4-2 Clásica', positions: [0, 1, 2, 4, 5, 11, 12, 14, 15, 27, 29], arrows: {}, settings: DEFAULT_TACTIC_SETTINGS, individualSettings: generateIndividualDefaults([0, 1, 2, 4, 5, 11, 12, 14, 15, 27, 29]) },
+   { id: '4-3-3', name: '4-3-3 Ofensiva', positions: [0, 1, 2, 4, 5, 8, 12, 14, 19, 20, 26], arrows: {}, settings: DEFAULT_TACTIC_SETTINGS, individualSettings: generateIndividualDefaults([0, 1, 2, 4, 5, 8, 12, 14, 19, 20, 26]) },
+   { id: '4-2-3-1', name: '4-2-3-1 Doble Pivote', positions: [0, 1, 2, 4, 5, 8, 10, 17, 19, 20, 26], arrows: {}, settings: DEFAULT_TACTIC_SETTINGS, individualSettings: generateIndividualDefaults([0, 1, 2, 4, 5, 8, 10, 17, 19, 20, 26]) },
+   { id: '3-5-2', name: '3-5-2 Carrileros', positions: [0, 2, 3, 4, 11, 15, 8, 12, 14, 27, 29], arrows: {}, settings: DEFAULT_TACTIC_SETTINGS, individualSettings: generateIndividualDefaults([0, 2, 3, 4, 11, 15, 8, 12, 14, 27, 29]) },
+   { id: '5-4-1', name: '5-4-1 Muro Defensivo', positions: [0, 1, 2, 3, 4, 5, 12, 14, 11, 15, 26], arrows: {}, settings: DEFAULT_TACTIC_SETTINGS, individualSettings: generateIndividualDefaults([0, 1, 2, 3, 4, 5, 12, 14, 11, 15, 26]) }
 ];
 
 export const NAMES_DB = {

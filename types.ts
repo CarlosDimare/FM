@@ -18,6 +18,59 @@ export type Attribute = number;
 export type DialogueType = 'PRAISE_FORM' | 'CRITICIZE_FORM' | 'PRAISE_TRAINING' | 'WARN_CONDUCT' | 'DEMAND_MORE';
 export type DialogueTone = 'MILD' | 'MODERATE' | 'AGGRESSIVE';
 
+export interface PlayerTacticSettings {
+  mentality: number;
+  creativeFreedom: number;
+  passingStyle: number;
+  closingDown: number;
+  tackling: number;
+  forwardRuns: 'RARELY' | 'MIXED' | 'OFTEN';
+  runWithBall: 'RARELY' | 'MIXED' | 'OFTEN';
+  longShots: 'RARELY' | 'MIXED' | 'OFTEN';
+  throughBalls: 'RARELY' | 'MIXED' | 'OFTEN';
+  crossBall: 'RARELY' | 'MIXED' | 'OFTEN';
+  marking: 'ZONAL' | 'MAN';
+  tightMarking: boolean;
+  holdUpBall: boolean;
+}
+
+export interface TacticSettings {
+  mentality: number;
+  creativeFreedom: number;
+  passingStyle: number;
+  tempo: number;
+  width: number;
+  closingDown: number;
+  timeWasting: number;
+  defensiveLine: number;
+  tackling: number;
+  focusPassing: 'MIXED' | 'CENTER' | 'LEFT' | 'RIGHT' | 'BOTH_FLANKS';
+  marking: 'ZONAL' | 'MAN';
+  targetManSupply: 'MIXED' | 'TO_FEET' | 'TO_HEAD' | 'RUN_ONTO_BALL';
+  tightMarking: boolean;
+  useTargetMan: boolean;
+  usePlaymaker: boolean;
+  playOffside: boolean;
+  counterAttack: boolean;
+  setPieces: {
+    cornersLeft: string;
+    cornersRight: string;
+    freeKicksLeft: string;
+    freeKicksRight: string;
+    throwInsLeft: string;
+    throwInsRight: string;
+  };
+}
+
+export interface Tactic {
+  id: string;
+  name: string;
+  positions: number[];
+  arrows: Record<number, number>; // Slot index -> Target Slot index (movement arrow)
+  settings: TacticSettings;
+  individualSettings: Record<number, PlayerTacticSettings>; // Slot index -> settings
+}
+
 export interface PlayerStats {
   mental: {
     aggression: number;
@@ -93,12 +146,7 @@ export interface Player {
   suspension?: { type: string, matchesLeft: number };
   requestedSalary?: number;
   lastNegotiationDate?: Date;
-  loanDetails?: { originalClubId: string, wageShare: number }; // Datos si el jugador está cedido
-}
-
-export interface ClubHonour {
-  name: string;
-  year: number;
+  loanDetails?: { originalClubId: string, wageShare: number };
 }
 
 export interface Club {
@@ -118,7 +166,7 @@ export interface Club {
   };
   reputation: number;
   stadium: string;
-  honours: ClubHonour[];
+  honours: { name: string, year: number }[];
   qualifiedFor?: string | null;
   trainingFacilities: number;
   youthFacilities: number;
@@ -162,12 +210,6 @@ export interface TableEntry {
   points: number;
 }
 
-export interface Tactic {
-  id: string;
-  name: string;
-  positions: number[];
-}
-
 export interface Staff {
   id: string;
   name: string;
@@ -199,7 +241,7 @@ export interface TransferOffer {
   fromClubId: string;
   toClubId: string;
   amount: number;
-  wageShare: number; // Porcentaje del sueldo que paga el comprador (0-100)
+  wageShare: number;
   type: 'PURCHASE' | 'LOAN';
   status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'COUNTER_OFFER' | 'COMPLETED';
   date: Date;
@@ -285,10 +327,6 @@ export interface DialogueResult {
   canReplica?: boolean;
 }
 
-/**
- * Interface representing a summary of a completed match, 
- * used for tracking history in the WorldManager.
- */
 export interface MatchLog {
   id: string;
   date: Date;

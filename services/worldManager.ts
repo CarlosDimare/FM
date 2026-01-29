@@ -1,25 +1,16 @@
-
-import { Player, Club, Competition, CompetitionType, Position, PlayerStats, Fixture, TableEntry, Tactic, Staff, StaffRole, SquadType, PlayerSeasonStats, ClubHonour, TransferOffer, InboxMessage, MessageCategory, MatchLog, TacticalStyle } from "../types";
+import { Player, Club, Competition, CompetitionType, Position, PlayerStats, Fixture, TableEntry, Tactic, Staff, StaffRole, SquadType, PlayerSeasonStats, TransferOffer, InboxMessage, MessageCategory, MatchLog, TacticalStyle, TacticSettings } from "../types";
 import { generateUUID, randomInt, weightedRandom } from "./utils";
 import { NATIONS } from "../constants";
 import { TACTIC_PRESETS, NAMES_DB, REGEN_DB, STAFF_NAMES, POS_DEFINITIONS, ARG_PRIMERA, ARG_NACIONAL, CONT_CLUBS, CONT_CLUBS_TIER2, WORLD_BOSSES, RealClubDef } from "../data/static";
 import { SLOT_CONFIG } from "./engine";
-
-const ZONES = {
-    GK: [0],
-    DEF: [1, 2, 3, 4, 5],
-    DM: [6, 7, 8, 9, 10],
-    MID: [11, 12, 13, 14, 15],
-    AM: [16, 17, 18, 19, 20],
-    ATT: [26, 27, 28, 29, 30]
-};
 
 export class WorldManager {
   players: Player[] = [];
   clubs: Club[] = [];
   competitions: Competition[] = [];
   staff: Staff[] = [];
-  tactics: Tactic[] = [...TACTIC_PRESETS];
+  // Clone TACTIC_PRESETS which now includes default settings from static.ts
+  tactics: Tactic[] = TACTIC_PRESETS.map(t => ({ ...t, settings: { ...t.settings } }));
   offers: TransferOffer[] = [];
   inbox: InboxMessage[] = [];
   matchHistory: MatchLog[] = []; 
@@ -92,8 +83,8 @@ export class WorldManager {
     club.finances.monthlyExpenses = totalSalaries + (club.reputation * 10);
   }
 
-  generateRandomHonours(): ClubHonour[] {
-    const honours: ClubHonour[] = [];
+  generateRandomHonours() {
+    const honours = [];
     const possible = ["Liga Profesional", "Copa Argentina", "Supercopa", "Copa Libertadores", "Copa Sudamericana"];
     const count = randomInt(0, 5);
     for (let i = 0; i < count; i++) {
@@ -213,6 +204,7 @@ export class WorldManager {
   createRandomPlayer(clubId: string, primaryPos: Position, minAge = 16, maxAge = 36, baseYear: number = 2008): Player {
     const club = this.getClub(clubId);
     const repBase = club ? club.reputation / 500 : 10;
+    // FIXED: Corrected reference to tier before initialization by using repBase
     const tier = randomInt(Math.max(1, repBase - 5), Math.min(20, repBase + 5)); 
 
     let nat = "Argentina";
@@ -357,7 +349,17 @@ export class WorldManager {
   getLeagues() { return this.competitions.filter(c => c.type === 'LEAGUE'); }
   getClubsByLeague(leagueId: string) { return this.clubs.filter(c => c.leagueId === leagueId); }
   getTactics(): Tactic[] { return this.tactics; }
-  saveTactic(name: string, positions: number[]) { this.tactics.push({ id: generateUUID(), name, positions }); }
+  
+  saveTactic(name: string, positions: number[], settings: TacticSettings) { 
+    this.tactics.push({ 
+      id: generateUUID(), 
+      name, 
+      positions, 
+      arrows: {},
+      settings: { ...settings },
+      individualSettings: {}
+    }); 
+  }
 
   getClubsByCompetition(competitionId: string, fixtures: Fixture[]): Club[] {
      const clubIds = new Set<string>();
@@ -608,7 +610,7 @@ export class WorldManager {
               else laneScore = 0.30;
           }
 
-          const eff = lineScore * laneScore;
+          const eff = lineScore * lineScore;
           if (eff > maxEfficiency) maxEfficiency = eff;
       }
       return maxEfficiency;
@@ -760,7 +762,6 @@ export class WorldManager {
           this.addInboxMessage('MARKET', msg, `Respuesta del ${toClub.name}.`, currentDate, player.id);
         }
       } else if (offer.type === 'LOAN') {
-         // Probabilidad de cesión basada en el porcentaje de ficha ofrecido
          const chance = (player.transferStatus === 'LOANABLE' ? 0.7 : 0.2) + (offer.wageShare / 200);
          if (Math.random() < chance) {
             offer.status = 'ACCEPTED';
@@ -784,7 +785,6 @@ export class WorldManager {
           player.clubId = offer.fromClubId; 
           player.transferStatus = 'NONE';
       } else {
-          // Si es préstamo, el sueldo se ajusta al porcentaje
           player.loanDetails = { originalClubId: offer.toClubId, wageShare: offer.wageShare };
           player.clubId = offer.fromClubId;
       }
