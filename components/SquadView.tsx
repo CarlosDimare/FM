@@ -98,7 +98,7 @@ export const SquadView: React.FC<SquadViewProps> = ({ players, onSelectPlayer, o
       <FMBox title={customTitle || `Plantilla (${players.length})`} className="flex-1" noPadding>
         <FMTable 
             headers={['Pos', 'Nombre', 'Edad', 'Prog', 'Sueldo', 'Fis', 'Mor', 'Valor']}
-            colWidths={['50px', 'auto', '40px', '40px', '70px', '40px', '40px', '80px']}
+            colWidths={['45px', 'auto', '35px', '35px', '70px', '40px', '40px', '80px']}
             onHeaderClick={handleHeaderClick}
         >
             {sortedPlayers.map((player, idx) => (
@@ -116,14 +116,14 @@ export const SquadView: React.FC<SquadViewProps> = ({ players, onSelectPlayer, o
                    <FMTableCell className="text-center text-slate-700 font-bold">{player.positions[0]}</FMTableCell>
 
                    <FMTableCell className="text-slate-900">
-                      <div className="flex items-center">
+                      <div className="flex items-center min-w-0">
                         <img 
                           src={getFlagUrl(player.nationality)} 
                           alt={player.nationality} 
                           className="w-4 h-3 object-cover shadow-sm rounded-[1px] mr-2 shrink-0 border border-slate-300" 
                           title={player.nationality} 
                         />
-                        <span className="truncate max-w-[80px] sm:max-w-none">{player.name}</span>
+                        <span className="truncate max-w-[140px] sm:max-w-none">{player.name}</span>
                         {getStatusIcons(player)}
                       </div>
                    </FMTableCell>
@@ -134,7 +134,7 @@ export const SquadView: React.FC<SquadViewProps> = ({ players, onSelectPlayer, o
                       {renderTrend(player.developmentTrend)}
                    </FMTableCell>
 
-                   <FMTableCell className="text-right hidden lg:table-cell font-bold" isNumber>£{(player.salary / 1000).toFixed(0)}k</FMTableCell>
+                   <FMTableCell className="text-right hidden sm:table-cell font-bold" isNumber>£{(player.salary / 1000).toFixed(0)}k</FMTableCell>
 
                    <FMTableCell className="text-center font-bold" isNumber>
                       <span className={player.fitness < 70 ? 'text-red-600' : ''}>{Math.round(player.fitness)}%</span>
@@ -144,7 +144,7 @@ export const SquadView: React.FC<SquadViewProps> = ({ players, onSelectPlayer, o
                       <span className={player.morale < 40 ? 'text-red-600' : ''}>{Math.round(player.morale)}%</span>
                    </FMTableCell>
 
-                   <FMTableCell className="text-right font-black" isNumber>£{(player.value / 1000000).toFixed(1)}M</FMTableCell>
+                   <FMTableCell className="text-right font-black hidden xs:table-cell" isNumber>£{(player.value / 1000000).toFixed(1)}M</FMTableCell>
                 </tr>
             ))}
         </FMTable>

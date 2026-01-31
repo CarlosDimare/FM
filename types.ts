@@ -125,6 +125,7 @@ export interface PlayerSeasonStats {
 export interface Player {
   id: string;
   name: string;
+  photo?: string;
   age: number;
   birthDate: Date;
   height: number;
