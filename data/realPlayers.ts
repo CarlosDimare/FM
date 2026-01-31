@@ -3,6 +3,7 @@ import { Position } from "../types";
 
 export interface RealPlayerDef {
   name: string;
+  photo?: string;
   clubShort: string;
   position: string;
   nationality: string;
@@ -20,7 +21,8 @@ export const REAL_PLAYERS_DB: RealPlayerDef[] = [
     nationality: "Argentina",
     age: 23,
     ca: 148,
-    pa: 165
+    pa: 165,
+    photo: "https://cdn.soccerwiki.org/images/player/43217.png"
   },
   {
     name: "Edinson Cavani",
@@ -29,7 +31,8 @@ export const REAL_PLAYERS_DB: RealPlayerDef[] = [
     nationality: "Uruguay",
     age: 39,
     ca: 132,
-    pa: 135
+    pa: 135,
+    photo: "https://cdn.soccerwiki.org/images/player/1321.png"
   },
   {
     name: "Marcos Rojo",
@@ -38,7 +41,8 @@ export const REAL_PLAYERS_DB: RealPlayerDef[] = [
     nationality: "Argentina",
     age: 36,
     ca: 130,
-    pa: 130
+    pa: 130,
+    photo: "https://cdn.soccerwiki.org/images/player/12544.png"
   },
   {
     name: "Leandro Brey",
@@ -56,7 +60,8 @@ export const REAL_PLAYERS_DB: RealPlayerDef[] = [
     nationality: "Argentina",
     age: 23,
     ca: 138,
-    pa: 155
+    pa: 155,
+    photo: "https://cdn.soccerwiki.org/images/player/103290.png"
   },
   {
     name: "Aaron Anselmino",
@@ -83,7 +88,8 @@ export const REAL_PLAYERS_DB: RealPlayerDef[] = [
     nationality: "Argentina",
     age: 24,
     ca: 140,
-    pa: 148
+    pa: 148,
+    photo: "https://cdn.soccerwiki.org/images/player/103289.png"
   },
   {
     name: "Miguel Merentiel",
@@ -92,7 +98,8 @@ export const REAL_PLAYERS_DB: RealPlayerDef[] = [
     nationality: "Uruguay",
     age: 30,
     ca: 138,
-    pa: 140
+    pa: 140,
+    photo: "https://cdn.soccerwiki.org/images/player/89662.png"
   },
   {
     name: "Nicolás Figal",
@@ -110,7 +117,8 @@ export const REAL_PLAYERS_DB: RealPlayerDef[] = [
     nationality: "Peru",
     age: 35,
     ca: 125,
-    pa: 125
+    pa: 125,
+    photo: "https://cdn.soccerwiki.org/images/player/23019.png"
   },
 
   // === RIVER PLATE (RIV) - Plantel 2026 ===
@@ -121,7 +129,8 @@ export const REAL_PLAYERS_DB: RealPlayerDef[] = [
     nationality: "Argentina",
     age: 39,
     ca: 138,
-    pa: 138
+    pa: 138,
+    photo: "https://cdn.soccerwiki.org/images/player/16304.png"
   },
   {
     name: "Miguel Borja",
@@ -130,7 +139,8 @@ export const REAL_PLAYERS_DB: RealPlayerDef[] = [
     nationality: "Colombia",
     age: 33,
     ca: 138,
-    pa: 140
+    pa: 140,
+    photo: "https://cdn.soccerwiki.org/images/player/52566.png"
   },
   {
     name: "Nicolás De la Cruz",
@@ -139,7 +149,8 @@ export const REAL_PLAYERS_DB: RealPlayerDef[] = [
     nationality: "Uruguay",
     age: 29,
     ca: 158,
-    pa: 160
+    pa: 160,
+    photo: "https://cdn.soccerwiki.org/images/player/84232.png"
   },
   {
     name: "Enzo Díaz",
@@ -148,7 +159,8 @@ export const REAL_PLAYERS_DB: RealPlayerDef[] = [
     nationality: "Argentina",
     age: 27,
     ca: 140,
-    pa: 145
+    pa: 145,
+    photo: "https://cdn.soccerwiki.org/images/player/94179.png"
   },
   {
     name: "Pablo Solari",
@@ -157,7 +169,8 @@ export const REAL_PLAYERS_DB: RealPlayerDef[] = [
     nationality: "Argentina",
     age: 26,
     ca: 142,
-    pa: 148
+    pa: 148,
+    photo: "https://cdn.soccerwiki.org/images/player/117967.png"
   },
   {
     name: "Andrés Herrera",
@@ -184,7 +197,8 @@ export const REAL_PLAYERS_DB: RealPlayerDef[] = [
     nationality: "Argentina",
     age: 26,
     ca: 140,
-    pa: 145
+    pa: 145,
+    photo: "https://cdn.soccerwiki.org/images/player/89531.png"
   },
   {
     name: "Mateo Retegui",
@@ -193,7 +207,8 @@ export const REAL_PLAYERS_DB: RealPlayerDef[] = [
     nationality: "Italia",
     age: 26,
     ca: 152,
-    pa: 158
+    pa: 158,
+    photo: "https://cdn.soccerwiki.org/images/player/98555.png"
   },
   {
     name: "Leandro Díaz",
@@ -258,7 +273,8 @@ export const REAL_PLAYERS_DB: RealPlayerDef[] = [
     nationality: "Argentina",
     age: 30,
     ca: 158,
-    pa: 160
+    pa: 160,
+    photo: "https://cdn.soccerwiki.org/images/player/82337.png"
   },
   {
     name: "Jaminton Campaz",
@@ -267,7 +283,8 @@ export const REAL_PLAYERS_DB: RealPlayerDef[] = [
     nationality: "Colombia",
     age: 28,
     ca: 138,
-    pa: 140
+    pa: 140,
+    photo: "https://cdn.soccerwiki.org/images/player/91398.png"
   },
   {
     name: "Ignacio Malcorra",
@@ -276,7 +293,8 @@ export const REAL_PLAYERS_DB: RealPlayerDef[] = [
     nationality: "Argentina",
     age: 36,
     ca: 125,
-    pa: 125
+    pa: 125,
+    photo: "https://cdn.soccerwiki.org/images/player/34522.png"
   },
   {
     name: "Aldo Quevedo",
@@ -303,7 +321,8 @@ export const REAL_PLAYERS_DB: RealPlayerDef[] = [
     nationality: "Argentina",
     age: 27,
     ca: 135,
-    pa: 138
+    pa: 138,
+    photo: "https://cdn.soccerwiki.org/images/player/94186.png"
   },
   {
     name: "Kilian Virviescas",
@@ -332,7 +351,8 @@ export const REAL_PLAYERS_DB: RealPlayerDef[] = [
     nationality: "Argentina",
     age: 25,
     ca: 142,
-    pa: 150
+    pa: 150,
+    photo: "https://cdn.soccerwiki.org/images/player/117942.png"
   },
   {
     name: "Juan Sforza",
@@ -341,7 +361,8 @@ export const REAL_PLAYERS_DB: RealPlayerDef[] = [
     nationality: "Argentina",
     age: 24,
     ca: 148,
-    pa: 160
+    pa: 160,
+    photo: "https://cdn.soccerwiki.org/images/player/113337.png"
   },
   {
     name: "Francisco González",
@@ -350,7 +371,8 @@ export const REAL_PLAYERS_DB: RealPlayerDef[] = [
     nationality: "Argentina",
     age: 22,
     ca: 138,
-    pa: 155
+    pa: 155,
+    photo: "https://cdn.soccerwiki.org/images/player/103282.png"
   },
   {
     name: "Iván Leguizamón",
@@ -368,7 +390,8 @@ export const REAL_PLAYERS_DB: RealPlayerDef[] = [
     nationality: "Argentina",
     age: 40,
     ca: 120,
-    pa: 120
+    pa: 120,
+    photo: "https://cdn.soccerwiki.org/images/player/12185.png"
   },
   {
     name: "Ezequiel Ponce",
@@ -377,7 +400,8 @@ export const REAL_PLAYERS_DB: RealPlayerDef[] = [
     nationality: "Argentina",
     age: 28,
     ca: 145,
-    pa: 148
+    pa: 148,
+    photo: "https://cdn.soccerwiki.org/images/player/77189.png"
   },
   {
     name: "Leonardo Sánchez",
@@ -404,7 +428,8 @@ export const REAL_PLAYERS_DB: RealPlayerDef[] = [
     nationality: "Argentina",
     age: 29,
     ca: 132,
-    pa: 134
+    pa: 134,
+    photo: "https://cdn.soccerwiki.org/images/player/102927.png"
   },
   {
     name: "Cristian Lema",
@@ -413,7 +438,8 @@ export const REAL_PLAYERS_DB: RealPlayerDef[] = [
     nationality: "Argentina",
     age: 31,
     ca: 136,
-    pa: 138
+    pa: 138,
+    photo: "https://cdn.soccerwiki.org/images/player/34524.png"
   },
 
   // === QUILMES (QUI) - Plantel 2026 ===
@@ -442,7 +468,8 @@ export const REAL_PLAYERS_DB: RealPlayerDef[] = [
     nationality: "Argentina",
     age: 30,
     ca: 135,
-    pa: 135
+    pa: 135,
+    photo: "https://cdn.soccerwiki.org/images/player/94182.png"
   },
   {
     name: "Lucas Gamba",
@@ -451,7 +478,8 @@ export const REAL_PLAYERS_DB: RealPlayerDef[] = [
     nationality: "Argentina",
     age: 33,
     ca: 128,
-    pa: 128
+    pa: 128,
+    photo: "https://cdn.soccerwiki.org/images/player/73919.png"
   },
   {
     name: "Gustavo Canto",
@@ -460,7 +488,8 @@ export const REAL_PLAYERS_DB: RealPlayerDef[] = [
     nationality: "Argentina",
     age: 30,
     ca: 125,
-    pa: 125
+    pa: 125,
+    photo: "https://cdn.soccerwiki.org/images/player/89539.png"
   },
   {
     name: "Joaquín Ibañez",
@@ -478,7 +507,8 @@ export const REAL_PLAYERS_DB: RealPlayerDef[] = [
     nationality: "Argentina",
     age: 29,
     ca: 130,
-    pa: 132
+    pa: 132,
+    photo: "https://cdn.soccerwiki.org/images/player/94178.png"
   },
   {
     name: "Tomás Belmonte",
@@ -487,7 +517,8 @@ export const REAL_PLAYERS_DB: RealPlayerDef[] = [
     nationality: "Argentina",
     age: 31,
     ca: 134,
-    pa: 135
+    pa: 135,
+    photo: "https://cdn.soccerwiki.org/images/player/103284.png"
   },
   {
     name: "Lautaro Montoya",
@@ -496,7 +527,8 @@ export const REAL_PLAYERS_DB: RealPlayerDef[] = [
     nationality: "Argentina",
     age: 24,
     ca: 122,
-    pa: 140
+    pa: 140,
+    photo: "https://cdn.soccerwiki.org/images/player/89523.png"
   },
   {
     name: "Gastón Sauro",
@@ -505,7 +537,8 @@ export const REAL_PLAYERS_DB: RealPlayerDef[] = [
     nationality: "Argentina",
     age: 34,
     ca: 120,
-    pa: 120
+    pa: 120,
+    photo: "https://cdn.soccerwiki.org/images/player/12554.png"
   },
   {
     name: "Agustín Ale",
@@ -514,6 +547,7 @@ export const REAL_PLAYERS_DB: RealPlayerDef[] = [
     nationality: "Argentina",
     age: 25,
     ca: 118,
-    pa: 130
+    pa: 130,
+    photo: "https://cdn.soccerwiki.org/images/player/90367.png"
   }
 ];

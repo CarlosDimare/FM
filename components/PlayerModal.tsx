@@ -6,7 +6,7 @@ import { ProfileNarrativeEngine } from '../services/engine';
 import { DialogueSystem } from '../services/dialogueSystem';
 import { TransferOfferModal } from './TransferOfferModal';
 import { ContractNegotiationModal } from './ContractNegotiationModal';
-import { X, MessageSquare, Activity, Map, FileText, History, TrendingUp, ShieldAlert, ArrowRightLeft, UserX, UserPlus, Users, MessageCircle, AlertCircle, Info, Award, ShieldAlert as DisciplineIcon, Shield } from 'lucide-react';
+import { X, MessageSquare, Activity, Map, FileText, History, TrendingUp, ShieldAlert, ArrowRightLeft, UserX, UserPlus, Users, MessageCircle, AlertCircle, Info, Award, ShieldAlert as DisciplineIcon, Shield, User } from 'lucide-react';
 import { FMTable, FMTableCell, FMButton, FMBox } from './FMUI';
 import { getFlagUrl } from '../data/static';
 
@@ -191,66 +191,81 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({ player, onClose, userC
         <div className="bg-[#d4dcd4] w-full h-full md:h-auto md:max-w-5xl md:max-h-[95vh] md:rounded-sm shadow-2xl border border-[#a0b0a0] flex flex-col overflow-hidden">
           
           {/* Header - Industrial Style with Dynamic Club Colors */}
-          <div className={`p-3 md:p-4 border-b flex justify-between items-start shadow-sm shrink-0 transition-colors duration-300 relative overflow-hidden ${headerBgClass} ${headerBorderClass}`}>
+          <div className={`p-3 md:p-4 border-b flex items-start shadow-sm shrink-0 transition-colors duration-300 relative overflow-hidden ${headerBgClass} ${headerBorderClass}`}>
             
             {/* Background Effects */}
             <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-black/10 pointer-events-none"></div>
             <Shield className="absolute -left-6 top-1/2 -translate-y-1/2 w-32 h-32 text-black/10 rotate-12 pointer-events-none" strokeWidth={2} />
 
-            <div className="flex-1 min-w-0 pr-4 relative z-10">
-              <div className="flex flex-col gap-y-1">
-                 <div className="flex flex-wrap items-baseline gap-2">
-                    <h2 className={`text-2xl md:text-3xl font-black truncate tracking-tighter uppercase italic flex items-center gap-2 ${headerTextClass}`} style={{ fontFamily: 'Verdana, sans-serif' }}>
-                        <img 
-                          src={getFlagUrl(player.nationality)} 
-                          alt={player.nationality} 
-                          className="w-6 h-4 md:w-8 md:h-5 object-cover shadow-sm rounded-[1px] border border-black/10" 
-                        />
-                        <span>{player.name}</span>
-                        <span className="opacity-70 font-normal text-lg"> - </span>
-                        <span className="text-lg opacity-90">{club?.name || 'Agente Libre'}</span>
+            {/* Photo Container - Carnet Style */}
+            <div className="relative z-20 shrink-0 mr-3 md:mr-4 group">
+               <div className="w-16 h-20 md:w-28 md:h-32 bg-slate-200 border border-white shadow-xl rounded-sm overflow-hidden relative group-hover:scale-105 transition-transform">
+                  {player.photo ? (
+                     <img src={player.photo} alt={player.name} className="w-full h-full object-cover" />
+                  ) : (
+                     <div className="w-full h-full flex items-center justify-center bg-slate-300 text-slate-500">
+                        <User className="w-10 h-10 md:w-16 md:h-16" strokeWidth={1} />
+                     </div>
+                  )}
+                  <div className="absolute inset-0 bg-black/10 pointer-events-none"></div>
+               </div>
+               <div className="absolute -bottom-1 -right-1 w-5 h-5 md:w-6 md:h-6 bg-white rounded-full flex items-center justify-center shadow-md border border-slate-300">
+                  <img src={getFlagUrl(player.nationality)} alt={player.nationality} className="w-3 md:w-4 h-2 md:h-2.5 object-cover rounded-[1px]" />
+               </div>
+            </div>
+
+            <div className="flex-1 min-w-0 pr-6 relative z-10">
+              <div className="flex flex-col gap-y-0.5">
+                 <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0">
+                    <h2 className={`text-xl md:text-3xl font-black tracking-tighter uppercase italic flex flex-wrap items-center gap-x-2 ${headerTextClass}`} style={{ fontFamily: 'Verdana, sans-serif' }}>
+                        <span className="truncate">{player.name}</span>
+                        <span className="opacity-70 font-normal text-sm md:text-lg"> - </span>
+                        <span className="text-sm md:text-lg opacity-90 truncate">{club?.name || 'Agente Libre'}</span>
                     </h2>
                  </div>
 
                  {/* Metadata Line */}
-                 <div className={`flex flex-wrap items-center gap-3 font-bold uppercase text-[10px] tracking-tight mt-1 ${headerTextClass} opacity-80`} style={{ fontFamily: 'Verdana, sans-serif' }}>
-                    <span className="bg-black/20 px-1.5 rounded-[1px] text-current border border-black/10">
+                 <div className={`flex flex-wrap items-center gap-x-2 gap-y-1 font-bold uppercase text-[9px] md:text-[10px] tracking-tight mt-0.5 ${headerTextClass} opacity-80`} style={{ fontFamily: 'Verdana, sans-serif' }}>
+                    <span className="bg-black/20 px-1.5 rounded-[1px] text-current border border-black/10 shrink-0">
                         {POSITION_FULL_NAMES[player.positions[0]] || player.positions[0]}
                     </span>
-                    <span>{player.nationality.toUpperCase()}</span>
+                    <span className="truncate max-w-[80px] md:max-w-none">{player.nationality.toUpperCase()}</span>
                     <span>•</span>
                     <span>{player.age} AÑOS</span>
-                    <span>•</span>
-                    <span>{player.height} CM</span>
-                    <span>•</span>
-                    <span>{player.weight} KG</span>
+                    <span className="hidden sm:inline">•</span>
+                    <span className="hidden sm:inline">{player.height} CM</span>
+                    <span className="hidden sm:inline">•</span>
+                    <span className="hidden sm:inline">{player.weight} KG</span>
                  </div>
 
                  {/* Quote Line */}
-                 <div className={`text-xs font-black uppercase italic tracking-tight leading-tight mt-1 ${headerTextClass} opacity-90`} style={{ fontFamily: 'Verdana, sans-serif' }}>
+                 <div className={`text-[10px] md:text-xs font-black uppercase italic tracking-tight leading-tight mt-0.5 ${headerTextClass} opacity-90 truncate`} style={{ fontFamily: 'Verdana, sans-serif' }}>
                     "{headline}"
                  </div>
 
                  {/* Personality Badge */}
-                 <div className="flex flex-wrap gap-2 mt-1">
-                    <div className="flex items-center gap-1 bg-black/10 border border-black/10 px-2 py-0.5 rounded-[1px]" title="Personalidad">
-                        <span className={`text-[9px] font-black uppercase ${headerTextClass} opacity-90`}>{personality}</span>
+                 <div className="flex flex-wrap items-center gap-2 mt-1">
+                    <div className="flex items-center gap-1 bg-black/10 border border-black/10 px-1.5 py-0.5 rounded-[1px]" title="Personalidad">
+                        <span className={`text-[8px] md:text-[9px] font-black uppercase ${headerTextClass} opacity-90`}>{personality}</span>
                     </div>
                     {player.developmentTrend === 'RISING' && (
-                       <div className="flex items-center gap-1 bg-green-50 border border-green-200 px-2 py-0.5 rounded-[1px]">
+                       <div className="flex items-center gap-1 bg-green-50 border border-green-200 px-1.5 py-0.5 rounded-[1px]">
                           <TrendingUp size={10} className="text-green-600" /> 
                        </div>
                     )}
                     {playerMotive && (
-                       <div className="flex items-center gap-1 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-[1px]">
+                       <div className="flex items-center gap-1 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-[1px]">
                           <AlertCircle size={10} className="text-amber-600" />
                        </div>
                     )}
+                    <div className={`flex items-center gap-1 bg-black/10 border border-black/10 px-1.5 py-0.5 rounded-[1px] ml-auto ${player.morale > 80 ? 'text-green-400' : 'text-yellow-400'}`}>
+                        <span className="text-[8px] md:text-[9px] font-black uppercase">Leal</span>
+                    </div>
                  </div>
               </div>
             </div>
             
-            <button onClick={onClose} className={`${headerTextClass} opacity-70 hover:opacity-100 transition-colors relative z-10`}><X size={24} /></button>
+            <button onClick={onClose} className={`absolute top-2 right-2 md:relative md:top-0 md:right-0 ${headerTextClass} opacity-70 hover:opacity-100 transition-colors relative z-20`}><X size={24} /></button>
           </div>
 
           {/* Tabs */}

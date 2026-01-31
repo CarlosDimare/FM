@@ -725,7 +725,7 @@ const App: React.FC = () => {
       
       {isSaveModalOpen && (
          <div className="fixed inset-0 z-[500] bg-slate-900/80 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
-            <div className="bg-slate-200 w-full max-w-sm rounded-sm border-2 border-slate-500 shadow-2xl p-6">
+            <div className="bg-slate-200 w-full max-sm rounded-sm border-2 border-slate-500 shadow-2xl p-6">
                <h3 className="text-lg font-black text-slate-900 uppercase italic mb-4 border-b border-slate-400 pb-2">Guardar Partida</h3>
                <div className="space-y-4">
                   <div>
@@ -761,7 +761,7 @@ const App: React.FC = () => {
            )}
            <div className="flex items-center gap-3">
               <div className={`w-1.5 h-8 ${userClub ? userClub.secondaryColor.replace('text-', 'bg-') : 'bg-slate-800'} border-x border-black/10 opacity-80`}></div>
-              <h1 className={`text-sm font-black uppercase tracking-tight italic drop-shadow-sm truncate max-w-[100px] sm:max-w-none ${userClub ? '' : 'text-slate-950'}`}>
+              <h1 className={`text-sm font-black uppercase tracking-tight italic drop-shadow-sm truncate max-w-[150px] sm:max-w-none ${userClub ? '' : 'text-slate-950'}`}>
                 {userClub?.name || "FM"}
               </h1>
            </div>

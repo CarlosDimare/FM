@@ -202,6 +202,7 @@ export class WorldManager {
      return {
         id: generateUUID(),
         name: def.name,
+        photo: def.photo,
         age: age,
         birthDate,
         height: 180, // Default average
