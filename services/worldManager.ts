@@ -1,4 +1,3 @@
-
 import { Player, Club, Competition, Position, PlayerStats, Fixture, TableEntry, Tactic, Staff, StaffRole, SquadType, TransferOffer, InboxMessage, MessageCategory, TacticalStyle, TacticSettings, MatchSettings } from "../types";
 import { generateUUID, randomInt, weightedRandom } from "./utils";
 import { NATIONS } from "../constants";
@@ -112,7 +111,7 @@ export class WorldManager {
         'GK': Position.GK, 'DC': Position.DC, 'DL': Position.DL, 'DR': Position.DR,
         'DM': Position.DM, 'MC': Position.MC, 'ML': Position.ML, 'MR': Position.MR,
         'AMC': Position.AMC, 'AML': Position.AML, 'AMR': Position.AMR, 'ST': Position.ST,
-        'WR': Position.AMR, 'WP': Position.AML, 'P': Position.GK, 'DFC': Position.DC,
+        'WD': Position.STR, 'WI': Position.STL, 'P': Position.GK, 'DFC': Position.DC,
         'LD': Position.DR, 'LI': Position.DL
      };
      
@@ -292,29 +291,26 @@ export class WorldManager {
     const players = this.getPlayersByClub(clubId).filter(p => p.squad === squad && !p.injury && (!p.suspension || p.suspension.matchesLeft === 0));
     players.forEach(p => { p.isStarter = false; p.tacticalPosition = undefined; });
     
-    // Pick first tactic and try to fill positions logically
     const tactic = this.tactics[0];
     tactic.positions.forEach(slot => {
         const metadata = SLOT_CONFIG[slot];
         if (!metadata) return;
 
-        // Find players who can play this general line first
         const eligible = players.filter(p => {
             if (p.isStarter) return false;
             const primaryPos = p.positions[0];
             
             if (metadata.line === 'GK') return primaryPos === Position.GK;
             if (metadata.line === 'SW') return primaryPos === Position.SW;
-            if (metadata.line === 'DEF') return primaryPos.includes('DFC') || primaryPos.includes('LI') || primaryPos.includes('LD') || primaryPos.includes('LIB');
-            if (metadata.line === 'DM') return primaryPos.includes('MCD') || primaryPos.includes('CD') || primaryPos.includes('CI');
-            // Fix: Replaced invalid Position.MD and Position.MI with Position.MR and Position.ML
+            if (metadata.line === 'DEF') return primaryPos === Position.DC || primaryPos === Position.DL || primaryPos === Position.DR;
+            if (metadata.line === 'DM') return primaryPos === Position.DM || primaryPos === Position.DML || primaryPos === Position.DMR;
             if (metadata.line === 'MID') return primaryPos === Position.MC || primaryPos === Position.MR || primaryPos === Position.ML;
-            if (metadata.line === 'AM') return primaryPos.includes('MPC') || primaryPos.includes('ED') || primaryPos.includes('EI');
-            if (metadata.line === 'ATT') return primaryPos === Position.ST || primaryPos.includes('DWD') || primaryPos.includes('DWI');
+            // Fix: Comparison between narrowed enum type and specific member caused overlap error due to duplicate string values in Position enum. Casting primaryPos to any to skip overlap check.
+            if (metadata.line === 'AM') return (primaryPos as any) === Position.AM || primaryPos === Position.AMC || primaryPos === Position.AMR || primaryPos === Position.AML;
+            if (metadata.line === 'ATT') return primaryPos === Position.ST || primaryPos === Position.STR || primaryPos === Position.STL;
             return false;
         });
 
-        // Pick best available or fallback to best overall if none for specific line
         let best = eligible.sort((a,b) => b.currentAbility - a.currentAbility)[0];
         if (!best) {
             best = players.filter(p => !p.isStarter).sort((a,b) => b.currentAbility - a.currentAbility)[0];

@@ -755,33 +755,29 @@ const App: React.FC = () => {
          </div>
       )}
 
-      <header className={`h-12 border-b flex items-center justify-between px-4 shadow-sm z-[110] shrink-0 transition-colors duration-300 ${
-          userClub 
-            ? `${userClub.primaryColor} ${userClub.secondaryColor} border-black/20` 
-            : 'bg-gradient-to-b from-slate-200 to-slate-300 border-slate-600'
-      }`}>
-        <div className="flex items-center gap-4">
-           {!isMatchView && (
+      {!isMatchView && (
+        <header className={`h-12 border-b flex items-center justify-between px-4 shadow-sm z-[110] shrink-0 transition-colors duration-300 ${
+            userClub 
+              ? `${userClub.primaryColor} ${userClub.secondaryColor} border-black/20` 
+              : 'bg-gradient-to-b from-slate-200 to-slate-300 border-slate-600'
+        }`}>
+          <div className="flex items-center gap-4">
              <button onClick={() => setIsSidebarOpen(true)} className={`lg:hidden hover:opacity-80 transition-opacity ${userClub ? 'text-current' : 'text-slate-900'}`}>
                 <Menu size={20} />
              </button>
-           )}
-           <div className="flex items-center gap-3">
-              <div className={`w-1.5 h-8 ${userClub ? userClub.secondaryColor.replace('text-', 'bg-') : 'bg-slate-800'} border-x border-black/10 opacity-80`}></div>
-              <h1 className={`text-sm font-black uppercase tracking-tight italic drop-shadow-sm truncate max-w-[150px] sm:max-w-none ${userClub ? '' : 'text-slate-950'}`}>
-                {userClub?.name || "FM"}
-              </h1>
-           </div>
-        </div>
+             <div className="flex items-center gap-3">
+                <div className={`w-1.5 h-8 ${userClub ? userClub.secondaryColor.replace('text-', 'bg-') : 'bg-slate-800'} border-x border-black/10 opacity-80`}></div>
+                <h1 className={`text-sm font-black uppercase tracking-tight italic drop-shadow-sm truncate max-w-[150px] sm:max-w-none ${userClub ? '' : 'text-slate-950'}`}>
+                  {userClub?.name || "FM"}
+                </h1>
+             </div>
+          </div>
 
-        <div className="flex items-center gap-2 sm:gap-4">
-           {!isMatchView && (
+          <div className="flex items-center gap-2 sm:gap-4">
              <div className={`font-mono text-[10px] sm:text-[11px] font-black uppercase tracking-widest ${userClub ? 'opacity-90' : 'text-slate-700'}`}>
                {currentDate.toLocaleDateString()}
              </div>
-           )}
-           <div id="header-actions" className="flex items-center gap-2">
-             {!isMatchView && (
+             <div id="header-actions" className="flex items-center gap-2">
                <FMButton 
                  variant={isPreMatchView ? "primary" : "primary"} 
                  onClick={advanceTime}
@@ -793,13 +789,13 @@ const App: React.FC = () => {
                      <> <Play size={10} fill="currentColor" /> Continuar </>
                    )}
                </FMButton>
-             )}
-           </div>
-        </div>
-      </header>
+             </div>
+          </div>
+        </header>
+      )}
 
       <div className="flex flex-1 overflow-hidden relative">
-        {userClub && (
+        {userClub && !isMatchView && (
             <Sidebar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} currentView={currentView} setView={(v) => { setView(v); setIsSidebarOpen(false); }} club={userClub} onVacation={() => setIsVacationModalOpen(true)} onSave={handleOpenSaveModal} />
         )}
         <main className="flex-1 flex flex-col min-w-0 bg-[#94a3b8] relative overflow-hidden">

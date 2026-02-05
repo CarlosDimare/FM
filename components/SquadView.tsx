@@ -18,7 +18,6 @@ interface SquadViewProps {
 type SortField = 'STATUS' | 'POS' | 'NAME' | 'AGE' | 'TREND' | 'SAL' | 'FIT' | 'MOR' | 'VAL';
 
 export const SquadView: React.FC<SquadViewProps> = ({ players, onSelectPlayer, onContextMenu, customTitle, currentDate }) => {
-  // Default sorting set to Position as requested
   const [sortField, setSortField] = useState<SortField>('POS');
   const [sortDesc, setSortDesc] = useState(false);
 
@@ -26,7 +25,6 @@ export const SquadView: React.FC<SquadViewProps> = ({ players, onSelectPlayer, o
     if (sortField === field) setSortDesc(!sortDesc);
     else { 
       setSortField(field); 
-      // Most fields sort descending by default (salary, value), but position sorts ascending
       setSortDesc(field === 'POS' || field === 'NAME' ? false : true); 
     }
   };
@@ -150,7 +148,7 @@ export const SquadView: React.FC<SquadViewProps> = ({ players, onSelectPlayer, o
             </FMTable>
         </div>
         
-        {/* Mobile Table View: Shows Edad, Fis, Valor as requested */}
+        {/* Mobile Table View */}
         <div className="md:hidden h-full overflow-hidden">
             <FMTable 
                 headers={mobileHeaders}
@@ -172,6 +170,7 @@ export const SquadView: React.FC<SquadViewProps> = ({ players, onSelectPlayer, o
                     <FMTableCell className="text-center text-slate-700 font-bold text-[9px] px-1">{player.positions[0]}</FMTableCell>
                     <FMTableCell className="text-slate-900 px-2">
                         <div className="flex items-center min-w-0">
+                            <img src={getFlagUrl(player.nationality)} alt={player.nationality} className="w-3 h-2 object-cover shadow-sm rounded-[1px] mr-1.5 shrink-0 border border-slate-300" />
                             <span className="truncate max-w-[100px] text-[10px]">{player.name}</span>
                             {getStatusIcons(player)}
                         </div>

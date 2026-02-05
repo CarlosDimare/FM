@@ -1,5 +1,4 @@
 
-
 export enum Position {
   GK = 'P',
   SW = 'LIB',
@@ -23,8 +22,8 @@ export enum Position {
   AML = 'EI',
   ST = 'DC',
   STC = 'DC',
-  STR = 'DWD',
-  STL = 'DWI'
+  STR = 'WD',
+  STL = 'WI'
 }
 
 export type SquadType = 'SENIOR' | 'RESERVE' | 'U20';
@@ -483,8 +482,7 @@ export const POSITION_FULL_NAMES: Record<string, string> = {
   [Position.ST]: "Delantero Centro"
 };
 
-// Order defined by user: P, LIB, DFC, LD, LI, CD, CI, MCD, MC, MPC, MD, MI, ED, EI, DWD, DWI, DC
-// Fix: Removed duplicate properties with the same name (enum values were identical for some members)
+// Order defined by user: P, LIB, DFC, LD, LI, CD, CI, MCD, MC, MPC, MD, MI, ED, EI, WD, WI, DC
 export const POSITION_ORDER: Record<string, number> = {
   [Position.GK]: 0,
   [Position.SW]: 1,

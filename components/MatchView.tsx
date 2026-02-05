@@ -1,6 +1,5 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { createPortal } from 'react-dom';
 import { Club, Player, MatchState, MatchEvent, PlayerMatchStats, Position, TacticalReport, Tactic } from '../types';
 import { MatchSimulator } from '../services/engine';
 import { GAME_SPEED_MS } from '../constants';
@@ -196,44 +195,6 @@ export const MatchView: React.FC<MatchViewProps> = ({ homeTeam, awayTeam, homePl
         .join(', ');
   };
 
-  const renderControls = () => {
-    const headerNode = document.getElementById('header-actions');
-    if (!headerNode) return null;
-
-    return createPortal(
-      <div className="flex gap-1">
-        {matchState.minute < 90 && (
-            <>
-                <button 
-                    onClick={() => setMatchState(p => ({...p, isPlaying: !p.isPlaying}))} 
-                    className={`h-8 px-3 rounded-sm shadow-md flex items-center justify-center transition-all border border-black/20 ${matchState.isPlaying ? 'bg-slate-300 text-slate-800 hover:bg-slate-400' : 'bg-green-600 text-white hover:bg-green-700'}`}
-                    title={matchState.isPlaying ? "Pausar" : "Reanudar"}
-                >
-                    {matchState.isPlaying ? <Pause size={14} fill="currentColor"/> : <Play size={14} fill="currentColor"/>}
-                </button>
-                <button 
-                    onClick={handleInstantResult} 
-                    className="h-8 px-3 bg-slate-800 text-yellow-400 rounded-sm shadow-md flex items-center justify-center hover:bg-black transition-all border border-black/20"
-                    title="Resultado Instantáneo"
-                >
-                    <Zap size={14} fill="currentColor"/>
-                </button>
-            </>
-        )}
-        {matchState.minute >= 90 && (
-            <button 
-                onClick={() => onFinish(matchState.homeScore, matchState.awayScore, matchState.playerStats)} 
-                className="h-8 px-3 bg-slate-950 text-white rounded-sm shadow-md flex items-center justify-center hover:bg-black animate-pulse border border-white/20"
-                title="Finalizar Partido"
-            >
-                <CheckCircle size={16} />
-            </button>
-        )}
-      </div>,
-      headerNode
-    );
-  };
-
   const getIntensityStyles = (intensity: number) => {
     switch (intensity) {
       case 1: return "text-[10px] leading-tight font-medium opacity-80";
@@ -279,61 +240,7 @@ export const MatchView: React.FC<MatchViewProps> = ({ homeTeam, awayTeam, homePl
 
   return (
     <div className="flex flex-col h-full bg-slate-300 overflow-hidden font-sans relative">
-      {renderControls()}
-      
-      {/* Tactical Report Modal */}
-      {showReportModal && tacticalReport && (
-          <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
-              <FMBox className="w-full max-w-sm shadow-2xl border-2 border-slate-400" title={
-                  <div className="flex justify-between items-center w-full">
-                      <span>Análisis Táctico - {matchState.minute >= 90 ? 'FINAL' : 'ENTRETIEMPO'}</span>
-                      <button onClick={() => setShowReportModal(false)} className="text-slate-700 hover:text-black"><X size={16}/></button>
-                  </div>
-              } noPadding>
-                  <div className="p-6 bg-slate-100 flex flex-col gap-4">
-                      <div className="flex items-center gap-3 border-b border-slate-300 pb-3">
-                          <BrainCircuit className="text-blue-700" size={28} />
-                          <div>
-                              <h3 className="text-lg font-black text-slate-900 uppercase italic leading-none">{tacticalReport.title}</h3>
-                              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Informe del Asistente</p>
-                          </div>
-                      </div>
-                      
-                      <div className="space-y-3">
-                          <p className="text-sm font-bold text-slate-800 leading-relaxed italic">"{tacticalReport.summary}"</p>
-                          
-                          {tacticalReport.keyStrength && (
-                              <div className="bg-green-100 border-l-4 border-green-500 p-3 rounded-r-sm">
-                                  <p className="text-[9px] font-black text-green-800 uppercase tracking-widest mb-1">Punto Fuerte</p>
-                                  <p className="text-xs font-bold text-green-900">{tacticalReport.keyStrength}</p>
-                              </div>
-                          )}
-                          
-                          {tacticalReport.keyWeakness && (
-                              <div className="bg-red-100 border-l-4 border-red-500 p-3 rounded-r-sm">
-                                  <p className="text-[9px] font-black text-red-800 uppercase tracking-widest mb-1">Punto Débil</p>
-                                  <p className="text-xs font-bold text-red-900">{tacticalReport.keyWeakness}</p>
-                              </div>
-                          )}
-
-                          <div className="bg-slate-200 border border-slate-300 p-3 rounded-sm flex gap-3 items-start">
-                              <Zap size={16} className="text-yellow-600 mt-0.5" />
-                              <div>
-                                  <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-1">Sugerencia</p>
-                                  <p className="text-xs font-bold text-slate-800">{tacticalReport.suggestion}</p>
-                              </div>
-                          </div>
-                      </div>
-
-                      <button onClick={() => setShowReportModal(false)} className="w-full bg-slate-800 text-white font-black uppercase text-xs py-3 rounded-sm hover:bg-slate-900 mt-2">
-                          Entendido
-                      </button>
-                  </div>
-              </FMBox>
-          </div>
-      )}
-
-      {/* FM08-Style LED Scoreboard */}
+      {/* FM08-Style LED Scoreboard as Header */}
       <div className="w-full flex h-14 md:h-20 shadow-xl z-20 relative bg-slate-800 border-b-2 border-slate-600">
         {/* HOME TEAM HALF */}
         <div className={`flex-1 flex items-center justify-end pr-4 md:pr-8 relative overflow-hidden transition-colors ${hCol.bg}`}>
@@ -461,6 +368,85 @@ export const MatchView: React.FC<MatchViewProps> = ({ homeTeam, awayTeam, homePl
           </div>
         )}
       </div>
+
+      {/* FOOTER CONTROLS */}
+      <footer className="bg-slate-900 border-t border-slate-700 p-3 md:p-4 flex items-center justify-center gap-4 shrink-0 z-30 shadow-[0_-4px_10px_rgba(0,0,0,0.3)]">
+        {matchState.minute < 90 ? (
+          <>
+            <button 
+                onClick={() => setMatchState(p => ({...p, isPlaying: !p.isPlaying}))} 
+                className={`flex-1 max-w-[200px] h-12 rounded-sm shadow-md flex items-center justify-center gap-2 transition-all border font-black uppercase tracking-widest text-xs ${matchState.isPlaying ? 'bg-slate-300 text-slate-800 border-slate-400 hover:bg-slate-400' : 'bg-green-600 text-white border-green-700 hover:bg-green-700'}`}
+            >
+                {matchState.isPlaying ? <><Pause size={18} fill="currentColor"/> PAUSAR</> : <><Play size={18} fill="currentColor"/> JUGAR</>}
+            </button>
+            <button 
+                onClick={handleInstantResult} 
+                className="flex-1 max-w-[200px] h-12 bg-slate-800 text-yellow-400 rounded-sm shadow-md flex items-center justify-center gap-2 hover:bg-black transition-all border border-slate-700 font-black uppercase tracking-widest text-xs"
+            >
+                <Zap size={18} fill="currentColor"/> INSTANTÁNEO
+            </button>
+          </>
+        ) : (
+          <button 
+              onClick={() => onFinish(matchState.homeScore, matchState.awayScore, matchState.playerStats)} 
+              className="w-full max-w-sm h-12 bg-blue-700 text-white rounded-sm shadow-md flex items-center justify-center gap-2 hover:bg-blue-800 animate-pulse border border-blue-600 font-black uppercase tracking-widest text-xs"
+          >
+              <CheckCircle size={18} /> SALIR DEL PARTIDO
+          </button>
+        )}
+      </footer>
+
+      {/* Tactical Report Modal */}
+      {showReportModal && tacticalReport && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
+              <FMBox className="w-full max-w-sm shadow-2xl border-2 border-slate-400" title={
+                  <div className="flex justify-between items-center w-full">
+                      <span>Análisis Táctico - {matchState.minute >= 90 ? 'FINAL' : 'ENTRETIEMPO'}</span>
+                      <button onClick={() => setShowReportModal(false)} className="text-slate-700 hover:text-black"><X size={16}/></button>
+                  </div>
+              } noPadding>
+                  <div className="p-6 bg-slate-100 flex flex-col gap-4">
+                      <div className="flex items-center gap-3 border-b border-slate-300 pb-3">
+                          <BrainCircuit className="text-blue-700" size={28} />
+                          <div>
+                              <h3 className="text-lg font-black text-slate-900 uppercase italic leading-none">{tacticalReport.title}</h3>
+                              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Informe del Asistente</p>
+                          </div>
+                      </div>
+                      
+                      <div className="space-y-3">
+                          <p className="text-sm font-bold text-slate-800 leading-relaxed italic">"{tacticalReport.summary}"</p>
+                          
+                          {tacticalReport.keyStrength && (
+                              <div className="bg-green-100 border-l-4 border-green-500 p-3 rounded-r-sm">
+                                  <p className="text-[9px] font-black text-green-800 uppercase tracking-widest mb-1">Punto Fuerte</p>
+                                  <p className="text-xs font-bold text-green-900">{tacticalReport.keyStrength}</p>
+                              </div>
+                          )}
+                          
+                          {tacticalReport.keyWeakness && (
+                              <div className="bg-red-100 border-l-4 border-red-500 p-3 rounded-r-sm">
+                                  <p className="text-[9px] font-black text-red-800 uppercase tracking-widest mb-1">Punto Débil</p>
+                                  <p className="text-xs font-bold text-red-900">{tacticalReport.keyWeakness}</p>
+                              </div>
+                          )}
+
+                          <div className="bg-slate-200 border border-slate-300 p-3 rounded-sm flex gap-3 items-start">
+                              <Zap size={16} className="text-yellow-600 mt-0.5" />
+                              <div>
+                                  <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-1">Sugerencia</p>
+                                  <p className="text-xs font-bold text-slate-800">{tacticalReport.suggestion}</p>
+                              </div>
+                          </div>
+                      </div>
+
+                      <button onClick={() => setShowReportModal(false)} className="w-full bg-slate-800 text-white font-black uppercase text-xs py-3 rounded-sm hover:bg-slate-900 mt-2">
+                          Entendido
+                      </button>
+                  </div>
+              </FMBox>
+          </div>
+      )}
     </div>
   );
 };
