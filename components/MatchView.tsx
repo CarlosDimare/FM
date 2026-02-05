@@ -200,8 +200,8 @@ export const MatchView: React.FC<MatchViewProps> = ({ homeTeam, awayTeam, homePl
       case 1: return "text-[10px] leading-tight font-medium opacity-80";
       case 2: return "text-[12px] leading-snug font-bold";
       case 3: return "text-[14px] leading-normal font-black";
-      case 4: return "text-[16px] leading-tight font-black italic tracking-tight";
-      case 5: return "text-[24px] rounded-sm uppercase tracking-tighter drop-shadow-sm font-black italic";
+      case 4: return "text-[16px] sm:text-[18px] leading-snug font-black italic tracking-tight";
+      case 5: return "text-[20px] sm:text-[28px] leading-[1.1] uppercase tracking-tight drop-shadow-sm font-black italic";
       default: return "text-[14px]";
     }
   };

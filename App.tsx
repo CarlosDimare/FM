@@ -667,7 +667,7 @@ const App: React.FC = () => {
       
       {isLoadModalOpen && (
          <div className="fixed inset-0 z-[200] bg-slate-900/80 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
-            <div className="bg-slate-200 w-full max-w-lg rounded-sm border-2 border-slate-500 shadow-2xl p-6 flex flex-col max-h-[80vh]">
+            <div className="bg-slate-200 w-full max-lg rounded-sm border-2 border-slate-500 shadow-2xl p-6 flex flex-col max-h-[80vh]">
                <div className="flex justify-between items-center mb-6 border-b border-slate-400 pb-2">
                   <h2 className="text-xl font-black text-slate-900 uppercase italic">Cargar Partida</h2>
                   <button onClick={() => setIsLoadModalOpen(false)}><X size={20} className="text-slate-600 hover:text-red-600"/></button>
@@ -726,6 +726,10 @@ const App: React.FC = () => {
   const isMatchView = currentView === 'MATCH';
   const isPreMatchView = currentView === 'PRE_MATCH';
 
+  // Dynamic header date colors
+  const dateBg = userClub ? userClub.secondaryColor.replace('text-', 'bg-') : 'bg-white';
+  const dateText = userClub ? userClub.primaryColor.replace('bg-', 'text-') : 'text-slate-700';
+
   return (
     <div className="flex flex-col h-screen w-screen bg-slate-400 text-slate-950 overflow-hidden font-sans relative text-sm">
       <div className={`h-1 w-full ${userClub ? userClub.secondaryColor.replace('text-','bg-') : 'bg-slate-800'}`}></div>
@@ -774,7 +778,7 @@ const App: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-4">
-             <div className={`font-mono text-[10px] sm:text-[11px] font-black uppercase tracking-widest ${userClub ? 'opacity-90' : 'text-slate-700'}`}>
+             <div className={`font-mono text-[10px] sm:text-[11px] font-black uppercase tracking-widest px-2 py-1 rounded-sm shadow-inner border border-black/20 ${dateBg} ${dateText}`}>
                {currentDate.toLocaleDateString()}
              </div>
              <div id="header-actions" className="flex items-center gap-2">
