@@ -441,36 +441,37 @@ export class LifecycleManager {
      if (phase === 'YOUNG') {
         if (p.currentAbility < p.potentialAbility) {
            const chance = 0.4 * growthFactor; 
-           Object.keys(technical).forEach(k => { if (technical[k] < 20 && Math.random() < chance) { technical[k]++; totalChange++; } });
-           Object.keys(physical).forEach(k => { if (physical[k] < 20 && Math.random() < (chance * 0.7)) { physical[k]++; totalChange++; } });
-           Object.keys(mental).forEach(k => { if (mental[k] < 20 && Math.random() < (chance * 0.3)) { mental[k]++; totalChange++; } });
+           Object.keys(technical).forEach(k => { if ((technical as any)[k] < 20 && Math.random() < chance) { (technical as any)[k]++; totalChange++; } });
+           Object.keys(physical).forEach(k => { if ((physical as any)[k] < 20 && Math.random() < (chance * 0.7)) { (physical as any)[k]++; totalChange++; } });
+           Object.keys(mental).forEach(k => { if ((mental as any)[k] < 20 && Math.random() < (chance * 0.3)) { (mental as any)[k]++; totalChange++; } });
         }
      } 
      else if (phase === 'PRIME') {
         const mentalChance = 0.3 * growthFactor;
-        Object.keys(mental).forEach(k => { if (mental[k] < 20 && Math.random() < mentalChance) { mental[k]++; totalChange++; } });
+        Object.keys(mental).forEach(k => { if ((mental as any)[k] < 20 && Math.random() < mentalChance) { (mental as any)[k]++; totalChange++; } });
         if (avgRating > 7.2 && p.currentAbility < p.potentialAbility) {
            const keys = Object.keys(technical);
            const k = keys[randomInt(0, keys.length - 1)];
-           if (technical[k] < 20) { technical[k]++; totalChange++; }
+           if ((technical as any)[k] < 20) { (technical as any)[k]++; totalChange++; }
         }
      }
      else {
         const declineBase = (p.age - 30) * 0.15; 
         const mitigation = (p.stats.physical.naturalFitness / 40) + (growthFactor * 0.2); 
         const declineChance = Math.max(0.05, declineBase - mitigation);
-        Object.keys(physical).forEach(k => { if (physical[k] > 1 && Math.random() < declineChance) { physical[k]--; totalChange--; } });
-        Object.keys(technical).forEach(k => { if (technical[k] > 1 && Math.random() < (declineChance * 0.5)) { technical[k]--; totalChange--; } });
+        Object.keys(physical).forEach(k => { if ((physical as any)[k] > 1 && Math.random() < declineChance) { (physical as any)[k]--; totalChange--; } });
+        Object.keys(technical).forEach(k => { if ((technical as any)[k] > 1 && Math.random() < (declineChance * 0.5)) { (technical as any)[k]--; totalChange--; } });
         if (Math.random() < 0.3) {
             const mKeys = ['decisions', 'positioning', 'anticipation', 'leadership', 'composure'];
             const k = mKeys[randomInt(0, mKeys.length - 1)];
-            if (mental[k] < 20) { mental[k]++; totalChange++; }
+            if ((mental as any)[k] < 20) { (mental as any)[k]++; totalChange++; }
         }
      }
 
-     const avgTech = Object.values(technical).reduce((a,b) => a+b, 0) / Object.values(technical).length;
-     const avgMen = Object.values(mental).reduce((a,b) => a+b, 0) / Object.values(mental).length;
-     const avgPhy = Object.values(physical).reduce((a,b) => a+b, 0) / Object.values(physical).length;
+     // Added type casting to resolve arithmetic operation errors on unknown values
+     const avgTech = (Object.values(technical) as number[]).reduce((a,b) => a+b, 0) / Object.values(technical).length;
+     const avgMen = (Object.values(mental) as number[]).reduce((a,b) => a+b, 0) / Object.values(mental).length;
+     const avgPhy = (Object.values(physical) as number[]).reduce((a,b) => a+b, 0) / Object.values(physical).length;
      
      const oldCA = p.currentAbility;
      p.currentAbility = ((avgTech + avgMen + avgPhy) / 3) * 10;

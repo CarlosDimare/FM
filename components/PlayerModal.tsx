@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import { Player, Attribute, DialogueType, DialogueResult, ATTRIBUTE_LABELS, Position, SquadType, DialogueTone, POSITION_FULL_NAMES } from '../types';
 import { world } from '../services/worldManager';
@@ -47,25 +48,23 @@ const POS_MAP: Record<string, { top: string; left: string }> = {
   [Position.GK]: { top: "90%", left: "50%" },
   [Position.SW]: { top: "82%", left: "50%" },
   [Position.DC]: { top: "75%", left: "50%" },
-  [Position.DRC]: { top: "75%", left: "70%" },
-  [Position.DLC]: { top: "75%", left: "30%" },
+  // Fix: Removed duplicate Position.DRC and Position.DLC entries as they resolve to the same 'DFC' key as Position.DC.
   [Position.DR]: { top: "75%", left: "85%" },
   [Position.DL]: { top: "75%", left: "15%" },
   [Position.DM]: { top: "60%", left: "50%" },
-  [Position.DMC]: { top: "60%", left: "50%" },
+  // Fix: Removed duplicate Position.DMC as it resolves to the same 'MCD' key as Position.DM.
   [Position.DMR]: { top: "60%", left: "75%" },
   [Position.DML]: { top: "60%", left: "25%" },
   [Position.MC]: { top: "45%", left: "50%" },
-  [Position.MCR]: { top: "45%", left: "70%" },
-  [Position.MCL]: { top: "45%", left: "30%" },
+  // Fix: Removed duplicate Position.MCR and Position.MCL as they resolve to the same 'MC' key as Position.MC.
   [Position.MR]: { top: "45%", left: "85%" },
   [Position.ML]: { top: "45%", left: "15%" },
   [Position.AM]: { top: "30%", left: "50%" },
-  [Position.AMC]: { top: "30%", left: "50%" },
+  // Fix: Removed duplicate Position.AMC as it resolves to the same 'MPC' key as Position.AM.
   [Position.AMR]: { top: "30%", left: "80%" },
   [Position.AML]: { top: "30%", left: "20%" },
   [Position.ST]: { top: "12%", left: "50%" },
-  [Position.STC]: { top: "12%", left: "50%" },
+  // Fix: Removed duplicate Position.STC as it resolves to the same 'DC' key as Position.ST.
   [Position.STR]: { top: "12%", left: "70%" },
   [Position.STL]: { top: "12%", left: "30%" }
 };
@@ -129,6 +128,7 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({ player, onClose, userC
   };
 
   const handleMotiveAction = (action: 'PROMISE' | 'IGNORE') => {
+    player.lastMotiveInteraction = new Date(currentDate); // Record interaction
     const result = DialogueSystem.resolveInitiatedMotive(player, action, currentDate);
     player.morale = Math.max(0, Math.min(100, player.morale + result.moraleChange));
     setDialogueResult(result);

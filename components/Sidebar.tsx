@@ -1,8 +1,9 @@
 
 import React, { useState } from 'react';
-import { Home, Users, Trophy, Calendar, Clipboard, ListOrdered, Sun, Info, ShoppingBag, Search, Wallet, X, MessageSquare, Inbox, ChevronDown, ChevronRight, Globe, Briefcase, Building2, Save, Dumbbell } from 'lucide-react';
+import { Home, Users, Trophy, Calendar, Clipboard, ListOrdered, Sun, Info, ShoppingBag, Search, Wallet, X, MessageSquare, Inbox, ChevronDown, ChevronRight, Globe, Briefcase, Building2, Save, Dumbbell, Settings } from 'lucide-react';
 import { Club, SquadType, Competition } from '../types';
 import { world } from '../services/worldManager';
+import { SettingsModal } from './SettingsModal';
 
 interface SidebarProps {
   currentView: string;
@@ -22,6 +23,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, club, on
     'MARKET': false,
     'TORNEOS': false
   });
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const unreadMessages = world.inbox.filter(m => !m.isRead).length;
 
@@ -124,9 +126,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView, club, on
              <button onClick={onSave} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 hover:text-slate-950 rounded border border-slate-400 shadow-sm transition-all font-bold text-[10px] uppercase tracking-widest active:scale-95">
                 <Save size={14} /> Guardar Partida
              </button>
+             <button onClick={() => setIsSettingsOpen(true)} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 hover:text-slate-950 rounded border border-slate-400 shadow-sm transition-all font-bold text-[10px] uppercase tracking-widest active:scale-95">
+                <Settings size={14} /> Configuración
+             </button>
           </div>
         </nav>
       </div>
+      {isSettingsOpen && <SettingsModal onClose={() => setIsSettingsOpen(false)} />}
     </>
   );
 };

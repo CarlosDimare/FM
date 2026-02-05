@@ -1,4 +1,5 @@
 
+
 import { Player, DialogueType, DialogueResult, DialogueTone } from "../types";
 import { randomInt } from "./utils";
 import { world } from "./worldManager";
@@ -135,6 +136,13 @@ export class DialogueSystem {
   }
 
   static checkPlayerMotives(player: Player, currentDate: Date): string | null {
+     if (player.lastMotiveInteraction) {
+        const lastInteraction = player.lastMotiveInteraction instanceof Date ? player.lastMotiveInteraction : new Date(player.lastMotiveInteraction);
+        const diffTime = currentDate.getTime() - lastInteraction.getTime();
+        const diffDays = diffTime / (1000 * 3600 * 24);
+        if (diffDays < 30) return null;
+     }
+
      const { mental } = player.stats;
      if (player.morale < 30) return "Siento que el ambiente en el club no es el ideal para mí ahora mismo.";
      if (player.isUnhappyWithContract && mental.ambition > 15) return "Me gustaría hablar sobre mi contrato, siento que mi valor no se refleja en mi sueldo.";
