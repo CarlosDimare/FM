@@ -1,3 +1,4 @@
+
 import { Player, Club, Competition, Position, PlayerStats, Fixture, TableEntry, Tactic, Staff, StaffRole, SquadType, TransferOffer, InboxMessage, MessageCategory, TacticalStyle, TacticSettings, MatchSettings } from "../types";
 import { generateUUID, randomInt, weightedRandom } from "./utils";
 import { NATIONS } from "../constants";
@@ -287,11 +288,11 @@ export class WorldManager {
 
   getClubsByLeague(leagueId: string) { return this.clubs.filter(c => c.leagueId === leagueId); }
 
-  selectBestEleven(clubId: string, squad: SquadType) {
+  selectBestEleven(clubId: string, squad: SquadType, tacticId?: string) {
     const players = this.getPlayersByClub(clubId).filter(p => p.squad === squad && !p.injury && (!p.suspension || p.suspension.matchesLeft === 0));
     players.forEach(p => { p.isStarter = false; p.tacticalPosition = undefined; });
     
-    const tactic = this.tactics[0];
+    const tactic = tacticId ? (this.tactics.find(t => t.id === tacticId) || this.tactics[0]) : this.tactics[0];
     tactic.positions.forEach(slot => {
         const metadata = SLOT_CONFIG[slot];
         if (!metadata) return;

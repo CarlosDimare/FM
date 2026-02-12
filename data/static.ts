@@ -275,7 +275,7 @@ const generateIndividualDefaults = (positions: number[]) => {
 
 // Fix missing settings errors
 export const TACTIC_PRESETS: Tactic[] = [
-   { id: '4-4-2', name: '4-4-2 Clásica', positions: [0, 1, 2, 4, 5, 11, 12, 14, 15, 27, 29], arrows: {}, settings: DEFAULT_TACTIC_SETTINGS, individualSettings: generateIndividualDefaults([0, 1, 2, 4, 5, 11, 12, 14, 15, 27, 29]) },
+   { id: '4-4-2', name: '4-4-2 Clásica', positions: [0, 1, 2, 4, 5, 11, 12, 14, 15, 29, 30], arrows: {}, settings: DEFAULT_TACTIC_SETTINGS, individualSettings: generateIndividualDefaults([0, 1, 2, 4, 5, 11, 12, 14, 15, 29, 30]) },
    { id: '4-3-3', name: '4-3-3 Ofensiva', positions: [0, 1, 2, 4, 5, 8, 12, 14, 19, 20, 26], arrows: {}, settings: DEFAULT_TACTIC_SETTINGS, individualSettings: generateIndividualDefaults([0, 1, 2, 4, 5, 8, 12, 14, 19, 20, 26]) },
    { id: '4-2-3-1', name: '4-2-3-1 Doble Pivote', positions: [0, 1, 2, 4, 5, 8, 10, 17, 19, 20, 26], arrows: {}, settings: DEFAULT_TACTIC_SETTINGS, individualSettings: generateIndividualDefaults([0, 1, 2, 4, 5, 8, 10, 17, 19, 20, 26]) },
    { id: '3-5-2', name: '3-5-2 Carrileros', positions: [0, 2, 3, 4, 11, 15, 8, 12, 14, 27, 29], arrows: {}, settings: DEFAULT_TACTIC_SETTINGS, individualSettings: generateIndividualDefaults([0, 2, 3, 4, 11, 15, 8, 12, 14, 27, 29]) },

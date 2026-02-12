@@ -133,8 +133,65 @@ export const TacticsView: React.FC<TacticsViewProps> = ({ players, club, onUpdat
    };
 
    const handleAutoPick = () => {
-      world.selectBestEleven(club.id, 'SENIOR'); 
-      onUpdatePlayer(players[0]);
+      const currentSquad = players.length > 0 ? players[0].squad : 'SENIOR';
+      world.selectBestEleven(club.id, currentSquad, activeTactic.id); 
+      if (players.length > 0) onUpdatePlayer(players[0]);
+   };
+
+   const isPlayerSuitableForLine = (p: Player, line: string) => {
+       const pos = p.positions[0];
+       if (line === 'GK') return pos === Position.GK;
+       if (line === 'SW') return pos === Position.SW;
+       if (line === 'DEF') return [Position.DC, Position.DL, Position.DR].includes(pos);
+       if (line === 'DM') return [Position.DM, Position.DMC, Position.DMR, Position.DML].includes(pos);
+       if (line === 'MID') return [Position.MC, Position.ML, Position.MR, Position.MCL, Position.MCR].includes(pos);
+       if (line === 'AM') return [Position.AM, Position.AML, Position.AMR, Position.AMC].includes(pos);
+       if (line === 'ATT') return [Position.ST, Position.STR, Position.STL].includes(pos);
+       return false;
+   };
+
+   const handleTacticChange = (tacticId: string) => {
+       setSelectedTacticId(tacticId);
+       const newTactic = world.getTactics().find(t => t.id === tacticId);
+       if (!newTactic) return;
+
+       const currentStarters = players.filter(p => p.isStarter);
+       const unassignedPlayers = [...currentStarters];
+       const targetSlots = [...newTactic.positions];
+
+       // Clear current positions
+       unassignedPlayers.forEach(p => p.tacticalPosition = undefined);
+
+       // 1. Assign GK
+       const gkSlot = targetSlots.find(s => SLOT_CONFIG[s].line === 'GK');
+       if (gkSlot !== undefined) {
+           const gkIdx = unassignedPlayers.findIndex(p => p.positions.includes(Position.GK));
+           if (gkIdx !== -1) {
+               unassignedPlayers[gkIdx].tacticalPosition = gkSlot;
+               unassignedPlayers.splice(gkIdx, 1);
+               targetSlots.splice(targetSlots.indexOf(gkSlot), 1);
+           }
+       }
+
+       // 2. Assign remaining based on line suitability
+       for (const slot of [...targetSlots]) {
+           if (!targetSlots.includes(slot)) continue;
+           
+           const line = SLOT_CONFIG[slot].line;
+           let bestIdx = unassignedPlayers.findIndex(p => isPlayerSuitableForLine(p, line));
+           
+           if (bestIdx === -1 && unassignedPlayers.length > 0) {
+               bestIdx = 0; // Fallback
+           }
+
+           if (bestIdx !== -1) {
+               unassignedPlayers[bestIdx].tacticalPosition = slot;
+               unassignedPlayers.splice(bestIdx, 1);
+               targetSlots.splice(targetSlots.indexOf(slot), 1);
+           }
+       }
+       
+       onUpdatePlayer(players[0]);
    };
 
    const handleSlotDrop = (targetSlot: number) => {
@@ -150,6 +207,14 @@ export const TacticsView: React.FC<TacticsViewProps> = ({ players, club, onUpdat
       const idx2 = activeTactic.positions.indexOf(targetSlot);
       if (idx1 !== -1) activeTactic.positions[idx1] = targetSlot;
       if (idx2 !== -1) activeTactic.positions[idx2] = draggingSlot;
+      
+      // If we move to an empty slot, ensure it becomes active in the tactic definition
+      if (idx1 === -1 && p1) activeTactic.positions.push(targetSlot);
+      if (idx1 !== -1 && !p2 && idx2 === -1) {
+          // If we moved a player FROM a slot to an empty slot, and no one swapped back, remove the old slot
+          activeTactic.positions.splice(idx1, 1);
+          activeTactic.positions.push(targetSlot);
+      }
 
       const sSlot = draggingSlot as number;
       const settings1 = activeTactic.individualSettings[sSlot];
@@ -218,6 +283,7 @@ export const TacticsView: React.FC<TacticsViewProps> = ({ players, club, onUpdat
              const p = starters.find(pl => pl.tacticalPosition === slotIdx);
              const isSelected = selectedSlot === slotIdx;
              
+             // Render ALL slots to allow free dragging
              return (
                 <div 
                     key={idx} 
@@ -245,8 +311,8 @@ export const TacticsView: React.FC<TacticsViewProps> = ({ players, club, onUpdat
                          </div>
                       </div>
                    ) : (
-                      <div className={`w-7 h-7 sm:w-10 sm:h-10 rounded-full border border-dashed flex items-center justify-center transition-colors ${currentHoverSlot === slotIdx ? 'border-white bg-white/10' : 'border-white/20'}`}>
-                         <MousePointer2 size={10} className="text-white/20" />
+                      <div className={`w-7 h-7 sm:w-10 sm:h-10 rounded-full border border-dashed flex items-center justify-center transition-colors ${currentHoverSlot === slotIdx ? 'border-white bg-white/20' : 'border-white/10'}`}>
+                         {/* Show subtle indicator for empty slots */}
                       </div>
                    )}
                 </div>
@@ -262,7 +328,7 @@ export const TacticsView: React.FC<TacticsViewProps> = ({ players, club, onUpdat
             <div className="flex items-center justify-between gap-2">
                 <select className="bg-white border border-[#a0b0a0] text-[10px] font-black px-3 py-2 uppercase rounded-sm shadow-inner flex-1 max-w-[200px]" 
                    value={selectedTacticId} 
-                   onChange={(e) => setSelectedTacticId(e.target.value)}
+                   onChange={(e) => handleTacticChange(e.target.value)}
                 >
                    {world.getTactics().map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                 </select>
