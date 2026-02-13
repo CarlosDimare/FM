@@ -35,69 +35,49 @@ export class ProfileNarrativeEngine {
 
   static generateHeadline(player: Player): string {
     const { technical, mental, physical, goalkeeping } = player.stats;
-
-    // Prioridad 0: Estados críticos
     if (player.fitness < 60) return "Físicamente al límite, necesita descanso urgente.";
     if (player.morale < 35) return "Desmotivado y con la cabeza fuera del equipo.";
-
-    // Prioridad 1: Porteros
     if (goalkeeping) {
        if (goalkeeping.reflexes >= 16) return "Un seguro bajo palos con reflejos felinos.";
        if (goalkeeping.oneOnOnes >= 16) return "Especialista en salir triunfante de los mano a mano.";
        return "Portero solvente que aporta seguridad a la zaga.";
     }
-
-    // Prioridad 2: Jugadores de Campo - Definición de estilo por atributos altos
-    // Delanteros
     if (technical.finishing >= 16 && mental.composure >= 15) return "Un depredador del área que rara vez falla ante el gol.";
     if (physical.pace >= 17 || physical.acceleration >= 17) return "Un velocista capaz de castigar cualquier defensa adelantada.";
-    
-    // Creativos
     if (technical.passing >= 16 && mental.vision >= 15) return "Un cerebro privilegiado capaz de ver huecos imposibles.";
     if (technical.technique >= 16 && mental.flair >= 16) return "Un virtuoso del balón que deleita con su calidad técnica.";
-
-    // Defensores
     if (technical.marking >= 16 && technical.tackling >= 16) return "Un baluarte defensivo prácticamente inexpugnable.";
     if (technical.heading >= 16 && physical.jumpingReach >= 16) return "Un coloso del aire dominante en ambas áreas.";
     if (mental.positioning >= 16 && mental.anticipation >= 16) return "Lee el juego de maravilla y siempre está en el lugar justo.";
-
-    // Esfuerzo / Mental
     if (mental.determination >= 18 && mental.workRate >= 17) return "Un guerrero incansable que lucha cada balón como si fuera el último.";
     if (mental.leadership >= 17) return "El gran capitán que guía al grupo con autoridad y ejemplo.";
-
-    // Por defecto según calidad general
     if (player.currentAbility > 150) return "Un futbolista de clase mundial que marca diferencias.";
     if (player.currentAbility > 120) return "Un jugador de gran nivel plenamente consolidado.";
-    
     return "Un profesional centrado en cumplir con su labor diaria.";
   }
 }
 
 export class MatchSimulator {
   private static buildupPhase: Record<string, number> = {};
-  private static gkStress: Record<string, number> = {}; 
 
   private static getEffectiveAttribute(p: Player, stats: Record<string, PlayerMatchStats>, category: 'mental' | 'technical' | 'physical', attr: string): number {
     const base = (p.stats as any)[category][attr] || 10;
     const condition = stats[p.id]?.condition || 100;
-    const moraleMult = 0.9 + (p.morale / 500); 
-    
-    const fatigueImpact = category === 'technical' ? 0.15 : 0.4; 
-    const fatigueMult = 1 - ((100 - condition) / 100 * fatigueImpact);
-    
+    const moraleMult = 0.95 + (p.morale / 1000); 
+    const fatigueMult = 1 - ((100 - condition) / 100 * 0.2);
     return Math.max(1, base * moraleMult * fatigueMult);
   }
 
-  private static calculatePressure(actor: Player, defPlayers: Player[], ballX: number, ballY: number, actorStats: Record<string, PlayerMatchStats>): number {
+  private static calculatePressure(actor: Player, defPlayers: Player[], ballX: number, ballY: number, actorStats: Record<string, PlayerMatchStats>, isHomeActor: boolean): number {
     let totalPressure = 0;
     defPlayers.forEach(def => {
-      const coords = this.getPlayerCoords(def, def.clubId === world.clubs[0].id, ballX); 
+      const coords = this.getPlayerCoords(def, !isHomeActor, ballX); 
       const dist = Math.sqrt(Math.pow(coords.x - ballX, 2) + Math.pow(coords.y - ballY, 2));
       
-      if (dist < 150) {
+      if (dist < 150) { // Radio de presión reducido de 200 a 150 para ser más realista
         const marking = this.getEffectiveAttribute(def, actorStats, 'technical', 'marking');
         const pos = this.getEffectiveAttribute(def, actorStats, 'mental', 'positioning');
-        totalPressure += (marking * 0.7 + pos * 0.3) * (1 - dist / 150);
+        totalPressure += (marking * 0.5 + pos * 0.5) * (1 - dist / 150);
       }
     });
     return totalPressure / 5; 
@@ -145,7 +125,7 @@ export class MatchSimulator {
           const gkShift = (ballX - (isHomeTeam ? 0 : 1000)) * 0.05; 
           x += gkShift;
       } else {
-          const xOffset = (ballX - x) * 0.4;
+          const xOffset = (ballX - x) * 0.45;
           x += xOffset;
       }
       return { x, y };
@@ -154,10 +134,10 @@ export class MatchSimulator {
   private static getProximityWeight(p: Player, ballX: number, ballY: number, isHomeTeam: boolean): number {
       const coords = this.getPlayerCoords(p, isHomeTeam, ballX);
       const dist = Math.sqrt(Math.pow(coords.x - ballX, 2) + Math.pow(coords.y - ballY, 2));
-      if (dist < 50) return 1.0;
-      if (dist < 150) return 0.8;
-      if (dist < 300) return 0.3;
-      return 0.001;
+      if (dist < 40) return 1.2;
+      if (dist < 100) return 1.0;
+      if (dist < 250) return 0.6;
+      return 0.01;
   }
 
   static initMatchStats(players: Player[]): Record<string, PlayerMatchStats> {
@@ -203,6 +183,7 @@ export class MatchSimulator {
     const defPlayers = isHomeActor ? activeAway : activeHome;
     const currentTeamStats = isHomeActor ? newState.homeStats : newState.awayStats;
     const actorClub = isHomeActor ? homeTeam : awayTeam;
+    const defClub = isHomeActor ? awayTeam : homeTeam;
     
     const ballX = newState.ballPosition.x;
     const ballY = newState.ballPosition.y;
@@ -218,10 +199,10 @@ export class MatchSimulator {
         newState.ballState = 'IN_PLAY';
         const kTeam = teamId === homeTeam.id ? homeTeam : awayTeam;
         newState.events.push({ minute: state.minute, second: state.second, type: 'KICKOFF', text: `Inicio de juego. Mueve ${kTeam.name}.`, importance: 'MEDIUM', intensity: 2 });
-        timeConsumed = 5;
+        timeConsumed = 8;
     } 
     else if (newState.ballState === 'OUT_OF_BOUNDS') {
-        newState.events.push({ minute: state.minute, second: state.second, type: 'PASS', text: "Saque de banda/meta.", importance: 'LOW', intensity: 1 });
+        newState.events.push({ minute: state.minute, second: state.second, type: 'PASS', text: "Reanudación del juego.", importance: 'LOW', intensity: 1 });
         newState.ballState = 'IN_PLAY';
         const validReceivers = attPlayers.filter(p => SLOT_CONFIG[p.tacticalPosition || 0]?.line !== 'GK');
         const target = validReceivers[randomInt(0, validReceivers.length-1)];
@@ -233,8 +214,8 @@ export class MatchSimulator {
             const winner = activeOnPitch.map(p => ({ 
                 player: p, 
                 score: (this.getEffectiveAttribute(p, newState.playerStats, 'mental', 'anticipation') + 
-                        this.getEffectiveAttribute(p, newState.playerStats, 'physical', 'acceleration')) * 
-                        Math.random() * this.getProximityWeight(p, ballX, ballY, p.clubId === homeTeam.id) 
+                        this.getEffectiveAttribute(p, newState.playerStats, 'physical', 'acceleration') * 0.5) * 
+                        (0.6 + Math.random()) * this.getProximityWeight(p, ballX, ballY, p.clubId === homeTeam.id) 
             })).sort((a,b) => b.score - a.score)[0].player;
             
             newState.possessorId = winner.id; 
@@ -242,7 +223,6 @@ export class MatchSimulator {
             timeConsumed = 10;
         } else {
             const decisions = this.getEffectiveAttribute(actor, newState.playerStats, 'mental', 'decisions');
-            const vision = this.getEffectiveAttribute(actor, newState.playerStats, 'mental', 'vision');
             const flair = this.getEffectiveAttribute(actor, newState.playerStats, 'mental', 'flair');
             const actorRole = SLOT_CONFIG[actor.tacticalPosition || 0]?.line;
             const isActorGK = actorRole === 'GK';
@@ -251,54 +231,53 @@ export class MatchSimulator {
             const rollDecision = Math.random() * 20;
 
             if (isBallInAttackingThird && !isActorGK) {
-                if (actorRole === 'DEF' || actorRole === 'DM') {
-                    if (rollDecision < 2 && distToGoal < 200) action = 'SHOOT';
-                    else if (rollDecision < 4) action = 'DRIBBLE';
-                    else action = 'PASS';
-                } else {
-                    if (rollDecision < (decisions * 0.25) && distToGoal < 220) action = 'SHOOT';
-                    else if (rollDecision < (flair * 0.35)) action = 'DRIBBLE';
-                }
-            } else if (distToGoal > 700 && (rollDecision > 16 || isActorGK)) {
+                // Decisiones más inteligentes: solo dispara si está cerca o tiene mucho talento
+                if (distToGoal < 180 && rollDecision < (decisions * 0.6)) action = 'SHOOT';
+                else if (distToGoal < 280 && rollDecision < (flair * 0.4)) action = 'DRIBBLE';
+            } else if (distToGoal > 800 && (rollDecision > 16 || isActorGK)) {
                 action = 'CLEAR';
             }
 
-            const pressure = this.calculatePressure(actor, defPlayers, ballX, ballY, newState.playerStats);
+            const pressure = this.calculatePressure(actor, defPlayers, ballX, ballY, newState.playerStats, isHomeActor);
             const composure = this.getEffectiveAttribute(actor, newState.playerStats, 'mental', 'composure');
-            const pressurePenalty = Math.max(0, (pressure - composure) / 8); 
+            // La serenidad ahora mitiga mucho mejor la presión
+            const pressurePenalty = Math.max(0, (pressure - (composure * 0.8)) / 4); 
 
-            const nearbyDef = defPlayers.map(p => ({ 
+            const nearbyDefData = defPlayers.map(p => ({ 
                 player: p, 
                 dist: Math.sqrt(Math.pow(this.getPlayerCoords(p, !isHomeActor, ballX).x - ballX, 2) + Math.pow(this.getPlayerCoords(p, !isHomeActor, ballX).y - ballY, 2)) 
             })).sort((a,b) => a.dist - b.dist)[0];
-            const defClub = isHomeActor ? awayTeam : homeTeam;
+            const nearbyDef = nearbyDefData.player;
 
             if (action === 'SHOOT') {
                 slowMotion = true;
                 const finishing = this.getEffectiveAttribute(actor, newState.playerStats, 'technical', 'finishing');
                 const technique = this.getEffectiveAttribute(actor, newState.playerStats, 'technical', 'technique');
-                const shootingQuality = (finishing * 0.7 + technique * 0.3) - (pressurePenalty * 2.2);
+                
+                // Calidad de remate mejorada
+                const shootingQuality = (finishing * 0.7 + technique * 0.3) - (pressurePenalty * 2.2) + (Math.random() * 8 - 4);
                 
                 const gk = defPlayers.find(p => p.positions.includes(Position.GK)) || defPlayers[0];
                 const reflexes = this.getEffectiveAttribute(gk, newState.playerStats, 'goalkeeping' as any, 'reflexes');
-                const oneOnOne = this.getEffectiveAttribute(gk, newState.playerStats, 'goalkeeping' as any, 'oneOnOnes');
-                const saveQuality = (reflexes * 0.85 + oneOnOne * 0.15) * (0.9 + Math.random() * 0.4);
+                const positionGk = this.getEffectiveAttribute(gk, newState.playerStats, 'mental', 'positioning');
+                const saveQuality = (reflexes * 0.8 + positionGk * 0.2) * (0.9 + Math.random() * 0.4);
 
                 newState.playerStats[actor.id].shots++;
                 currentTeamStats.shots++; 
 
-                if (shootingQuality > saveQuality + 6.5) {
+                // Umbral de gol bajado drásticamente de 8.5 a 4.2 para permitir más goles
+                if (shootingQuality > saveQuality + 4.2) {
                     currentTeamStats.shotsOnTarget++;
                     const goalTexts = ["Remate inapelable.", "Ajustado al palo.", "Fusiló al portero.", "Cabezazo magistral.", "Definición de crack.", "No pudo hacer nada el arquero."];
                     this.scoreGoal(newState, actor, gk, isHomeActor, "Gol", goalTexts[randomInt(0, goalTexts.length-1)], actorClub);
-                } else if (shootingQuality > saveQuality - 3) {
+                } else if (shootingQuality > saveQuality - 1) {
                     currentTeamStats.shotsOnTarget++;
                     newState.playerStats[gk.id].saves++;
-                    newState.events.push({ minute: state.minute, second: state.second, type: 'SAVE', text: `${this.getPlayerLabel(gk, defClub)} salva el remate de ${this.getPlayerLabel(actor, actorClub)}.`, teamId: gk.clubId, importance: 'HIGH', intensity: 4 });
+                    newState.events.push({ minute: state.minute, second: state.second, type: 'SAVE', text: `${this.getPlayerLabel(gk, defClub)} evita el tanto de ${this.getPlayerLabel(actor, actorClub)}.`, teamId: gk.clubId, importance: 'HIGH', intensity: 4 });
                     newState.possessorId = gk.id;
                 } else {
                     const missTexts = ["Disparo desviado", "Se le fue a las nubes", "Remate fuera", "Impactó en el lateral de la red"];
-                    newState.events.push({ minute: state.minute, second: state.second, type: 'MISS', text: `${missTexts[randomInt(0,3)]} de ${this.getPlayerLabel(actor, actorClub)}.`, teamId: actor.clubId, importance: 'MEDIUM', intensity: 2 });
+                    newState.events.push({ minute: state.minute, second: state.second, type: 'MISS', text: `${missTexts[randomInt(0, missTexts.length-1)]} de ${this.getPlayerLabel(actor, actorClub)}.`, teamId: actor.clubId, importance: 'MEDIUM', intensity: 2 });
                     newState.ballState = 'OUT_OF_BOUNDS'; newState.possessorId = null;
                 }
                 timeConsumed = 30;
@@ -306,60 +285,56 @@ export class MatchSimulator {
             else if (action === 'DRIBBLE') {
                 const dribbling = this.getEffectiveAttribute(actor, newState.playerStats, 'technical', 'dribbling');
                 const technique = this.getEffectiveAttribute(actor, newState.playerStats, 'technical', 'technique');
-                const tackling = this.getEffectiveAttribute(nearbyDef.player, newState.playerStats, 'technical', 'tackling');
+                const tackling = this.getEffectiveAttribute(nearbyDef, newState.playerStats, 'technical', 'tackling');
                 
-                const dribbleDifficulty = actorRole === 'DEF' ? 1.4 : 1.15;
+                const dribbleDifficulty = (isBallInAttackingThird ? 1.3 : 1.0) + (pressure / 25);
 
-                if ((dribbling * 0.6 + technique * 0.4) - pressurePenalty > (tackling * dribbleDifficulty)) {
+                if ((dribbling * 0.5 + technique * 0.5) - (pressurePenalty * 1.5) > (tackling * dribbleDifficulty)) {
                     newState.playerStats[actor.id].dribblesCompleted++;
                     this.moveBall(newState, isHomeActor, 120, 40);
-                    newState.events.push({ minute: state.minute, second: state.second, type: 'PASS', text: `${this.getPlayerLabel(actor, actorClub)} desborda con clase a ${this.getPlayerLabel(nearbyDef.player, defClub)}.`, teamId: actor.clubId, importance: 'LOW', intensity: 2 });
+                    newState.events.push({ minute: state.minute, second: state.second, type: 'PASS', text: `${this.getPlayerLabel(actor, actorClub)} supera la marca de ${this.getPlayerLabel(nearbyDef, defClub)}.`, teamId: actor.clubId, importance: 'LOW', intensity: 2 });
                 } else {
-                    newState.possessorId = nearbyDef.player.id;
-                    newState.events.push({ minute: state.minute, second: state.second, type: 'TACKLE', text: `${this.getPlayerLabel(nearbyDef.player, defClub)} le roba la cartera a ${this.getPlayerLabel(actor, actorClub)}.`, teamId: nearbyDef.player.clubId, importance: 'MEDIUM', intensity: 3 });
+                    newState.possessorId = nearbyDef.id;
+                    newState.playerStats[nearbyDef.id].tacklesCompleted++;
+                    newState.events.push({ minute: state.minute, second: state.second, type: 'TACKLE', text: `${this.getPlayerLabel(nearbyDef, defClub)} le quita el balón a ${this.getPlayerLabel(actor, actorClub)}.`, teamId: nearbyDef.clubId, importance: 'MEDIUM', intensity: 3 });
                 }
                 timeConsumed = 15;
             }
             else if (action === 'CLEAR') {
-                this.moveBall(newState, isHomeActor, 420, 130);
+                this.moveBall(newState, isHomeActor, 400, 180);
                 const clearMsgs = ["revienta el balón", "despeja el peligro", "aleja la pelota", "manda el balón arriba"];
                 newState.events.push({ minute: state.minute, second: state.second, type: 'PASS', text: `${this.getPlayerLabel(actor, actorClub)} ${clearMsgs[randomInt(0,3)]}.`, teamId: actor.clubId, importance: 'LOW', intensity: 1 });
                 newState.possessorId = null;
-                timeConsumed = 10;
+                timeConsumed = 12;
             }
             else { 
                 const passing = this.getEffectiveAttribute(actor, newState.playerStats, 'technical', 'passing');
+                const vision = this.getEffectiveAttribute(actor, newState.playerStats, 'mental', 'vision');
                 const firstTouch = this.getEffectiveAttribute(actor, newState.playerStats, 'technical', 'firstTouch');
                 
-                if (firstTouch < 6 && Math.random() < 0.07) {
-                    const failMsgs = ["Mal control", "Control defectuoso", "Balón se le escapa"];
-                    newState.events.push({ minute: state.minute, second: state.second, type: 'INTERCEPTION', text: `${failMsgs[randomInt(0,2)]} de ${this.getPlayerLabel(actor, actorClub)} que pierde la posesión.`, teamId: actor.clubId, importance: 'LOW', intensity: 1 });
-                    newState.possessorId = nearbyDef.player.id;
+                if (firstTouch < 10 && Math.random() < 0.1) {
+                    const failMsgs = ["Mal control", "Control defectuoso", "El balón se le escapa"];
+                    newState.events.push({ minute: state.minute, second: state.second, type: 'INTERCEPTION', text: `${failMsgs[randomInt(0,2)]} de ${this.getPlayerLabel(actor, actorClub)}. Pierde la posesión.`, teamId: actor.clubId, importance: 'LOW', intensity: 1 });
+                    newState.possessorId = nearbyDef.id;
                 } else {
-                    const passQuality = (passing * 0.85 + vision * 0.15) - (pressurePenalty * 0.8);
+                    const passQuality = (passing * 0.7 + vision * 0.3) - (pressurePenalty * 1.2);
                     let possibleReceivers = attPlayers.filter(p => p.id !== actor.id);
                     
-                    if (isBallInAttackingThird || ballX > (isHomeActor ? 500 : 500)) {
-                        const nonGKs = possibleReceivers.filter(p => {
-                            const pos = p.tacticalPosition ?? -1;
-                            return pos >= 0 && SLOT_CONFIG[pos]?.line !== 'GK';
-                        });
-                        if (nonGKs.length > 0) possibleReceivers = nonGKs;
-                    }
-
                     const target = possibleReceivers[randomInt(0, possibleReceivers.length-1)];
-                    const passBaseDifficulty = 5 + Math.random() * 8; 
+                    const passBaseDifficulty = (isBallInAttackingThird ? 11 : 6) + Math.random() * 5; 
                     
                     if (passQuality > passBaseDifficulty) {
                         newState.playerStats[actor.id].passesCompleted++;
                         newState.possessorId = target.id;
-                        this.moveBall(newState, isHomeActor, 85, 30);
-                        newState.events.push({ minute: state.minute, second: state.second, type: 'PASS', text: `${this.getPlayerLabel(actor, actorClub)} ${this.getRandomPassVerb(currentZone, true)} ${this.getPlayerLabel(target, actorClub)}.`, teamId: actor.clubId, importance: 'LOW', intensity: 1 });
+                        this.moveBall(newState, isHomeActor, 110, 45);
+                        if (isBallInAttackingThird || Math.random() > 0.75) {
+                             newState.events.push({ minute: state.minute, second: state.second, type: 'PASS', text: `${this.getPlayerLabel(actor, actorClub)} ${this.getRandomPassVerb(currentZone, isBallInAttackingThird)} ${this.getPlayerLabel(target, actorClub)}.`, teamId: actor.clubId, importance: 'LOW', intensity: 1 });
+                        }
                     } else {
                         newState.playerStats[actor.id].passesAttempted++;
-                        newState.possessorId = nearbyDef.player.id;
-                        const interceptMsgs = ["interceptado por", "cortado por", "que regala a"];
-                        newState.events.push({ minute: state.minute, second: state.second, type: 'INTERCEPTION', text: `Pase impreciso de ${this.getPlayerLabel(actor, actorClub)} ${interceptMsgs[randomInt(0,2)]} ${this.getPlayerLabel(nearbyDef.player, defClub)}.`, teamId: nearbyDef.player.clubId, importance: 'LOW', intensity: 1 });
+                        newState.possessorId = nearbyDef.id;
+                        const interceptMsgs = ["interceptado por", "cortado por", "que regala a", "se queda corto ante"];
+                        newState.events.push({ minute: state.minute, second: state.second, type: 'INTERCEPTION', text: `Pase impreciso de ${this.getPlayerLabel(actor, actorClub)} ${interceptMsgs[randomInt(0,3)]} ${this.getPlayerLabel(nearbyDef, defClub)}.`, teamId: nearbyDef.clubId, importance: 'LOW', intensity: 1 });
                     }
                 }
                 timeConsumed = 15;
@@ -372,7 +347,7 @@ export class MatchSimulator {
         if (stats && timeConsumed > 0) {
             stats.minutesPlayed += (timeConsumed / 60);
             const stamina = p.stats.physical.stamina;
-            const fatigueRate = 0.007 * (1.5 - stamina / 20);
+            const fatigueRate = 0.007 * (1.6 - stamina / 20);
             stats.condition = Math.max(1, stats.condition - (timeConsumed * fatigueRate)); 
             this.updateRating(p, stats);
         }
@@ -410,10 +385,11 @@ export class MatchSimulator {
   }
 
   private static updateRating(p: Player, s: PlayerMatchStats) {
-      if (s.minutesPlayed < 10) { s.rating = 6.0; return; }
+      if (s.minutesPlayed < 5) { s.rating = 6.0; return; }
       let score = 6.0;
-      score += (s.goals || 0) * 1.5; score += (s.assists || 0) * 0.9; score += (s.saves || 0) * 0.5; score -= (s.conceded || 0) * 0.7;
+      score += (s.goals || 0) * 1.6; score += (s.assists || 0) * 1.0; score += (s.saves || 0) * 0.5; score -= (s.conceded || 0) * 0.7;
       score += (s.tacklesCompleted || 0) * 0.2; score += (s.interceptions || 0) * 0.15;
+      score -= (s.passesAttempted - s.passesCompleted) * 0.04;
       s.rating = Math.max(1, Math.min(10, score));
   }
 
@@ -424,7 +400,10 @@ export class MatchSimulator {
       const aRep = world.getClub(awayId)?.reputation || 5000;
       let hScore = 0, aScore = 0;
       const bias = (hRep - aRep) / 2500; 
-      for(let i=0; i<6; i++) { if (Math.random() + (bias * 0.05) > 0.92) hScore++; if (Math.random() - (bias * 0.05) > 0.94) aScore++; }
+      for(let i=0; i<3; i++) { 
+        if (Math.random() + (bias * 0.05) > 0.93) hScore++; 
+        if (Math.random() - (bias * 0.05) > 0.94) aScore++; 
+      }
       const stats = this.initMatchStats([...hS, ...aS]);
       return { homeScore: hScore, awayScore: aScore, stats };
   }
