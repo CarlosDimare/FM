@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Club, Player, MatchState, MatchEvent, PlayerMatchStats, Position, Tactic } from '../types';
 import { MatchSimulator } from '../services/engine';
@@ -69,7 +70,6 @@ export const MatchView: React.FC<MatchViewProps> = ({ homeTeam, awayTeam, homePl
       if (!matchState.isPlaying || matchState.minute >= 90) return;
       
       setMatchState(prev => {
-        // Fix: Removed homeTactic and awayTactic arguments as MatchSimulator.simulateStep expects only 5 arguments
         const { nextState, slowMotion } = MatchSimulator.simulateStep(
             prev, homeTeam, awayTeam, homePlayers, awayPlayers
         );
@@ -80,14 +80,12 @@ export const MatchView: React.FC<MatchViewProps> = ({ homeTeam, awayTeam, homePl
     };
     if (matchState.isPlaying) timeoutId = setTimeout(gameLoop, tickDuration);
     return () => clearTimeout(timeoutId);
-    // Fix: Added missing dependencies to ensure the game loop uses updated props
   }, [matchState.isPlaying, tickDuration, homeTeam, awayTeam, homePlayers, awayPlayers]);
 
   const skipToTime = (targetMin: number) => {
     setMatchState(prev => {
       let current = { ...prev };
       while (current.minute < targetMin && current.minute < 90) {
-        // Fix: Removed homeTactic and awayTactic arguments to match the 5-parameter signature of simulateStep
         const { nextState } = MatchSimulator.simulateStep(
           current, homeTeam, awayTeam, homePlayers, awayPlayers
         );
@@ -104,7 +102,6 @@ export const MatchView: React.FC<MatchViewProps> = ({ homeTeam, awayTeam, homePl
         return `[${e.minute}:${sec}] ${e.text}`;
     }).join('\n');
 
-    // Robust copy method
     try {
         const textArea = document.createElement("textarea");
         textArea.value = logData;
@@ -117,7 +114,6 @@ export const MatchView: React.FC<MatchViewProps> = ({ homeTeam, awayTeam, homePl
         setTimeout(() => setCopied(false), 2000);
     } catch (err) {
         console.error('Fallback copy failed', err);
-        // Secondary attempt with modern API
         if (navigator.clipboard) {
             navigator.clipboard.writeText(logData).then(() => {
                 setCopied(true);
@@ -278,7 +274,7 @@ export const MatchView: React.FC<MatchViewProps> = ({ homeTeam, awayTeam, homePl
         )}
 
         {activeTab === 'STATS' && (
-          <div className="flex-1 p-6 space-y-6 overflow-y-auto bg-white/30">
+          <div className="flex-1 p-6 space-y-6 overflow-y-auto bg-[#e8ece8]">
                 <FMBox title="Estadísticas de Equipo">
                    <div className="space-y-6 p-4">
                       {renderStatsRow("Posesión", matchState.homeStats.possession, matchState.awayStats.possession, true)}
@@ -376,14 +372,20 @@ export const MatchView: React.FC<MatchViewProps> = ({ homeTeam, awayTeam, homePl
   function renderStatsRow(label: string, home: number, away: number, isPercent = false) {
     return (
         <div className="space-y-1">
-          <div className="flex justify-between text-[11px] text-slate-700 uppercase font-black">
-              <span>{home}{isPercent ? '%' : ''}</span>
-              <span>{label}</span>
-              <span>{away}{isPercent ? '%' : ''}</span>
+          <div className="flex justify-between items-end text-[11px] text-slate-800 uppercase font-black px-1">
+              <span className="text-sm md:text-base">{home}{isPercent ? '%' : ''}</span>
+              <span className="pb-1 text-[10px] text-slate-500 tracking-widest">{label}</span>
+              <span className="text-sm md:text-base">{away}{isPercent ? '%' : ''}</span>
           </div>
-          <div className="h-3 bg-slate-300 rounded-full flex overflow-hidden border border-slate-400 shadow-inner">
-            <div className={`${homeTeam.primaryColor}`} style={{ width: `${(home/(home+away+0.001))*100}%` }}></div>
-            <div className={`${awayTeam.primaryColor}`} style={{ width: `${(away/(home+away+0.001))*100}%` }}></div>
+          <div className="h-4 bg-[#ccd5cc] rounded-sm flex overflow-hidden border border-[#a0b0a0] shadow-inner p-[1px]">
+            <div 
+                className={`${homeTeam.primaryColor} rounded-l-sm transition-all duration-500 border-r border-black/10`} 
+                style={{ width: `${(home/(home+away+0.001))*100}%` }}
+            ></div>
+            <div 
+                className={`${awayTeam.primaryColor} rounded-r-sm transition-all duration-500 border-l border-black/10`} 
+                style={{ width: `${(away/(home+away+0.001))*100}%` }}
+            ></div>
           </div>
         </div>
     );
